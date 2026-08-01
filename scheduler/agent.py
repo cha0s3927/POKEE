@@ -139,6 +139,7 @@ TOOLS = [
 ]
 
 MAX_TOOL_ITERATIONS = 5
+MAX_MESSAGES = 101  # system prompt + 100 messages
 
 
 class Agent:
@@ -212,9 +213,12 @@ class Agent:
                 # Final text response
                 messages.append({"role": "assistant", "content": msg.content})
 
-                # Trim old messages: keep system prompt + last 20 messages
-                if len(messages) > 21:
-                    self.sessions[user_id] = [messages[0]] + messages[-20:]
+                # Trim old messages: keep system prompt + last 100, never break tool-call pairs
+                if len(messages) > MAX_MESSAGES:
+                    keep_from = len(messages) - 100
+                    while keep_from > 1 and messages[keep_from].get("role") == "tool":
+                        keep_from -= 1
+                    self.sessions[user_id] = [messages[0]] + messages[keep_from:]
 
                 return msg.content
 

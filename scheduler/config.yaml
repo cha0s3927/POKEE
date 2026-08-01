@@ -13,3 +13,8 @@ llm:
 # WeChat 接入
 wechat:
   secret: "${WECHAT_SECRET:-wechat-secret-change-me}"
+
+# 飞书接入
+feishu:
+  app_id: "${FEISHU_APP_ID:-}"
+  app_secret: "${FEISHU_APP_SECRET:-}"

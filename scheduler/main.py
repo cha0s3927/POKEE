@@ -27,6 +27,7 @@ from starlette.responses import Response
 
 from agent import Agent
 from auth import hash_password, verify_password, new_token, validate_email, get_current_user, now_iso as auth_now
+from channels.feishu import FeishuBot
 
 TZ = ZoneInfo("Asia/Shanghai")
 
@@ -53,6 +54,11 @@ LLM_MODEL = LLM_CONFIG.get("model", "deepseek-chat")
 
 WECHAT_SECRET = config.get("wechat", {}).get("secret", os.environ.get("WECHAT_SECRET", "wechat-secret-change-me"))
 WECHAT_PUSH_URL = config.get("wechat", {}).get("push_url", os.environ.get("WECHAT_PUSH_URL", "http://localhost:8765/push"))
+
+FEISHU_CONFIG = config.get("feishu", {})
+FEISHU_APP_ID = FEISHU_CONFIG.get("app_id", os.environ.get("FEISHU_APP_ID", ""))
+FEISHU_APP_SECRET = FEISHU_CONFIG.get("app_secret", os.environ.get("FEISHU_APP_SECRET", ""))
+feishu_bot: FeishuBot | None = None
 
 # ── 数据库 ────────────────────────────────────────────
 Path("data").mkdir(exist_ok=True)
@@ -148,6 +154,11 @@ def fire_reminder(reminder_id: str):
         "sent_at": now_iso(),
     }
     push_sse(payload)
+
+    # 飞书用户：主动推送
+    if user_id.startswith("feishu:") and feishu_bot:
+        open_id = user_id[len("feishu:"):]
+        feishu_bot.send_notification(open_id, task, run_at)
 
     # 微信用户：主动推送到 Node adapter 的 push server
     if user_id.startswith("wechat:"):
@@ -289,11 +300,16 @@ app = FastAPI(
 
 @app.on_event("startup")
 def startup():
-    global _main_loop
+    global _main_loop, feishu_bot
     _main_loop = asyncio.get_running_loop()
     scheduler.start()
     n = restore_jobs()
     print(f"[STARTUP] {n} pending reminders restored")
+
+    if FEISHU_APP_ID and FEISHU_APP_SECRET:
+        feishu_bot = FeishuBot(FEISHU_APP_ID, FEISHU_APP_SECRET, agent, execute_tool)
+        feishu_bot.start()
+        print("[STARTUP] Feishu bot started")
 
 
 @app.on_event("shutdown")
