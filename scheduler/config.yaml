@@ -1,0 +1,15 @@
+# Reminder Agent 配置
+server_url: "${SERVER_URL:-http://localhost:8000}"
+
+database:
+  url: "sqlite:///data/reminders.db"
+
+# LLM 配置（DeepSeek API，OpenAI 兼容格式）
+llm:
+  api_key: "${DEEPSEEK_API_KEY:-}"
+  base_url: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}"
+  model: "${LLM_MODEL:-deepseek-v4-flash}"
+
+# WeChat 接入
+wechat:
+  secret: "${WECHAT_SECRET:-wechat-secret-change-me}"

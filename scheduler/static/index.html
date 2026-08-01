@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reminder Agent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22252f; --border: #2a2d38;
+    --text: #e4e6ed; --text2: #9ca0b0; --accent: #6c8aff; --accent2: #5b7af0;
+    --green: #4ade80; --yellow: #fbbf24; --red: #f87171;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh; overflow: hidden;
+  }
+
+  /* ── Auth page ── */
+  .auth-container {
+    display: flex; align-items: center; justify-content: center; height: 100vh;
+  }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 40px 36px; width: 380px; max-width: 90vw;
+  }
+  .auth-box h1 {
+    font-size: 22px; font-weight: 600; text-align: center; margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .auth-box .sub { text-align: center; font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+  .auth-tabs { display: flex; margin-bottom: 24px; border-radius: var(--radius-sm); overflow: hidden; }
+  .auth-tabs button {
+    flex: 1; padding: 10px; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); cursor: pointer; font-size: 14px; transition: all 0.2s;
+  }
+  .auth-tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .auth-field { margin-bottom: 16px; }
+  .auth-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .auth-field input {
+    width: 100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .auth-field input:focus { border-color: var(--accent); }
+  .auth-box .btn {
+    width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: background 0.2s; margin-top: 8px;
+  }
+  .auth-box .btn:hover { background: var(--accent2); }
+  .auth-box .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auth-error { color: var(--red); font-size: 12px; text-align: center; margin-top: 12px; min-height: 18px; }
+  .auth-box .logout-hint { text-align: center; font-size: 11px; color: var(--text2); margin-top: 16px; cursor: pointer; }
+
+  /* ── Chat layout ── */
+  .app { display: none; height: 100vh; }
+  .app.active { display: flex; }
+  .sidebar {
+    width: 320px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h1 {
+    font-size: 18px; font-weight: 600;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sidebar-header .user-info { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .reminder-list { flex: 1; overflow-y: auto; padding: 12px; }
+  .reminder-list::-webkit-scrollbar { width: 4px; }
+  .reminder-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .reminder-card {
+    background: var(--surface2); border-radius: var(--radius-sm); padding: 12px;
+    margin-bottom: 8px; border-left: 3px solid var(--accent); font-size: 13px;
+  }
+  .reminder-card.sent { border-left-color: var(--green); opacity: 0.7; }
+  .reminder-card.cancelled { border-left-color: var(--red); opacity: 0.5; text-decoration: line-through; }
+  .reminder-card .task { font-weight: 500; margin-bottom: 4px; }
+  .reminder-card .meta { font-size: 11px; color: var(--text2); }
+  .section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2);
+    padding: 8px 4px; margin-top: 4px;
+  }
+  .empty-state { text-align: center; padding: 40px 16px; color: var(--text2); font-size: 13px; }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .chat-header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-header .status { font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .chat-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .chat-header button {
+    background: transparent; border: 1px solid var(--border); color: var(--text2);
+    padding: 6px 14px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;
+    margin-left: 8px; transition: all 0.2s;
+  }
+  .chat-header button:hover { border-color: var(--accent); color: var(--accent); }
+  .chat-header button.danger:hover { border-color: var(--red); color: var(--red); }
+  .messages {
+    flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .msg { display: flex; gap: 10px; max-width: 80%; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.assistant { align-self: flex-start; }
+  .msg.system { align-self: center; max-width: 90%; }
+  .msg-avatar {
+    width: 32px; height: 32px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+  .msg.user .msg-avatar { background: var(--accent); }
+  .msg.assistant .msg-avatar { background: linear-gradient(135deg, #6c8aff, #a78bfa); }
+  .msg-bubble {
+    padding: 12px 16px; border-radius: var(--radius); font-size: 14px;
+    line-height: 1.6; word-break: break-word;
+  }
+  .msg.user .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 2px; }
+  .msg.assistant .msg-bubble { background: var(--surface2); border-bottom-left-radius: 2px; }
+  .msg.system .msg-bubble {
+    background: transparent; border: 1px dashed var(--border);
+    padding: 10px 20px; font-size: 13px; color: var(--yellow); text-align: center;
+  }
+  .typing { align-self: flex-start; padding-left: 42px; }
+  .typing .dots { display: flex; gap: 4px; }
+  .typing .dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text2);
+    animation: bounce 1.4s infinite ease-in-out both;
+  }
+  .typing .dots span:nth-child(1) { animation-delay: -0.32s; }
+  .typing .dots span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes bounce { 0%,80%,100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+  .input-area { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+  .input-area input {
+    flex: 1; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-size: 14px; outline: none;
+  }
+  .input-area input:focus { border-color: var(--accent); }
+  .input-area input::placeholder { color: #4a4d5a; }
+  .input-area button {
+    padding: 12px 24px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .input-area button:hover { background: var(--accent2); }
+  .input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .msg { max-width: 90%; }
+    .messages { padding: 16px; }
+    .input-area { padding: 12px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Auth page ── -->
+<div id="authPage" class="auth-container">
+  <div class="auth-box">
+    <h1>Reminder Agent</h1>
+    <p class="sub">登录以使用定时提醒助手</p>
+    <div class="auth-tabs">
+      <button id="tabLogin" class="active" onclick="switchTab('login')">登录</button>
+      <button id="tabRegister" onclick="switchTab('register')">注册</button>
+    </div>
+    <div class="auth-field">
+      <label>邮箱</label>
+      <input type="email" id="authEmail" placeholder="example@mail.com" autofocus>
+    </div>
+    <div class="auth-field">
+      <label>密码（至少6位）</label>
+      <input type="password" id="authPassword" placeholder="••••••" onkeydown="if(event.key==='Enter') doAuth()">
+    </div>
+    <button class="btn" id="authBtn" onclick="doAuth()">登录</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- ── Chat app ── -->
+<div id="app" class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>Reminder Agent</h1>
+      <p class="user-info" id="sidebarUser"></p>
+    </div>
+    <div class="reminder-list" id="reminderList">
+      <div class="empty-state">加载中...</div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="chat-header">
+      <div class="status"><span class="dot"></span>在线</div>
+      <div>
+        <button onclick="resetSession()">新会话</button>
+        <button class="danger" onclick="logout()">退出登录</button>
+      </div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="msg assistant">
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble">
+          你好！我是提醒助手 ⏰<br>
+          比如你可以说："明天下午3点提醒我开会"、"10分钟后提醒我看邮件"
+        </div>
+      </div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="输入提醒内容..." autofocus
+             onkeydown="if(event.key==='Enter') sendMessage()">
+      <button id="sendBtn" onclick="sendMessage()">发送</button>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──
+let token = localStorage.getItem('rm_token') || '';
+let authMode = 'login';
+let isLoading = false;
+let _sse = null;
+let _audioCtx = null;
+
+// ── Init ──
+if (token) {
+  showApp();
+} else {
+  document.getElementById('authPage').style.display = 'flex';
+}
+
+// ── Auth page ──
+function resetAuthForm() {
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+  document.getElementById('authError').textContent = '';
+  const btn = document.getElementById('authBtn');
+  btn.disabled = false;
+  btn.textContent = authMode === 'login' ? '登录' : '注册';
+}
+
+function switchTab(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+  resetAuthForm();
+}
+
+async function doAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  const btn = document.getElementById('authBtn');
+  if (btn.disabled) return;  // 防重复点击
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = '请填写邮箱和密码'; return; }
+  btn.disabled = true;
+  btn.textContent = '请稍候...';
+  try {
+    const resp = await fetch('/api/' + authMode, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) { errEl.textContent = data.detail || '操作失败'; btn.disabled = false; btn.textContent = authMode === 'login' ? '登录' : '注册'; return; }
+    token = data.token;
+    localStorage.setItem('rm_token', token);
+    showApp();
+  } catch (e) {
+    errEl.textContent = '网络错误，请重试';
+    btn.disabled = false;
+    btn.textContent = authMode === 'login' ? '登录' : '注册';
+  }
+}
+
+function skipAuth() {
+  token = 'skip';
+  showApp();
+}
+
+function logout() {
+  if (_sse) { _sse.close(); _sse = null; }
+  token = '';
+  localStorage.removeItem('rm_token');
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authPage').style.display = 'flex';
+  resetAuthForm();
+  document.getElementById('authEmail').focus();
+}
+
+// ── Chat app ──
+function showApp() {
+  document.getElementById('authPage').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  // 清空聊天记录，显示欢迎消息
+  document.getElementById('messages').innerHTML =
+    '<div class="msg assistant"><div class="msg-avatar">🤖</div><div class="msg-bubble">你好！我是提醒助手 ⏰<br>比如你可以说："明天下午3点提醒我开会"、"10分钟后提醒我看邮件"</div></div>';
+  requestNotificationPermission();
+  connectSSE();
+  loadReminders();
+  document.getElementById('userInput').focus();
+  window.addEventListener('beforeunload', () => {
+    if (_sse) { _sse.close(); _sse = null; }
+  });
+}
+
+function apiHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  if (token && token !== 'skip') h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+
+function sseTokenParam() {
+  return (token && token !== 'skip') ? ('&token=' + token) : '';
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const btn = document.getElementById('sendBtn');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+  input.value = ''; isLoading = true; btn.disabled = true;
+  appendMessage('user', text);
+  showTyping();
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST', headers: apiHeaders(),
+      body: JSON.stringify({ message: text }),
+    });
+    if (resp.status === 401) { removeTyping(); logout(); return; }
+    const data = await resp.json();
+    removeTyping();
+    appendMessage('assistant', data.reply);
+  } catch (e) {
+    removeTyping();
+    appendMessage('assistant', '抱歉，连接失败，请重试。');
+  }
+  isLoading = false; btn.disabled = false; input.focus();
+  loadReminders();
+}
+
+function appendMessage(role, content) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const avatar = role === 'user' ? '👤' : role === 'system' ? '' : '🤖';
+  const avatarDiv = role === 'system' ? '' : `<div class="msg-avatar">${avatar}</div>`;
+  div.innerHTML = `${avatarDiv}<div class="msg-bubble">${esc(content)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'typing'; div.id = 'typing-indicator';
+  div.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+// ── SSE ──
+function connectSSE() {
+  if (_sse) { _sse.close(); _sse = null; }
+  if (token === 'skip') return; // 跳过登录时不连 SSE
+  const es = new EventSource('/api/sse?token=' + token);
+  _sse = es;
+  es.onmessage = (e) => {
+    if (!e.data) return;
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'notification') {
+        playDing();
+        appendMessage('system', `⏰ 提醒时间到：${data.task}`);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Reminder Agent', { body: data.task, icon: '⏰' });
+        }
+        loadReminders();
+      }
+    } catch (_) {}
+  };
+  es.onerror = () => { _sse = null; setTimeout(connectSSE, 3000); };
+}
+
+// ── Audio ──
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+}
+function playDing() {
+  try {
+    const ctx = getAudioCtx();
+    const [gain, osc] = [ctx.createGain(), ctx.createOscillator()];
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+  } catch (_) {}
+}
+document.addEventListener('click', () => { if (_audioCtx?.state === 'suspended') _audioCtx.resume(); }, {once: true});
+document.addEventListener('keydown', () => { if (_audioCtx?.state === 'suspended') _audioCtx.resume(); }, {once: true});
+
+// ── Reminders ──
+async function loadReminders() {
+  if (token === 'skip') return;
+  try {
+    const resp = await fetch('/reminders?_=' + Date.now(), { headers: apiHeaders() });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    renderReminderList(await resp.json());
+  } catch (e) {
+    document.getElementById('reminderList').innerHTML =
+      '<div class="empty-state">加载失败</div>';
+  }
+}
+function renderReminderList(reminders) {
+  const container = document.getElementById('reminderList');
+  if (!reminders || reminders.length === 0) {
+    container.innerHTML = '<div class="empty-state">暂无提醒<br>在聊天框中创建一个吧</div>';
+    return;
+  }
+  const pending = reminders.filter(r => r.status === 'pending');
+  const done = reminders.filter(r => r.status !== 'pending');
+  let html = '';
+  if (pending.length > 0) {
+    html += `<div class="section-title">⏳ 待触发 (${pending.length})</div>`;
+    pending.forEach(r => {
+      html += `<div class="reminder-card"><div class="task">${esc(r.task)}</div>
+        <div class="meta"><span>🕐 ${fmt(r.run_at)}</span><span>#${r.id}</span></div></div>`;
+    });
+  }
+  if (done.length > 0) {
+    html += `<div class="section-title">✅ 已完成 (${done.length})</div>`;
+    done.forEach(r => {
+      html += `<div class="reminder-card ${r.status}"><div class="task">${esc(r.task)}</div>
+        <div class="meta"><span>${r.status==='sent'?'已触发':'已取消'}</span><span>#${r.id}</span></div></div>`;
+    });
+  }
+  container.innerHTML = html;
+}
+function fmt(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), p = n => String(n).padStart(2, '0');
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function resetSession() {
+  fetch('/api/reset', { method: 'POST', headers: apiHeaders() });
+  document.getElementById('messages').innerHTML = '';
+  appendMessage('assistant', '会话已重置，有什么我可以帮你的？');
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+</script>
+</body>
+</html>

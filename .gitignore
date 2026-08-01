@@ -1,0 +1,13 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+data/
+
+# Node
+node_modules/
+
+# IDE
+.claude/

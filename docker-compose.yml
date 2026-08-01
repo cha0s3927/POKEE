@@ -1,0 +1,13 @@
+services:
+  reminder-agent:
+    build: ./scheduler
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./scheduler/data:/app/data
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
+      - SERVER_URL=${SERVER_URL:-http://localhost:8000}
+    restart: unless-stopped
