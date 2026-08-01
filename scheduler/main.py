@@ -60,6 +60,9 @@ FEISHU_APP_ID = FEISHU_CONFIG.get("app_id", os.environ.get("FEISHU_APP_ID", ""))
 FEISHU_APP_SECRET = FEISHU_CONFIG.get("app_secret", os.environ.get("FEISHU_APP_SECRET", ""))
 feishu_bot: FeishuBot | None = None
 
+WHATSAPP_SECRET = config.get("whatsapp", {}).get("secret", os.environ.get("WHATSAPP_SECRET", "whatsapp-secret-change-me"))
+WHATSAPP_PUSH_URL = config.get("whatsapp", {}).get("push_url", os.environ.get("WHATSAPP_PUSH_URL", "http://localhost:8767/push"))
+
 # ── 数据库 ────────────────────────────────────────────
 Path("data").mkdir(exist_ok=True)
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -173,6 +176,20 @@ def fire_reminder(reminder_id: str):
             urllib.request.urlopen(req, timeout=5)
         except Exception as e:
             print(f"[WECHAT-PUSH] failed: {e}")
+
+    # WhatsApp 用户：主动推送到 Node adapter 的 push server
+    if user_id.startswith("whatsapp:"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                WHATSAPP_PUSH_URL,
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as e:
+            print(f"[WHATSAPP-PUSH] failed: {e}")
 
 
 def restore_jobs():
@@ -443,6 +460,37 @@ def wechat_reset(req: WechatResetRequest):
     if req.secret != WECHAT_SECRET:
         raise HTTPException(status_code=403, detail="密钥错误")
     user_id = f"wechat:{req.conversation_id}"
+    agent.clear_session(user_id)
+    return {"status": "ok"}
+
+
+# ── WhatsApp 接入 ─────────────────────────────────────
+class WhatsappChatRequest(BaseModel):
+    message: str = Field(description="用户消息")
+    conversation_id: str = Field(description="WhatsApp JID，用作 user_id")
+    secret: str = Field(description="共享密钥，验证请求来源")
+
+
+@app.post("/api/whatsapp/chat", summary="WhatsApp Agent 对话")
+def whatsapp_chat(req: WhatsappChatRequest):
+    if req.secret != WHATSAPP_SECRET:
+        raise HTTPException(status_code=403, detail="密钥错误")
+    user_id = f"whatsapp:{req.conversation_id}"
+    reply = agent.chat(user_message=req.message, user_id=user_id)
+    execute_tool("ack_notifications", {"user_id": user_id})
+    return {"reply": reply}
+
+
+class WhatsappResetRequest(BaseModel):
+    conversation_id: str = Field(description="WhatsApp JID")
+    secret: str = Field(description="共享密钥")
+
+
+@app.post("/api/whatsapp/reset", summary="重置 WhatsApp 会话")
+def whatsapp_reset(req: WhatsappResetRequest):
+    if req.secret != WHATSAPP_SECRET:
+        raise HTTPException(status_code=403, detail="密钥错误")
+    user_id = f"whatsapp:{req.conversation_id}"
     agent.clear_session(user_id)
     return {"status": "ok"}
 

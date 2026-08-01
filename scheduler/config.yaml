@@ -18,3 +18,7 @@ wechat:
 feishu:
   app_id: "${FEISHU_APP_ID:-}"
   app_secret: "${FEISHU_APP_SECRET:-}"
+
+# WhatsApp 接入
+whatsapp:
+  secret: "${WHATSAPP_SECRET:-whatsapp-secret-change-me}"

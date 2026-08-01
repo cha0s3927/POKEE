@@ -9,5 +9,9 @@ data/
 # Node
 node_modules/
 
+# WhatsApp session (sensitive)
+whatsapp-adapter/auth_info_baileys/
+whatsapp-adapter/.env
+
 # IDE
 .claude/
