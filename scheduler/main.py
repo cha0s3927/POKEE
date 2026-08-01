@@ -52,6 +52,7 @@ LLM_BASE_URL = LLM_CONFIG.get("base_url", "https://api.deepseek.com/v1")
 LLM_MODEL = LLM_CONFIG.get("model", "deepseek-chat")
 
 WECHAT_SECRET = config.get("wechat", {}).get("secret", os.environ.get("WECHAT_SECRET", "wechat-secret-change-me"))
+WECHAT_PUSH_URL = config.get("wechat", {}).get("push_url", os.environ.get("WECHAT_PUSH_URL", "http://localhost:8765/push"))
 
 # ── 数据库 ────────────────────────────────────────────
 Path("data").mkdir(exist_ok=True)
@@ -138,14 +139,29 @@ def fire_reminder(reminder_id: str):
         session.commit()
 
     print(f"[SCHEDULER] fire: {reminder_id} '{task}' for user={user_id}")
-    push_sse({
+    payload = {
         "type": "notification",
         "id": reminder_id,
         "task": task,
         "user_id": user_id,
         "run_at": run_at,
         "sent_at": now_iso(),
-    })
+    }
+    push_sse(payload)
+
+    # 微信用户：主动推送到 Node adapter 的 push server
+    if user_id.startswith("wechat:"):
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                WECHAT_PUSH_URL,
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as e:
+            print(f"[WECHAT-PUSH] failed: {e}")
 
 
 def restore_jobs():
