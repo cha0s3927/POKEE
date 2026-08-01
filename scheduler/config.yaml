@@ -22,3 +22,7 @@ feishu:
 # WhatsApp 接入
 whatsapp:
   secret: "${WHATSAPP_SECRET:-whatsapp-secret-change-me}"
+
+# LinkedIn 接入
+linkedin:
+  secret: "${LINKEDIN_SECRET:-reminder-agent-linkedin-2026}"

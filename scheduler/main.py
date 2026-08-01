@@ -13,6 +13,13 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+# 自动加载 .env（优先找当前目录，再找上级目录）
+from dotenv import load_dotenv
+for _env_dir in (Path(__file__).parent, Path(__file__).parent.parent):
+    _env_path = _env_dir / ".env"
+    if _env_path.exists():
+        load_dotenv(_env_path)
+
 import yaml
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -28,6 +35,7 @@ from starlette.responses import Response
 from agent import Agent
 from auth import hash_password, verify_password, new_token, validate_email, get_current_user, now_iso as auth_now
 from channels.feishu import FeishuBot
+from channels.linkedin import LinkedInBot
 
 TZ = ZoneInfo("Asia/Shanghai")
 
@@ -62,6 +70,14 @@ feishu_bot: FeishuBot | None = None
 
 WHATSAPP_SECRET = config.get("whatsapp", {}).get("secret", os.environ.get("WHATSAPP_SECRET", "whatsapp-secret-change-me"))
 WHATSAPP_PUSH_URL = config.get("whatsapp", {}).get("push_url", os.environ.get("WHATSAPP_PUSH_URL", "http://localhost:8767/push"))
+
+LINKEDIN_CONFIG = config.get("linkedin", {})
+LINKEDIN_EMAIL = LINKEDIN_CONFIG.get("email", os.environ.get("LINKEDIN_EMAIL", ""))
+LINKEDIN_PASSWORD = LINKEDIN_CONFIG.get("password", os.environ.get("LINKEDIN_PASSWORD", ""))
+LINKEDIN_SECRET = LINKEDIN_CONFIG.get("secret", os.environ.get("LINKEDIN_SECRET", "reminder-agent-linkedin-2026"))
+LINKEDIN_LI_AT = LINKEDIN_CONFIG.get("li_at", os.environ.get("LINKEDIN_LI_AT", ""))
+LINKEDIN_JSESSIONID = LINKEDIN_CONFIG.get("jsessionid", os.environ.get("LINKEDIN_JSESSIONID", ""))
+linkedin_bot: LinkedInBot | None = None
 
 # ── 数据库 ────────────────────────────────────────────
 Path("data").mkdir(exist_ok=True)
@@ -191,6 +207,11 @@ def fire_reminder(reminder_id: str):
         except Exception as e:
             print(f"[WHATSAPP-PUSH] failed: {e}")
 
+    # LinkedIn 用户：直接调用 send_notification（同一进程，无需 HTTP push）
+    if user_id.startswith("linkedin:") and linkedin_bot:
+        conv_id = user_id[len("linkedin:"):]
+        linkedin_bot.send_notification(conv_id, task, run_at)
+
 
 def restore_jobs():
     with Session(engine) as session:
@@ -317,7 +338,7 @@ app = FastAPI(
 
 @app.on_event("startup")
 def startup():
-    global _main_loop, feishu_bot
+    global _main_loop, feishu_bot, linkedin_bot
     _main_loop = asyncio.get_running_loop()
     scheduler.start()
     n = restore_jobs()
@@ -327,6 +348,14 @@ def startup():
         feishu_bot = FeishuBot(FEISHU_APP_ID, FEISHU_APP_SECRET, agent, execute_tool)
         feishu_bot.start()
         print("[STARTUP] Feishu bot started")
+
+    if LINKEDIN_EMAIL and LINKEDIN_PASSWORD:
+        cookies = None
+        if LINKEDIN_LI_AT:
+            cookies = {"li_at": LINKEDIN_LI_AT, "JSESSIONID": LINKEDIN_JSESSIONID}
+        linkedin_bot = LinkedInBot(LINKEDIN_EMAIL, LINKEDIN_PASSWORD, agent, execute_tool, cookies=cookies)
+        linkedin_bot.start()
+        print("[STARTUP] LinkedIn bot started")
 
 
 @app.on_event("shutdown")
@@ -491,6 +520,40 @@ def whatsapp_reset(req: WhatsappResetRequest):
     if req.secret != WHATSAPP_SECRET:
         raise HTTPException(status_code=403, detail="密钥错误")
     user_id = f"whatsapp:{req.conversation_id}"
+    agent.clear_session(user_id)
+    return {"status": "ok"}
+
+
+# ── LinkedIn 接入 ─────────────────────────────────────
+class LinkedinChatRequest(BaseModel):
+    message: str = Field(description="用户消息")
+    conversation_id: str = Field(description="LinkedIn conversation URN，用作 user_id")
+    secret: str = Field(description="共享密钥，验证请求来源")
+
+
+@app.post("/api/linkedin/chat", summary="LinkedIn Agent 对话")
+def linkedin_chat(req: LinkedinChatRequest):
+    if req.secret != LINKEDIN_SECRET:
+        raise HTTPException(status_code=403, detail="密钥错误")
+    user_id = f"linkedin:{req.conversation_id}"
+    reply = agent.chat(user_message=req.message, user_id=user_id)
+    execute_tool("ack_notifications", {"user_id": user_id})
+    # 如果 linkedin_bot 在运行，发送回复
+    if linkedin_bot and linkedin_bot.api:
+        linkedin_bot.api.send_message(reply, conversation_urn_id=req.conversation_id)
+    return {"reply": reply}
+
+
+class LinkedinResetRequest(BaseModel):
+    conversation_id: str = Field(description="LinkedIn conversation URN")
+    secret: str = Field(description="共享密钥")
+
+
+@app.post("/api/linkedin/reset", summary="重置 LinkedIn 会话")
+def linkedin_reset(req: LinkedinResetRequest):
+    if req.secret != LINKEDIN_SECRET:
+        raise HTTPException(status_code=403, detail="密钥错误")
+    user_id = f"linkedin:{req.conversation_id}"
     agent.clear_session(user_id)
     return {"status": "ok"}
 
