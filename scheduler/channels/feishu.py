@@ -4,6 +4,7 @@ Feishu Bot — WebSocket 长连接 + 消息收发 + 主动推送
 import json
 import logging
 import threading
+import traceback
 
 import lark_oapi
 from lark_oapi.api.im.v1 import (
@@ -18,9 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class FeishuBot:
-    def __init__(self, app_id: str, app_secret: str, agent, execute_tool):
+    def __init__(self, app_id: str, app_secret: str, agent, execute_tool,
+                 pairing_handler=None, resolve_user=None):
         self.agent = agent
         self.execute_tool = execute_tool
+        self.pairing_handler = pairing_handler  # (text, open_id) -> bool
+        self.resolve_user = resolve_user  # (open_id) -> str
 
         # API client（发消息用）
         self.api_client = (
@@ -40,22 +44,63 @@ class FeishuBot:
             app_id=app_id,
             app_secret=app_secret,
             event_handler=handler,
-            log_level=lark_oapi.LogLevel.WARNING,
+            log_level=lark_oapi.LogLevel.DEBUG,
         )
+
+        # Monkey-patch _handle_message to log ALL incoming WebSocket frames
+        self._patch_ws_client()
 
         self._thread: threading.Thread | None = None
         self._seen_msg_ids: set[str] = set()
+
+    def _patch_ws_client(self):
+        """拦截 WsClient._handle_message，打印所有收到的帧类型和 payload"""
+        import lark_oapi.ws.enum as ws_enum
+        original_handle_message = self.ws_client._handle_message
+
+        async def patched_handle_message(msg: bytes):
+            try:
+                from lark_oapi.ws.pb.pbbp2_pb2 import Frame
+                frame = Frame()
+                frame.ParseFromString(msg)
+                ft = ws_enum.FrameType(frame.method)
+                print(f"[FEISHU-WS] received frame: type={ft.name if hasattr(ft, 'name') else ft.value}")
+
+                if ft == ws_enum.FrameType.DATA:
+                    # 读取 headers 和 payload
+                    for h in frame.headers:
+                        print(f"[FEISHU-WS]   header: {h.key} = {h.value}")
+                    payload_str = frame.payload.decode("utf-8", errors="replace")[:500]
+                    print(f"[FEISHU-WS]   payload: {payload_str}")
+            except Exception as e:
+                print(f"[FEISHU-WS] parse error: {e}")
+
+            return await original_handle_message(msg)
+
+        self.ws_client._handle_message = patched_handle_message
 
     def start(self):
         self._thread = threading.Thread(target=self.ws_client.start, daemon=True)
         self._thread.start()
         logger.info("[feishu] WebSocket started")
+        print("[FEISHU] WebSocket thread started")
+        if self.pairing_handler:
+            print("[FEISHU] pairing_handler is registered")
 
     def stop(self):
         pass
 
     def _on_message(self, event: P2ImMessageReceiveV1):
+        try:
+            self._on_message_impl(event)
+        except Exception as e:
+            print(f"[FEISHU] ERROR in _on_message: {e}")
+            traceback.print_exc()
+
+    def _on_message_impl(self, event: P2ImMessageReceiveV1):
+        print(f"[FEISHU] _on_message called, event={event.event is not None}, msg={event.event and event.event.message is not None}")
         if not event.event or not event.event.message:
+            print(f"[FEISHU] _on_message skipped: no event or message")
             return
 
         msg = event.event.message
@@ -91,7 +136,22 @@ class FeishuBot:
         if not open_id:
             return
 
-        user_id = f"feishu:{open_id}"
+        print(f"[FEISHU] received: open_id={open_id} text={text}")
+
+        # 检查是否为配对码
+        if self.pairing_handler:
+            print(f"[FEISHU] checking pairing: text='{text}', open_id={open_id}")
+            handled = self.pairing_handler(text, open_id)
+            print(f"[FEISHU] pairing_handler returned: {handled}")
+            if handled:
+                self._send_text(open_id, "绑定成功！现在你可以通过飞书接收提醒了。")
+                return
+
+        # 解析用户 ID：绑定用户用 web_user_id，否则 fallback
+        if self.resolve_user:
+            user_id = self.resolve_user(open_id)
+        else:
+            user_id = f"feishu:{open_id}"
         logger.info("[feishu] message from %s: %s", user_id, text)
 
         reply = self.agent.chat(user_message=text, user_id=user_id)

@@ -6,3 +6,5 @@ openai>=1.0.0
 pyyaml>=6.0
 lark-oapi>=1.4.0
 linkedin-api>=2.0
+qrcode[pil]>=7.4
+pillow>=10.0

@@ -1,0 +1,33 @@
+.git
+.claude
+__pycache__
+*.pyc
+.venv
+venv
+*.md
+
+# Node
+wechat-adapter/node_modules
+whatsapp-adapter/node_modules
+**/node_modules
+
+# Data (mounted at runtime)
+scheduler/data
+
+# Env (passed via docker-compose)
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+tmp/

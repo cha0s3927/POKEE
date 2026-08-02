@@ -3,10 +3,16 @@ Reminder Agent — 定时提醒助手
 FastAPI + APScheduler + LLM Agent + Email Auth + Web Chat UI
 """
 import asyncio
+import base64
+import io
 import json
 import os
+import random
 import re
+import socket
+import string
 import time
+import urllib.request
 import uuid
 from collections import defaultdict
 from datetime import datetime
@@ -106,7 +112,82 @@ with engine.connect() as conn:
             last_login_at TEXT
         )
     """))
+    conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS user_im_bindings (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            im_user_id TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(user_id, platform),
+            UNIQUE(platform, im_user_id)
+        )
+    """))
     conn.commit()
+
+# ── 配对码（飞书 per-user 绑定）──────────────────────
+_pairing_codes: dict[str, dict] = {}  # {code: {user_id, expires_at}}
+
+
+def generate_pairing_code() -> str:
+    """生成 6 位随机配对码，清理过期码"""
+    now = time.time()
+    expired = [c for c, v in _pairing_codes.items() if v["expires"] < now]
+    for c in expired:
+        del _pairing_codes[c]
+    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    _pairing_codes[code] = {"user_id": "", "expires": now + 300}
+    return code
+
+
+def consume_pairing_code(code: str, open_id: str) -> str | None:
+    """消费配对码，返回 user_id 或 None"""
+    now = time.time()
+    entry = _pairing_codes.get(code)
+    if not entry or entry["expires"] < now:
+        if entry:
+            del _pairing_codes[code]
+        return None
+    user_id = entry["user_id"]
+    del _pairing_codes[code]
+    return user_id
+
+
+# ── 待绑定（WeChat/WhatsApp auto-bind）───────────────
+_pending_bindings: dict[str, dict] = {}  # {user_id: {platform, expires}}
+
+
+def set_pending_binding(user_id: str, platform: str):
+    """标记用户正在等待 IM 绑定"""
+    _pending_bindings[user_id] = {"platform": platform, "expires": time.time() + 300}
+
+
+def try_auto_bind(platform: str, im_user_id: str) -> str | None:
+    """尝试自动绑定 IM 身份到等待中的 web 用户，返回 web_user_id 或 None"""
+    now = time.time()
+    # 先清理过期条目
+    expired_users = [uid for uid, v in _pending_bindings.items() if v["expires"] < now]
+    for uid in expired_users:
+        del _pending_bindings[uid]
+    # 找该平台最近一个 pending 用户
+    candidates = [(uid, v) for uid, v in _pending_bindings.items() if v["platform"] == platform]
+    if not candidates:
+        return None
+    # 取最早的那个
+    candidates.sort(key=lambda x: x[1]["expires"])
+    user_id = candidates[0][0]
+    del _pending_bindings[user_id]
+    # 写入绑定
+    with Session(engine) as session:
+        session.execute(
+            text("INSERT OR IGNORE INTO user_im_bindings (id, user_id, platform, im_user_id, created_at) "
+                 "VALUES (:id, :uid, :platform, :imuid, :now)"),
+            {"id": str(uuid.uuid4())[:12], "uid": user_id, "platform": platform,
+             "imuid": im_user_id, "now": now_iso()},
+        )
+        session.commit()
+    print(f"[AUTO-BIND] {platform}:{im_user_id} -> user_id={user_id}")
+    return user_id
 
 # ── 调度器 ────────────────────────────────────────────
 jobstores = {"default": SQLAlchemyJobStore(url=DATABASE_URL)}
@@ -174,43 +255,54 @@ def fire_reminder(reminder_id: str):
     }
     push_sse(payload)
 
-    # 飞书用户：主动推送
-    if user_id.startswith("feishu:") and feishu_bot:
-        open_id = user_id[len("feishu:"):]
-        feishu_bot.send_notification(open_id, task, run_at)
+    # 查询 user_im_bindings，推送到所有已绑定的 IM 平台
+    bindings = []
+    with Session(engine) as session:
+        rows = session.execute(
+            text("SELECT platform, im_user_id FROM user_im_bindings WHERE user_id = :uid"),
+            {"uid": user_id},
+        ).fetchall()
+        bindings = [(r.platform, r.im_user_id) for r in rows]
 
-    # 微信用户：主动推送到 Node adapter 的 push server
-    if user_id.startswith("wechat:"):
-        try:
-            import urllib.request
-            req = urllib.request.Request(
-                WECHAT_PUSH_URL,
-                data=json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception as e:
-            print(f"[WECHAT-PUSH] failed: {e}")
+    # 兼容 user_id 本身就是 platform:xxx 格式（未绑定或旧数据）
+    if not bindings:
+        for prefix, platform in [("feishu:", "feishu"), ("wechat:", "wechat"), ("whatsapp:", "whatsapp"), ("linkedin:", "linkedin")]:
+            if user_id.startswith(prefix):
+                bindings.append((platform, user_id[len(prefix):]))
+                break
 
-    # WhatsApp 用户：主动推送到 Node adapter 的 push server
-    if user_id.startswith("whatsapp:"):
-        try:
-            import urllib.request
-            req = urllib.request.Request(
-                WHATSAPP_PUSH_URL,
-                data=json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception as e:
-            print(f"[WHATSAPP-PUSH] failed: {e}")
+    for platform, im_uid in bindings:
+        if platform == "feishu" and feishu_bot:
+            feishu_bot.send_notification(im_uid, task, run_at)
 
-    # LinkedIn 用户：直接调用 send_notification（同一进程，无需 HTTP push）
-    if user_id.startswith("linkedin:") and linkedin_bot:
-        conv_id = user_id[len("linkedin:"):]
-        linkedin_bot.send_notification(conv_id, task, run_at)
+        elif platform == "wechat":
+            try:
+                import urllib.request
+                req = urllib.request.Request(
+                    WECHAT_PUSH_URL,
+                    data=json.dumps({**payload, "user_id": im_uid}).encode(),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                urllib.request.urlopen(req, timeout=5)
+            except Exception as e:
+                print(f"[WECHAT-PUSH] failed: {e}")
+
+        elif platform == "whatsapp":
+            try:
+                import urllib.request
+                req = urllib.request.Request(
+                    WHATSAPP_PUSH_URL,
+                    data=json.dumps({**payload, "user_id": im_uid}).encode(),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                urllib.request.urlopen(req, timeout=5)
+            except Exception as e:
+                print(f"[WHATSAPP-PUSH] failed: {e}")
+
+        elif platform == "linkedin" and linkedin_bot:
+            linkedin_bot.send_notification(im_uid, task, run_at)
 
 
 def restore_jobs():
@@ -345,7 +437,42 @@ def startup():
     print(f"[STARTUP] {n} pending reminders restored")
 
     if FEISHU_APP_ID and FEISHU_APP_SECRET:
-        feishu_bot = FeishuBot(FEISHU_APP_ID, FEISHU_APP_SECRET, agent, execute_tool)
+
+        def handle_feishu_pairing(msg_text: str, open_id: str) -> bool:
+            """检查并消费配对码，创建 user↔飞书 绑定"""
+            code = msg_text.strip().upper()
+            print(f"[FEISHU-PAIR] checking code='{code}' against {len(_pairing_codes)} active codes: {list(_pairing_codes.keys())}")
+            user_id = consume_pairing_code(code, open_id)
+            print(f"[FEISHU-PAIR] consume result: user_id={user_id}")
+            if not user_id:
+                return False
+            with Session(engine) as session:
+                session.execute(
+                    text("INSERT OR IGNORE INTO user_im_bindings (id, user_id, platform, im_user_id, created_at) "
+                         "VALUES (:id, :uid, :platform, :imuid, :now)"),
+                    {"id": str(uuid.uuid4())[:12], "uid": user_id, "platform": "feishu",
+                     "imuid": open_id, "now": now_iso()},
+                )
+                session.commit()
+            print(f"[FEISHU] bound open_id={open_id} to user_id={user_id}")
+            return True
+
+        def resolve_feishu_user(open_id: str) -> str:
+            """根据 open_id 查找绑定的 web 用户，未绑定则返回 feishu:xxx"""
+            with Session(engine) as session:
+                row = session.execute(
+                    text("SELECT user_id FROM user_im_bindings WHERE platform='feishu' AND im_user_id=:imuid"),
+                    {"imuid": open_id},
+                ).fetchone()
+            if row:
+                return row.user_id
+            return f"feishu:{open_id}"
+
+        feishu_bot = FeishuBot(
+            FEISHU_APP_ID, FEISHU_APP_SECRET, agent, execute_tool,
+            pairing_handler=handle_feishu_pairing,
+            resolve_user=resolve_feishu_user,
+        )
         feishu_bot.start()
         print("[STARTUP] Feishu bot started")
 
@@ -473,7 +600,18 @@ class WechatChatRequest(BaseModel):
 def wechat_chat(req: WechatChatRequest):
     if req.secret != WECHAT_SECRET:
         raise HTTPException(status_code=403, detail="密钥错误")
-    user_id = f"wechat:{req.conversation_id}"
+    im_id = req.conversation_id
+    # 查绑定
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT user_id FROM user_im_bindings WHERE platform='wechat' AND im_user_id=:imuid"),
+            {"imuid": im_id},
+        ).fetchone()
+    if row:
+        user_id = row.user_id
+    else:
+        bound = try_auto_bind("wechat", im_id)
+        user_id = bound or f"wechat:{im_id}"
     reply = agent.chat(user_message=req.message, user_id=user_id)
     execute_tool("ack_notifications", {"user_id": user_id})
     return {"reply": reply}
@@ -488,7 +626,12 @@ class WechatResetRequest(BaseModel):
 def wechat_reset(req: WechatResetRequest):
     if req.secret != WECHAT_SECRET:
         raise HTTPException(status_code=403, detail="密钥错误")
-    user_id = f"wechat:{req.conversation_id}"
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT user_id FROM user_im_bindings WHERE platform='wechat' AND im_user_id=:imuid"),
+            {"imuid": req.conversation_id},
+        ).fetchone()
+    user_id = row.user_id if row else f"wechat:{req.conversation_id}"
     agent.clear_session(user_id)
     return {"status": "ok"}
 
@@ -504,7 +647,18 @@ class WhatsappChatRequest(BaseModel):
 def whatsapp_chat(req: WhatsappChatRequest):
     if req.secret != WHATSAPP_SECRET:
         raise HTTPException(status_code=403, detail="密钥错误")
-    user_id = f"whatsapp:{req.conversation_id}"
+    im_id = req.conversation_id
+    # 查绑定
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT user_id FROM user_im_bindings WHERE platform='whatsapp' AND im_user_id=:imuid"),
+            {"imuid": im_id},
+        ).fetchone()
+    if row:
+        user_id = row.user_id
+    else:
+        bound = try_auto_bind("whatsapp", im_id)
+        user_id = bound or f"whatsapp:{im_id}"
     reply = agent.chat(user_message=req.message, user_id=user_id)
     execute_tool("ack_notifications", {"user_id": user_id})
     return {"reply": reply}
@@ -519,7 +673,12 @@ class WhatsappResetRequest(BaseModel):
 def whatsapp_reset(req: WhatsappResetRequest):
     if req.secret != WHATSAPP_SECRET:
         raise HTTPException(status_code=403, detail="密钥错误")
-    user_id = f"whatsapp:{req.conversation_id}"
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT user_id FROM user_im_bindings WHERE platform='whatsapp' AND im_user_id=:imuid"),
+            {"imuid": req.conversation_id},
+        ).fetchone()
+    user_id = row.user_id if row else f"whatsapp:{req.conversation_id}"
     agent.clear_session(user_id)
     return {"status": "ok"}
 
@@ -598,6 +757,146 @@ def get_current_time():
     return execute_tool("get_current_time", {})
 
 
+def _tcp_ping(host: str, port: int, timeout: float = 1.0) -> bool:
+    try:
+        s = socket.create_connection((host, port), timeout=timeout)
+        s.close()
+        return True
+    except Exception:
+        return False
+
+
+@app.get("/api/platforms/status", summary="IM 平台连接状态（per-user）")
+def platforms_status(user: dict = Depends(auth_user)):
+    web_user_id = user["id"]
+    with Session(engine) as session:
+        rows = session.execute(
+            text("SELECT platform FROM user_im_bindings WHERE user_id = :uid"),
+            {"uid": web_user_id},
+        ).fetchall()
+    bindings = {r.platform for r in rows}
+    return {
+        "web": {"connected": True, "label": "Web", "has_qr": False},
+        "wechat": {
+            "connected": "wechat" in bindings,
+            "label": "微信",
+            "how": "在微信中给 Bot 发消息即可使用",
+            "has_qr": True,
+        },
+        "feishu": {
+            "connected": "feishu" in bindings,
+            "label": "飞书",
+            "how": "在飞书中与 Bot 对话即可使用",
+            "has_qr": True,
+        },
+        "whatsapp": {
+            "connected": "whatsapp" in bindings,
+            "label": "WhatsApp",
+            "how": "在 WhatsApp 中给自己发消息即可使用",
+            "has_qr": True,
+        },
+    }
+
+
+def _qr_image(text: str) -> str:
+    """生成 QR 码图片，返回 base64 data URL"""
+    import qrcode
+    img = qrcode.make(text, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+@app.get("/api/platforms/qr/wechat", summary="微信登录二维码")
+def qr_wechat(user: dict = Depends(auth_user)):
+    web_user_id = user["id"]
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT im_user_id FROM user_im_bindings WHERE user_id=:uid AND platform='wechat'"),
+            {"uid": web_user_id},
+        ).fetchone()
+    if row:
+        return {"connected": True, "qr_image": ""}
+    set_pending_binding(web_user_id, "wechat")
+    try:
+        req = urllib.request.Request("http://127.0.0.1:8765/qr")
+        resp = urllib.request.urlopen(req, timeout=3)
+        data = json.loads(resp.read())
+        qr_url = data.get("qr_url", "")
+        return {"connected": False, "qr_image": _qr_image(qr_url) if qr_url else "", "qr_url": qr_url}
+    except Exception:
+        return {"connected": False, "error": "adapter not reachable"}
+
+
+@app.get("/api/platforms/qr/whatsapp", summary="WhatsApp 登录二维码")
+def qr_whatsapp(user: dict = Depends(auth_user)):
+    web_user_id = user["id"]
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT im_user_id FROM user_im_bindings WHERE user_id=:uid AND platform='whatsapp'"),
+            {"uid": web_user_id},
+        ).fetchone()
+    if row:
+        return {"connected": True, "qr_image": ""}
+    set_pending_binding(web_user_id, "whatsapp")
+    try:
+        req = urllib.request.Request("http://127.0.0.1:8767/qr")
+        resp = urllib.request.urlopen(req, timeout=3)
+        data = json.loads(resp.read())
+        qr_text = data.get("qr", "")
+        pairing_code = data.get("pairing_code", "")
+        result = {"connected": False, "qr": qr_text}
+        if pairing_code:
+            result["pairing_code"] = pairing_code
+        elif qr_text:
+            result["qr_image"] = _qr_image(qr_text)
+        return result
+    except Exception:
+        return {"connected": False, "error": "adapter not reachable"}
+
+
+@app.post("/api/platforms/qr/whatsapp/pairing", summary="请求 WhatsApp 配对码")
+def whatsapp_pairing(user: dict = Depends(auth_user), body: dict = None):
+    try:
+        data = json.dumps(body or {}).encode()
+        req = urllib.request.Request("http://127.0.0.1:8767/pairing", data=data, method="POST")
+        req.add_header("Content-Type", "application/json")
+        resp = urllib.request.urlopen(req, timeout=10)
+        return json.loads(resp.read())
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/platforms/qr/feishu", summary="飞书 Bot 连接（per-user）")
+def qr_feishu(user: dict = Depends(auth_user)):
+    if not FEISHU_APP_ID:
+        return {"error": "feishu not configured"}
+    web_user_id = user["id"]
+    with Session(engine) as session:
+        row = session.execute(
+            text("SELECT im_user_id FROM user_im_bindings WHERE user_id=:uid AND platform='feishu'"),
+            {"uid": web_user_id},
+        ).fetchone()
+    if row:
+        return {
+            "connected": True,
+        }
+    # 复用已有的配对码，避免每次轮询生成新码
+    now = time.time()
+    code = None
+    for c, v in _pairing_codes.items():
+        if v.get("user_id") == web_user_id and v.get("expires", 0) > now:
+            code = c
+            break
+    if not code:
+        code = generate_pairing_code()
+        _pairing_codes[code]["user_id"] = web_user_id
+    return {
+        "connected": False,
+        "pairing_code": code,
+    }
+
+
 @app.get("/health", summary="健康检查")
 def health():
     return {"status": "ok", "scheduler_running": scheduler.running}
@@ -652,6 +951,12 @@ class NoCacheStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope) -> Response:
         response = await super().get_response(path, scope)
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        # 去掉 ETag/Last-Modified，防止浏览器做条件请求拿 304
+        for _h in ("etag", "last-modified"):
+            if _h in response.headers:
+                del response.headers[_h]
         return response
 
 
