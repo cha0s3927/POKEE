@@ -24,9 +24,9 @@ agent = Agent(
 
 # ── FastAPI app ──
 app = FastAPI(
-    title="Reminder Agent",
+    title="POKEE",
     version="4.0.0",
-    description="自然语言定时提醒助手 — 多 IM 平台 + LLM Agent",
+    description="Your Personal Reminder",
 )
 
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reminder Agent</title>
+<title>POKEE</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -225,8 +225,8 @@
 <!-- ── Auth page ── -->
 <div id="authPage" class="auth-container">
   <div class="auth-box">
-    <h1>Reminder Agent</h1>
-    <p class="sub">登录以使用定时提醒助手</p>
+    <h1>POKEE</h1>
+    <p class="sub">Your Personal Reminder</p>
     <div class="auth-tabs">
       <button id="tabLogin" class="active" onclick="switchTab('login')">登录</button>
       <button id="tabRegister" onclick="switchTab('register')">注册</button>
@@ -248,7 +248,8 @@
 <div id="app" class="app">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1>Reminder Agent</h1>
+      <h1>POKEE</h1>
+      <p class="sub" style="font-size:11px;color:var(--text2);margin-top:2px">Your Personal Reminder</p>
       <p class="user-info" id="sidebarUser"></p>
     </div>
     <div class="platform-status" id="platformStatus">
@@ -493,7 +494,7 @@ function connectSSE() {
         playDing();
         appendMessage('system', `⏰ 提醒时间到：${data.task}`);
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Reminder Agent', { body: data.task, icon: '⏰' });
+          new Notification('POKEE', { body: data.task, icon: '⏰' });
         }
         loadReminders();
       } else if (data.type === 'platform_connected') {
@@ -658,7 +659,7 @@ async function showQrModal(platform) {
   const hints = {
     wechat: '在微信中给 Bot 发消息即可使用',
     whatsapp: '在 WhatsApp 中给自己发消息即可使用',
-    feishu: '在飞书中搜索 Reminder Agent 即可对话',
+    feishu: '在飞书中搜索 POKEE 即可对话',
   };
   title.textContent = '连接 ' + (names[platform] || platform);
   success.style.display = 'none';
@@ -731,7 +732,7 @@ async function showQrModal(platform) {
         '<div style="font-size:13px;color:var(--text);margin-bottom:8px">将下方配对码发送给机器人即可完成绑定</div>' +
         '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
         esc(data.pairing_code) + '</div>' +
-        '<div style="font-size:12px;color:var(--text2);line-height:1.6">1. 打开飞书，搜索 <b>Reminder Agent</b><br>2. 将上方配对码发送给机器人<br>3. 页面自动检测连接状态</div>' +
+        '<div style="font-size:12px;color:var(--text2);line-height:1.6">1. 打开飞书，搜索 <b>POKEE</b><br>2. 将上方配对码发送给机器人<br>3. 页面自动检测连接状态</div>' +
         '</div>';
       sub.textContent = '';
       return;
