@@ -16,9 +16,11 @@ class ChatRequest(BaseModel):
 @router.post("/api/chat", summary="Agent 对话")
 def chat(req: ChatRequest, user: dict = Depends(auth_user)):
     from main import agent, execute_tool
+    from database import get_user_persona
     if not check_rate(user["id"], max_req=20):
         raise HTTPException(status_code=429, detail="请求太频繁，请稍后再试")
-    reply = agent.chat(user_message=req.message, user_id=user["id"])
+    persona = get_user_persona(user["id"])
+    reply = agent.chat(user_message=req.message, user_id=user["id"], persona=persona)
     execute_tool("ack_notifications", {"user_id": user["id"]})
     return {"reply": reply}
 
@@ -46,3 +48,36 @@ def ack_notifications(user: dict = Depends(auth_user)):
 def get_current_time():
     from tools import execute_tool
     return execute_tool("get_current_time", {})
+
+
+# ── 人设 ──
+
+@router.get("/api/settings/persona", summary="获取当前人设")
+def get_persona(user: dict = Depends(auth_user)):
+    from agent import PERSONAS
+    from database import get_user_persona
+    key = get_user_persona(user["id"])
+    info = PERSONAS.get(key, PERSONAS["default"])
+    return {"key": key, "name": info["name"], "emoji": info["emoji"]}
+
+
+@router.put("/api/settings/persona", summary="切换人设")
+def set_persona(req: dict, user: dict = Depends(auth_user)):
+    from database import engine
+    from sqlalchemy import text
+    key = req.get("persona", "default")
+    if key not in ("default", "cute_girl", "reliable_guy"):
+        raise HTTPException(status_code=400, detail="无效的人设")
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE users SET persona = :p WHERE id = :uid"),
+            {"p": key, "uid": user["id"]},
+        )
+        conn.commit()
+    return {"status": "ok", "persona": key}
+
+
+@router.get("/api/settings/personas", summary="列出所有人设")
+def list_personas():
+    from agent import PERSONAS
+    return {k: {"name": v["name"], "emoji": v["emoji"]} for k, v in PERSONAS.items()}

@@ -191,7 +191,7 @@ class FeishuBot:
             user_id = f"feishu:{open_id}"
         logger.info("[feishu] message from %s: %s", user_id, text)
 
-        reply = self.agent.chat(user_message=text, user_id=user_id)
+        reply = self.agent.chat(user_message=text, user_id=user_id, persona="default")
         self.execute_tool("ack_notifications", {"user_id": user_id})
 
         self._send_text(open_id, reply)

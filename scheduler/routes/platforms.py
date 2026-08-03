@@ -134,6 +134,7 @@ def _resolve_and_chat(platform: str, secret: str, expected_secret: str,
                        im_id: str, message: str) -> dict:
     """通用 IM 消息处理：验证密钥 → 解析用户 → agent.chat → 返回"""
     from main import agent, execute_tool
+    from database import get_user_persona
     if secret != expected_secret:
         raise HTTPException(status_code=403, detail="密钥错误")
 
@@ -149,7 +150,8 @@ def _resolve_and_chat(platform: str, secret: str, expected_secret: str,
         bound = try_auto_bind(platform, im_id)
         user_id = bound or f"{platform}:{im_id}"
 
-    reply = agent.chat(user_message=message, user_id=user_id)
+    persona = get_user_persona(user_id) if row else "default"
+    reply = agent.chat(user_message=message, user_id=user_id, persona=persona)
     execute_tool("ack_notifications", {"user_id": user_id})
     return {"reply": reply}
 

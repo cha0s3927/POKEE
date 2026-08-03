@@ -94,7 +94,7 @@ class LinkedInBot:
         user_id = f"linkedin:{conv_id}"
         logger.info("[linkedin] message from %s: %s", user_id, msg_body[:80])
 
-        reply = self.agent.chat(user_message=msg_body, user_id=user_id)
+        reply = self.agent.chat(user_message=msg_body, user_id=user_id, persona="default")
         self.execute_tool("ack_notifications", {"user_id": user_id})
 
         try:

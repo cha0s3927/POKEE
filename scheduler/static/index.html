@@ -100,6 +100,18 @@
   }
   .platform-row .ps-connect:hover { background: var(--accent); color: #fff; }
   .platform-row .ps-connect.show { display: inline; }
+  /* Persona selector */
+  .persona-switch {
+    padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+  }
+  .persona-switch select {
+    flex: 1; padding: 6px 8px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 13px; outline: none;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239ca0b0'/%3E%3C/svg%3E\");
+    background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px;
+  }
+  .persona-switch select:focus { border-color: var(--accent); }
   /* QR Modal */
   .qr-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -251,6 +263,13 @@
       <h1>POKEE</h1>
       <p class="sub" style="font-size:11px;color:var(--text2);margin-top:2px">Your Personal Reminder</p>
       <p class="user-info" id="sidebarUser"></p>
+    </div>
+    <div class="persona-switch" id="personaSwitch" style="display:none">
+      <select id="personaSelect" onchange="switchPersona(this.value)">
+        <option value="default">🤞 贴心朋友</option>
+        <option value="cute_girl">🌸 小桃</option>
+        <option value="reliable_guy">☕ 老周</option>
+      </select>
     </div>
     <div class="platform-status" id="platformStatus">
       <div class="ps-title">平台连接</div>
@@ -413,6 +432,7 @@ function showApp() {
   connectSSE();
   loadReminders();
   loadPlatformStatus();
+  loadPersona();
   document.getElementById('userInput').focus();
   window.addEventListener('beforeunload', () => {
     if (_sse) { _sse.close(); _sse = null; }
@@ -579,6 +599,29 @@ function resetSession() {
   fetch('/api/reset', { method: 'POST', headers: apiHeaders() });
   document.getElementById('messages').innerHTML = '';
   appendMessage('assistant', '会话已重置，有什么我可以帮你的？');
+}
+
+// ── Persona ──
+async function loadPersona() {
+  if (token === 'skip') { document.getElementById('personaSwitch').style.display = 'none'; return; }
+  try {
+    const resp = await fetch('/api/settings/persona', { headers: authHeaders() });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    document.getElementById('personaSelect').value = data.key;
+    document.getElementById('personaSwitch').style.display = 'flex';
+  } catch (_) {}
+}
+
+async function switchPersona(key) {
+  try {
+    await fetch('/api/settings/persona', {
+      method: 'PUT', headers: apiHeaders(),
+      body: JSON.stringify({ persona: key }),
+    });
+    // 切换人设后重置会话，让新 prompt 生效
+    resetSession();
+  } catch (_) {}
 }
 
 async function loadPlatformStatus() {

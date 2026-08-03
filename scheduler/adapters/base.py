@@ -44,7 +44,9 @@ class BaseIMAdapter(ABC):
 
     def handle_incoming(self, message: str, user_id: str) -> str:
         """收到消息 → agent.chat() → ack → 返回 reply"""
-        reply = self.agent.chat(user_message=message, user_id=user_id)
+        from database import get_user_persona
+        persona = get_user_persona(user_id)
+        reply = self.agent.chat(user_message=message, user_id=user_id, persona=persona)
         self.execute_tool("ack_notifications", {"user_id": user_id})
         return reply
 

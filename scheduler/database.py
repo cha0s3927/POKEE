@@ -35,9 +35,16 @@ def init_db():
                 password_hash TEXT NOT NULL,
                 token TEXT NOT NULL UNIQUE,
                 created_at TEXT NOT NULL,
-                last_login_at TEXT
+                last_login_at TEXT,
+                persona TEXT NOT NULL DEFAULT 'default'
             )
         """))
+        # 补加 persona 列（兼容已有表）
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN persona TEXT NOT NULL DEFAULT 'default'"))
+            conn.commit()
+        except Exception:
+            pass
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS user_im_bindings (
                 id TEXT PRIMARY KEY,
@@ -60,3 +67,12 @@ def init_db():
             )
         """))
         conn.commit()
+
+
+def get_user_persona(user_id: str) -> str:
+    """查用户的 persona 偏好，不存在则返回 default"""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT persona FROM users WHERE id = :uid"), {"uid": user_id}
+        ).fetchone()
+    return row.persona if row else "default"

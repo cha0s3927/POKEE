@@ -66,19 +66,49 @@ server.listen(PUSH_PORT, '127.0.0.1', () => {
 
 // ── 扫码登录（失败自动重试）──
 let accountId;
+
+async function fetchQrUrl() {
+  // 新版 weixin-agent-sdk 用 qrcode-terminal 画 ASCII 码，不通过 log 回调输出 URL
+  // 所以直接调 iLink API 获取 qrcode_img_content
+  try {
+    const resp = await fetch('https://ilinkai.weixin.qq.com/ilink/bot/get_bot_qrcode?bot_type=3', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'WeixinAgentSDK/0.5',
+      },
+    });
+    const data = await resp.json();
+    if (data.qrcode_img_content) {
+      wechatQrUrl = data.qrcode_img_content;
+      wechatQrUpdatedAt = Date.now();
+      console.log('[bot] QR URL captured from iLink API');
+    }
+  } catch (e) {
+    console.error('[bot] Failed to fetch QR URL:', e.message);
+  }
+}
+
+// 首次获取 QR URL
+fetchQrUrl();
+
 while (true) {
   try {
     accountId = await login({
       log: (msg) => {
         console.log(msg);
-        // 拦截所有 QR 链接（初始格式 + 刷新后的格式）
+        // QR 刷新时的 fallback：新版 SDK 不输出 URL，改为重新请求 API
         let m = msg.match(/二维码链接:\s*(https:\/\/\S+)/);
         if (!m) m = msg.match(/(https:\/\/liteapp\.weixin\.qq\.com\/\S+)/);
         if (!m) m = msg.match(/(https:\/\/\S*qrcode\S*)/i);
         if (m) {
           wechatQrUrl = m[1];
           wechatQrUpdatedAt = Date.now();
-          console.log('[bot] QR URL captured');
+          console.log('[bot] QR URL captured from log');
+        }
+        // SDK 刷新二维码后会打印"正在启动微信扫码登录"，此时重新获取 QR URL
+        if (msg.includes('正在启动微信扫码登录')) {
+          fetchQrUrl();
         }
       },
     });
@@ -89,6 +119,7 @@ while (true) {
     wechatQrUrl = '';
     wechatQrUpdatedAt = 0;
     await new Promise(r => setTimeout(r, 5000));
+    fetchQrUrl();
   }
 }
 
