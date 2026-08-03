@@ -3,11 +3,11 @@ services:
     build:
       context: .
       args:
-        - HTTP_PROXY=${BUILD_PROXY:-http://172.17.0.1:7897}
-        - HTTPS_PROXY=${BUILD_PROXY:-http://172.17.0.1:7897}
+        - HTTP_PROXY=${BUILD_PROXY:-http://172.18.0.1:7897}
+        - HTTPS_PROXY=${BUILD_PROXY:-http://172.18.0.1:7897}
         - NO_PROXY=127.0.0.1,localhost
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -44,7 +44,7 @@ services:
       # Proxy
       - HTTPS_PROXY=http://host.docker.internal:7897
       - HTTP_PROXY=http://host.docker.internal:7897
-      - NO_PROXY=127.0.0.1,localhost,host.docker.internal
+      - NO_PROXY=127.0.0.1,localhost,host.docker.internal,api.deepseek.com
     restart: unless-stopped
 
 volumes:

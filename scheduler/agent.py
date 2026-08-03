@@ -1,10 +1,15 @@
 """
 LLM Agent — tool-calling loop via DeepSeek API (OpenAI-compatible).
 """
+from __future__ import annotations
+
 import json
 import logging
 from datetime import datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from openai import OpenAI
 
@@ -163,6 +168,9 @@ class Agent:
                 note_lines.append(f"  - {n['task']}（{n['run_at']}）")
             messages.append({"role": "system", "content": "\n".join(note_lines)})
 
+        # 预注入当前时间，省去 get_current_time 工具调用（减少一次 API 往返）
+        tz_now = datetime.now(TZ).strftime("%Y-%m-%dT%H:%M:%S")
+        messages.append({"role": "system", "content": f"[当前时间: {tz_now} Asia/Shanghai]"})
         messages.append({"role": "user", "content": user_message})
 
         for _ in range(MAX_TOOL_ITERATIONS):

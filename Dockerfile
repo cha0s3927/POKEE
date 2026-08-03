@@ -49,8 +49,14 @@ RUN rm -rf /app/wechat-adapter/node_modules/qrcode-terminal 2>/dev/null || true
 COPY scheduler/main.py .
 COPY scheduler/agent.py .
 COPY scheduler/auth.py .
+COPY scheduler/config.py .
 COPY scheduler/config.yaml .
+COPY scheduler/database.py .
+COPY scheduler/scheduler.py .
+COPY scheduler/tools.py .
 COPY scheduler/channels/ channels/
+COPY scheduler/adapters/ adapters/
+COPY scheduler/routes/ routes/
 COPY scheduler/static/ static/
 
 # ── Node.js 适配器源码 ──

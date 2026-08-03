@@ -1,6 +1,9 @@
 """
 Feishu Bot — WebSocket 长连接 + 消息收发 + 主动推送
 """
+from __future__ import annotations
+
+import asyncio
 import json
 import logging
 import threading
@@ -17,14 +20,38 @@ from lark_oapi.ws import Client as WsClient
 
 logger = logging.getLogger(__name__)
 
+# ── 多 bot event loop 隔离 ───────────────────────────────────
+# lark_oapi 的 WsClient 使用模块级全局变量 `loop`（lark_oapi.ws.client.loop），
+# 多个 WsClient 实例会互相覆盖导致 "event loop already running"。
+# 这里用一个 thread-local proxy 替换掉全局 loop，使得每个线程的
+# WsClient._connect / _receive_message_loop 中的 loop.xxx() 调用
+# 都自动路由到本线程的 event loop。
+
+_loop_store = threading.local()
+
+class _ThreadLoopProxy:
+    def run_until_complete(self, fut):
+        return _loop_store.loop.run_until_complete(fut)
+
+    def create_task(self, coro):
+        return _loop_store.loop.create_task(coro)
+
+    # 以下属性透传，防止 lark_oapi 内部做 hasattr 检查时报错
+    def __getattr__(self, name):
+        return getattr(_loop_store.loop, name)
+
+import lark_oapi.ws.client as _ws_client_mod
+_ws_client_mod.loop = _ThreadLoopProxy()
+
 
 class FeishuBot:
     def __init__(self, app_id: str, app_secret: str, agent, execute_tool,
-                 pairing_handler=None, resolve_user=None):
+                 pairing_handler=None, resolve_user=None, on_open_id=None):
         self.agent = agent
         self.execute_tool = execute_tool
         self.pairing_handler = pairing_handler  # (text, open_id) -> bool
         self.resolve_user = resolve_user  # (open_id) -> str
+        self.on_open_id = on_open_id  # (open_id) -> None, 收到消息时通知 caller
 
         # API client（发消息用）
         self.api_client = (
@@ -80,7 +107,13 @@ class FeishuBot:
         self.ws_client._handle_message = patched_handle_message
 
     def start(self):
-        self._thread = threading.Thread(target=self.ws_client.start, daemon=True)
+        def _run():
+            _loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(_loop)
+            _loop_store.loop = _loop  # thread-local，不会影响其他 bot
+            self.ws_client.start()
+
+        self._thread = threading.Thread(target=_run, daemon=True)
         self._thread.start()
         logger.info("[feishu] WebSocket started")
         print("[FEISHU] WebSocket thread started")
@@ -137,6 +170,10 @@ class FeishuBot:
             return
 
         print(f"[FEISHU] received: open_id={open_id} text={text}")
+
+        # 通知 caller 实际的 open_id（per-user bot 的 device-code 注册可能没有返回值）
+        if self.on_open_id:
+            self.on_open_id(open_id)
 
         # 检查是否为配对码
         if self.pairing_handler:

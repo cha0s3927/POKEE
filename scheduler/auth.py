@@ -2,12 +2,19 @@
 Authentication — password hashing, token management, auth dependency.
 No extra dependencies, uses stdlib hashlib only.
 """
+from __future__ import annotations
+
 import hashlib
 import os
 import re
 import secrets
 from datetime import datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
+from typing import Optional
 
 from fastapi import Header, HTTPException
 from sqlalchemy import text
@@ -47,7 +54,7 @@ def validate_email(email: str) -> bool:
     return bool(EMAIL_RE.match(email))
 
 
-def get_current_user(engine, authorization: str | None = Header(default=None)) -> dict:
+def get_current_user(engine, authorization: Optional[str] = Header(default=None)) -> dict:
     """FastAPI 依赖：从 Authorization header 提取 token，返回当前用户。"""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="请先登录")

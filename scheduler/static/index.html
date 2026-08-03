@@ -120,6 +120,16 @@
     padding: 8px 24px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;
   }
   .qr-modal .qr-close:hover { border-color: var(--accent); color: var(--accent); }
+  .wa-tabs { display: flex; justify-content: center; gap: 0; margin-bottom: 16px; }
+  .wa-tab {
+    padding: 6px 20px; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); cursor: pointer; font-size: 12px; transition: all .15s;
+  }
+  .wa-tab:first-child { border-radius: 6px 0 0 6px; }
+  .wa-tab:last-child { border-radius: 0 6px 6px 0; }
+  .wa-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .wa-tab-panel { display: none; }
+  .wa-tab-panel.active { display: block; }
 
   .reminder-list { flex: 1; overflow-y: auto; padding: 12px; }
   .reminder-list::-webkit-scrollbar { width: 4px; }
@@ -279,15 +289,37 @@
   <div class="qr-modal">
     <h3 id="qrTitle">连接平台</h3>
     <p class="qr-sub" id="qrSub"></p>
-    <div class="qr-img" id="qrContainer"></div>
-    <div id="pairingInput" style="display:none;margin:12px 0">
-      <input type="tel" id="waPhone" placeholder="手机号（含国家码，如 8613800138000）"
-        style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;text-align:center">
-      <button onclick="requestPairing()" id="pairingBtn"
-        style="width:100%;margin-top:8px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer">
-        获取配对码
-      </button>
-      <div id="pairingError" style="color:var(--red);font-size:11px;margin-top:6px;min-height:16px"></div>
+    <div class="wa-tabs" id="waTabs" style="display:none">
+      <button class="wa-tab active" onclick="switchWaTab('qr')" id="waTabQr">扫码连接</button>
+      <button class="wa-tab" onclick="switchWaTab('pairing')" id="waTabPairing">配对码连接</button>
+    </div>
+    <div class="wa-tab-panel active" id="waPanelQr">
+      <div class="qr-img" id="qrContainer"></div>
+    </div>
+    <div class="wa-tab-panel" id="waPanelPairing">
+      <div id="pairingCodeDisplay" style="text-align:center;display:none"></div>
+      <div id="pairingInput" style="margin:12px 0">
+        <div style="display:flex;gap:8px">
+          <select id="waCountry" style="width:140px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+            <option value="86">🇨🇳 +86</option>
+            <option value="852">🇭🇰 +852</option>
+            <option value="886">🇼🇸 +886</option>
+            <option value="1">🇺🇲 +1</option>
+            <option value="44">🇬🇧 +44</option>
+            <option value="81">🇯🇵 +81</option>
+            <option value="65">🇸🇬 +65</option>
+            <option value="60">🇲🇾 +60</option>
+            <option value="other">其他</option>
+          </select>
+          <input type="tel" id="waPhone" placeholder="手机号"
+            style="flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;text-align:center">
+        </div>
+        <button onclick="requestPairing()" id="pairingBtn"
+          style="width:100%;margin-top:8px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer">
+          获取配对码
+        </button>
+        <div id="pairingError" style="color:var(--red);font-size:11px;margin-top:6px;min-height:16px"></div>
+      </div>
     </div>
     <div class="qr-success-text" id="qrSuccess">✅ 连接成功！</div>
     <button class="qr-close" onclick="closeQrModal()">关闭</button>
@@ -464,6 +496,14 @@ function connectSSE() {
           new Notification('Reminder Agent', { body: data.task, icon: '⏰' });
         }
         loadReminders();
+      } else if (data.type === 'platform_connected') {
+        // 关闭当前 QR 弹窗并刷新平台状态
+        if (_qrPollTimer) {
+          clearInterval(_qrPollTimer);
+          _qrPollTimer = null;
+        }
+        closeQrModal();
+        loadPlatformStatus();
       }
     } catch (_) {}
   };
@@ -569,6 +609,8 @@ async function loadPlatformStatus() {
 let _qrPollTimer = null;
 let _qrLibReady = false;
 let _qrLibLoading = false;
+let _qrPlatform = '';
+let _showingPairingCode = false;
 
 function loadQrLib(cb) {
   if (_qrLibReady) { cb(); return; }
@@ -587,6 +629,24 @@ function loadQrLib(cb) {
   document.head.appendChild(s);
 }
 
+function switchWaTab(tab) {
+  var tabQr = document.getElementById('waTabQr');
+  var tabPairing = document.getElementById('waTabPairing');
+  var panelQr = document.getElementById('waPanelQr');
+  var panelPairing = document.getElementById('waPanelPairing');
+  if (tab === 'pairing') {
+    tabQr.classList.remove('active');
+    tabPairing.classList.add('active');
+    panelQr.classList.remove('active');
+    panelPairing.classList.add('active');
+  } else {
+    tabQr.classList.add('active');
+    tabPairing.classList.remove('active');
+    panelQr.classList.add('active');
+    panelPairing.classList.remove('active');
+  }
+}
+
 async function showQrModal(platform) {
   const overlay = document.getElementById('qrOverlay');
   const title = document.getElementById('qrTitle');
@@ -598,7 +658,7 @@ async function showQrModal(platform) {
   const hints = {
     wechat: '在微信中给 Bot 发消息即可使用',
     whatsapp: '在 WhatsApp 中给自己发消息即可使用',
-    feishu: '在飞书中与 Bot 对话即可使用',
+    feishu: '在飞书中搜索 Reminder Agent 即可对话',
   };
   title.textContent = '连接 ' + (names[platform] || platform);
   success.style.display = 'none';
@@ -606,6 +666,20 @@ async function showQrModal(platform) {
   overlay.classList.add('active');
 
   if (_qrPollTimer) { clearInterval(_qrPollTimer); _qrPollTimer = null; }
+  _qrPlatform = platform;
+
+  // WhatsApp: show tabs; other platforms: hide tabs, show QR panel directly
+  var waTabs = document.getElementById('waTabs');
+  var waPanelQr = document.getElementById('waPanelQr');
+  var waPanelPairing = document.getElementById('waPanelPairing');
+  if (platform === 'whatsapp') {
+    waTabs.style.display = 'flex';
+    switchWaTab('qr');
+  } else {
+    waTabs.style.display = 'none';
+    waPanelQr.style.display = 'block';
+    waPanelPairing.style.display = 'none';
+  }
 
   function renderConnected(data) {
     success.style.display = 'block';
@@ -619,28 +693,45 @@ async function showQrModal(platform) {
 
   function renderQr(data) {
     container.innerHTML = '';
-    // pairing code takes priority (WhatsApp only; feishu falls through to QR)
-    if (data.pairing_code && platform !== 'feishu') {
-      var pairingHint = '';
-      if (platform === 'whatsapp') {
-        pairingHint = '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">在 WhatsApp 中输入此配对码</div>' +
-          '<div style="font-size:11px;color:var(--text2)">WhatsApp → 设置 → 已关联设备 → 使用电话号码关联</div>';
-      }
-      container.innerHTML = '<div style="text-align:center">' +
-        pairingHint +
+    _showingPairingCode = false;
+    // WhatsApp pairing code → render in pairing panel, switch tab
+    if (data.pairing_code && platform === 'whatsapp') {
+      _showingPairingCode = true;
+      var pairingDisplay = document.getElementById('pairingCodeDisplay');
+      pairingDisplay.innerHTML =
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">在 WhatsApp 中输入此配对码</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">WhatsApp → 设置 → 已关联设备 → 使用电话号码关联</div>' +
         '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
-        esc(data.pairing_code) + '</div>' +
-        '</div>';
+        esc(data.pairing_code) + '</div>';
+      pairingDisplay.style.display = 'block';
+      document.getElementById('pairingInput').style.display = 'none';
+      switchWaTab('pairing');
       sub.textContent = '';
       return;
     }
-    // Feishu: show pairing code with text instructions
+    // Feishu: show QR from device-code flow, or pairing code (legacy global bot)
+    if (platform === 'feishu' && data.qr_url && !data.pairing_code) {
+      container.innerHTML = '';
+      sub.textContent = '请使用飞书 App 扫描二维码创建 Bot';
+      loadQrLib(function() {
+        try {
+          new QRCode(container, {
+            text: data.qr_url, width: 220, height: 220,
+            colorDark: '#e4e6ed', colorLight: '#1a1d27'
+          });
+        } catch (_) {
+          container.innerHTML = '<span style="color:var(--red);font-size:13px">二维码生成失败，请刷新重试</span>';
+        }
+      });
+      return;
+    }
     if (platform === 'feishu' && data.pairing_code) {
+      _showingPairingCode = true;
       container.innerHTML = '<div style="text-align:center">' +
-        '<div style="font-size:13px;color:var(--text);margin-bottom:8px">在飞书中找到 Bot 并发送下方配对码</div>' +
+        '<div style="font-size:13px;color:var(--text);margin-bottom:8px">将下方配对码发送给机器人即可完成绑定</div>' +
         '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
         esc(data.pairing_code) + '</div>' +
-        '<div style="font-size:11px;color:var(--text2)">打开飞书 → 搜索应用 → 发送上方配对码即可绑定</div>' +
+        '<div style="font-size:12px;color:var(--text2);line-height:1.6">1. 打开飞书，搜索 <b>Reminder Agent</b><br>2. 将上方配对码发送给机器人<br>3. 页面自动检测连接状态</div>' +
         '</div>';
       sub.textContent = '';
       return;
@@ -687,6 +778,8 @@ async function showQrModal(platform) {
           renderQr(d);
           return;
         }
+        // Don't overwrite a displayed pairing code with QR
+        if (_showingPairingCode) return;
         var hasQrNow = d.qr_image || (platform === 'wechat' && d.qr_url) || d.qr || d.qr_data;
         var showingQr = container.querySelector('img') || container.querySelector('canvas');
         if (hasQrNow && !showingQr) renderQr(d);
@@ -717,13 +810,16 @@ async function showQrModal(platform) {
       document.getElementById('pairingInput').style.display = 'none';
     }
 
-    if (data.pairing_code && platform !== 'feishu') {
+    if (platform === 'feishu' && data.qr_url && !data.pairing_code) {
+      renderQr(data);
+      startPoll();
+    } else if (data.pairing_code && platform !== 'feishu') {
       renderQr(data);
     } else if (platform === 'feishu' && data.pairing_code) {
       renderQr(data);
       startPoll();
     } else {
-      var hasQr = data.qr_image || (platform === 'wechat' && data.qr_url) || data.qr || data.qr_data;
+      var hasQr = data.qr_image || data.qr_url || data.qr || data.qr_data;
       if (hasQr) {
         renderQr(data);
         startPoll();
@@ -741,26 +837,42 @@ async function showQrModal(platform) {
 
 function closeQrModal() {
   if (_qrPollTimer) { clearInterval(_qrPollTimer); _qrPollTimer = null; }
+  _qrPlatform = '';
+  _showingPairingCode = false;
+  document.getElementById('pairingCodeDisplay').style.display = 'none';
   document.getElementById('qrOverlay').classList.remove('active');
   loadPlatformStatus();
 }
 
 async function requestPairing() {
+  var country = document.getElementById('waCountry').value;
   var phone = document.getElementById('waPhone').value.trim();
   var errEl = document.getElementById('pairingError');
   var btn = document.getElementById('pairingBtn');
   if (!phone) { errEl.textContent = '请输入手机号'; return; }
+  if (country === 'other' && !phone.startsWith('+')) {
+    errEl.textContent = '请手动输入国家码（如 +8613800138000）';
+    return;
+  }
+  var fullPhone = country === 'other' ? phone.replace(/^\+/, '') : (country + phone);
   btn.disabled = true; btn.textContent = '请求中...'; errEl.textContent = '';
   try {
     var r = await fetch('/api/platforms/qr/whatsapp/pairing', {
       method: 'POST', headers: apiHeaders(),
-      body: JSON.stringify({ phone: phone }),
+      body: JSON.stringify({ phone: fullPhone }),
     });
     var d = await r.json();
     if (d.error) { errEl.textContent = d.error; btn.disabled = false; btn.textContent = '获取配对码'; return; }
     if (d.pairing_code) {
+      _showingPairingCode = true;
       document.getElementById('pairingInput').style.display = 'none';
-      renderQr({ pairing_code: d.pairing_code });
+      var pairingDisplay = document.getElementById('pairingCodeDisplay');
+      pairingDisplay.innerHTML =
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">在 WhatsApp 中输入此配对码</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">WhatsApp → 设置 → 已关联设备 → 使用电话号码关联</div>' +
+        '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
+        esc(d.pairing_code) + '</div>';
+      pairingDisplay.style.display = 'block';
     }
   } catch (_) {
     errEl.textContent = '网络错误';
