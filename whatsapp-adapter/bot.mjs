@@ -15,7 +15,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import { handleMessage } from './adapter.mjs';
 
 const PUSH_PORT = parseInt(process.env.WHATSAPP_PUSH_PORT || '8767');
-const PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+const PROXY_URL = process.env.WHATSAPP_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
 const MAX_BOTS = 50;
 
 // ── 多用户 session 存储 ───────────────────────────────────
@@ -60,8 +60,10 @@ async function connectForUser(userId) {
     const opts = {
       auth: session.state,
       browser: ['Ubuntu', 'Chrome', '22.04.4'],
-      qrTimeout: 120000,
-      defaultQueryTimeoutMs: 120000,
+      qrTimeout: 180000,
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 180000,
+      keepAliveIntervalMs: 30000,
     };
     if (PROXY_URL) {
       opts.agent = new HttpsProxyAgent(PROXY_URL);
