@@ -112,6 +112,18 @@
     background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px;
   }
   .persona-switch select:focus { border-color: var(--accent); }
+  /* Points card */
+  .points-card {
+    padding: 10px 20px; border-bottom: 1px solid var(--border); text-align: center;
+  }
+  .points-balance {
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .points-label { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
+  .points-today { font-size: 11px; color: var(--green); margin-top: 2px; min-height: 16px; }
+  .points-card.credited .points-today::after { content: ' ✅'; }
   /* QR Modal */
   .qr-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -270,6 +282,11 @@
         <option value="cute_girl">🌸 小桃</option>
         <option value="reliable_guy">☕ 老周</option>
       </select>
+    </div>
+    <div class="points-card" id="pointsCard" style="display:none">
+      <div class="points-balance" id="pointsBalance">0</div>
+      <div class="points-label">积分</div>
+      <div class="points-today" id="pointsToday"></div>
     </div>
     <div class="platform-status" id="platformStatus">
       <div class="ps-title">平台连接</div>
@@ -433,6 +450,7 @@ function showApp() {
   loadReminders();
   loadPlatformStatus();
   loadPersona();
+  loadPoints();
   document.getElementById('userInput').focus();
   window.addEventListener('beforeunload', () => {
     if (_sse) { _sse.close(); _sse = null; }
@@ -471,6 +489,7 @@ async function sendMessage() {
     const data = await resp.json();
     removeTyping();
     appendMessage('assistant', data.reply);
+    if (data.bonus) loadPoints();
   } catch (e) {
     removeTyping();
     appendMessage('assistant', '抱歉，连接失败，请重试。');
@@ -621,6 +640,25 @@ async function switchPersona(key) {
     });
     // 切换人设后重置会话，让新 prompt 生效
     resetSession();
+  } catch (_) {}
+}
+
+// ── Points ──
+async function loadPoints() {
+  if (token === 'skip') return;
+  try {
+    var resp = await fetch('/api/me/points?_=' + Date.now(), { headers: apiHeaders() });
+    if (!resp.ok) return;
+    var data = await resp.json();
+    document.getElementById('pointsBalance').textContent = data.balance;
+    document.getElementById('pointsCard').style.display = 'block';
+    if (data.today_earned > 0) {
+      document.getElementById('pointsToday').textContent = '今日 +' + data.today_earned;
+      document.getElementById('pointsCard').classList.add('credited');
+    } else {
+      document.getElementById('pointsToday').textContent = '';
+      document.getElementById('pointsCard').classList.remove('credited');
+    }
   } catch (_) {}
 }
 

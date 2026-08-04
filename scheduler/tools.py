@@ -111,4 +111,18 @@ def execute_tool(name: str, args: dict) -> dict:
             session.commit()
         return {"acked": result.rowcount}
 
+    elif name == "set_persona":
+        persona = args["persona"]
+        with Session(engine) as session:
+            session.execute(
+                text("INSERT OR REPLACE INTO persona_prefs (user_id, persona) VALUES (:uid, :p)"),
+                {"uid": user_id, "p": persona},
+            )
+            session.commit()
+        return {"status": "ok", "persona": persona}
+
+    elif name == "get_balance":
+        from database import get_user_points
+        return get_user_points(user_id)
+
     return {"error": "unknown_tool", "message": f"未知工具: {name}"}

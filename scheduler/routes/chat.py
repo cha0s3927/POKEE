@@ -16,13 +16,17 @@ class ChatRequest(BaseModel):
 @router.post("/api/chat", summary="Agent 对话")
 def chat(req: ChatRequest, user: dict = Depends(auth_user)):
     from main import agent, execute_tool
-    from database import get_user_persona
+    from database import get_user_persona, try_daily_bonus
     if not check_rate(user["id"], max_req=20):
         raise HTTPException(status_code=429, detail="请求太频繁，请稍后再试")
+    bonus = try_daily_bonus(user["id"])
     persona = get_user_persona(user["id"])
     reply = agent.chat(user_message=req.message, user_id=user["id"], persona=persona)
     execute_tool("ack_notifications", {"user_id": user["id"]})
-    return {"reply": reply}
+    result = {"reply": reply}
+    if bonus["credited"]:
+        result["bonus"] = bonus
+    return result
 
 
 @router.post("/api/reset", summary="重置会话")
@@ -81,3 +85,11 @@ def set_persona(req: dict, user: dict = Depends(auth_user)):
 def list_personas():
     from agent import PERSONAS
     return {k: {"name": v["name"], "emoji": v["emoji"]} for k, v in PERSONAS.items()}
+
+
+# ── 积分 ──
+
+@router.get("/api/me/points", summary="查询积分余额")
+def get_points(user: dict = Depends(auth_user)):
+    from database import get_user_points
+    return get_user_points(user["id"])

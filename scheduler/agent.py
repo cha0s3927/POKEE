@@ -178,6 +178,33 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "set_persona",
+            "description": "切换助手人设。default=贴心朋友(自然随意), cute_girl=小桃(可爱活泼少女风), reliable_guy=老周(沉稳靠谱同事风)。用户说可爱/软萌/活泼就选cute_girl，说稳重/靠谱/专业就选reliable_guy，说自然/正常/默认就选default",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "persona": {"type": "string", "enum": ["default", "cute_girl", "reliable_guy"], "description": "人设标识"},
+                },
+                "required": ["persona"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_balance",
+            "description": "查询用户积分余额和今日收入",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
+        },
+    },
 ]
 
 MAX_TOOL_ITERATIONS = 5
