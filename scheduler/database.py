@@ -128,10 +128,11 @@ def add_points(user_id: str, amount: int, reason: str, ref_id: Optional[str] = N
         ).fetchone()
         if existing is None:
             import uuid
+            placeholder_email = f"auto:{user_id}@placeholder.local"
             conn.execute(
                 text("INSERT INTO users (id, email, password_hash, token, created_at, persona, points) "
-                     "VALUES (:uid, '', '', :token, :now, 'default', 0)"),
-                {"uid": user_id, "token": str(uuid.uuid4()), "now": now},
+                     "VALUES (:uid, :email, '', :token, :now, 'default', 0)"),
+                {"uid": user_id, "email": placeholder_email, "token": str(uuid.uuid4()), "now": now},
             )
         conn.execute(
             text("UPDATE users SET points = points + :amt WHERE id = :uid"),
@@ -150,12 +151,12 @@ def add_points(user_id: str, amount: int, reason: str, ref_id: Optional[str] = N
 
 
 def get_user_points(user_id: str) -> dict:
-    """返回用户积分摘要"""
+    """返回用户积分摘要（显示单位）"""
     with engine.connect() as conn:
         row = conn.execute(
             text("SELECT points FROM users WHERE id = :uid"), {"uid": user_id}
         ).fetchone()
-        balance = row.points if row else 0
+        internal = row.points if row else 0
         # 今日收入
         from datetime import datetime
         try:
@@ -169,11 +170,12 @@ def get_user_points(user_id: str) -> dict:
                  "WHERE user_id = :uid AND amount > 0 AND date(created_at) = :today"),
             {"uid": user_id, "today": today},
         ).fetchone()
-    return {"balance": balance, "today_earned": row2.earned if row2 else 0}
+        internal_earned = row2.earned if row2 else 0
+    return {"balance": round(internal / 10, 1), "today_earned": round(internal_earned / 10, 1)}
 
 
 def try_daily_bonus(user_id: str) -> dict:
-    """每日首次活跃送积分。返回 {credited: bool, balance: int, today_earned: int}"""
+    """每日首次活跃送积分。返回 {credited: bool, balance: float, today_earned: float}（显示单位）"""
     from datetime import datetime
     try:
         from zoneinfo import ZoneInfo
@@ -183,7 +185,6 @@ def try_daily_bonus(user_id: str) -> dict:
     today = datetime.now(TZ).strftime("%Y-%m-%d")
 
     with engine.connect() as conn:
-        # 今天是否已签到
         row = conn.execute(
             text("SELECT id FROM points_ledger "
                  "WHERE user_id = :uid AND reason = 'daily_login' AND date(created_at) = :today "
@@ -191,7 +192,6 @@ def try_daily_bonus(user_id: str) -> dict:
             {"uid": user_id, "today": today},
         ).fetchone()
         if row:
-            # 已签到，返回当前余额
             pts = conn.execute(
                 text("SELECT points FROM users WHERE id = :uid"), {"uid": user_id}
             ).fetchone()
@@ -200,9 +200,11 @@ def try_daily_bonus(user_id: str) -> dict:
                      "WHERE user_id = :uid AND amount > 0 AND date(created_at) = :today"),
                 {"uid": user_id, "today": today},
             ).fetchone()
-            return {"credited": False, "balance": pts.points if pts else 0,
-                    "today_earned": pts_earned.earned if pts_earned else 0}
+            internal = pts.points if pts else 0
+            internal_earned = pts_earned.earned if pts_earned else 0
+            return {"credited": False, "balance": round(internal / 10, 1),
+                    "today_earned": round(internal_earned / 10, 1)}
 
-    # 未签到，加 5 分
-    balance = add_points(user_id, 5, "daily_login")
-    return {"credited": True, "balance": balance, "today_earned": 5}
+    # 未签到，加 50 内部单位 (= 5.0 显示积分)
+    balance_internal = add_points(user_id, 50, "daily_login")
+    return {"credited": True, "balance": round(balance_internal / 10, 1), "today_earned": 5.0}

@@ -45,6 +45,8 @@ def execute_tool(name: str, args: dict) -> dict:
         # deferred import 避免循环依赖
         from scheduler import add_reminder_job
         add_reminder_job(rid, run_at)
+        from database import add_points
+        add_points(user_id, -1, "create_reminder", rid)
         return {"id": rid, "status": "pending", "run_at": run_at}
 
     elif name == "list_reminders":

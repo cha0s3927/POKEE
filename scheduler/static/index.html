@@ -314,8 +314,12 @@
       </div>
     </div>
     <div class="input-area">
-      <input type="text" id="userInput" placeholder="输入提醒内容..." autofocus
-             onkeydown="if(event.key==='Enter') sendMessage()">
+      <form autocomplete="off" style="display:contents">
+        <input type="text" name="_dummy_user" style="display:none" autocomplete="username">
+        <input type="password" name="_dummy_pass" style="display:none" autocomplete="current-password">
+        <input type="text" id="userInput" name="_chat_input" placeholder="输入提醒内容..." autofocus autocomplete="off"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage()}">
+      </form>
       <button id="sendBtn" onclick="sendMessage()">发送</button>
     </div>
   </main>
@@ -489,7 +493,7 @@ async function sendMessage() {
     const data = await resp.json();
     removeTyping();
     appendMessage('assistant', data.reply);
-    if (data.bonus) loadPoints();
+    loadPoints();
   } catch (e) {
     removeTyping();
     appendMessage('assistant', '抱歉，连接失败，请重试。');

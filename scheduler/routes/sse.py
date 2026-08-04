@@ -40,14 +40,18 @@ async def sse_stream(request: Request, token: str = ""):
             while True:
                 try:
                     data = await asyncio.wait_for(queue.get(), timeout=15)
-                    print(f"[SSE] -> {uid}: {data.get('task', '')}")
+                    try:
+                        print(f"[SSE] -> {uid}: {data.get('task', '')}")
+                    except Exception:
+                        pass
                     yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
         except Exception:
             pass
         finally:
-            sse_clients.pop(uid, None)
+            if sse_clients.get(uid) is queue:
+                sse_clients.pop(uid, None)
             print(f"[SSE] user={uid} disconnected, total={len(sse_clients)}")
 
     return StreamingResponse(

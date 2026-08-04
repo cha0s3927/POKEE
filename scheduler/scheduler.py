@@ -92,7 +92,10 @@ def fire_reminder(reminder_id: str):
         )
         session.commit()
 
-    print(f"[SCHEDULER] fire: {reminder_id} '{task}' for user={user_id}")
+    try:
+        print(f"[SCHEDULER] fire: {reminder_id} for user={user_id}")
+    except Exception:
+        pass
     payload: dict[str, Any] = {
         "type": "notification",
         "id": reminder_id,
