@@ -59,6 +59,13 @@ class Settings:
     linkedin_li_at: str = _cfg.get("linkedin", {}).get("li_at", os.environ.get("LINKEDIN_LI_AT", ""))
     linkedin_jsessionid: str = _cfg.get("linkedin", {}).get("jsessionid", os.environ.get("LINKEDIN_JSESSIONID", ""))
 
+    # 虎皮椒支付
+    xunhupay_gateway: str = _cfg.get("xunhupay", {}).get("gateway", os.environ.get("XUNHUPAY_GATEWAY", "https://api.xunhupay.com"))
+    xunhupay_wx_appid: str = _cfg.get("xunhupay", {}).get("wx_appid", os.environ.get("XUNHUPAY_WX_APPID", ""))
+    xunhupay_wx_appsecret: str = _cfg.get("xunhupay", {}).get("wx_appsecret", os.environ.get("XUNHUPAY_WX_APPSECRET", ""))
+    xunhupay_ali_appid: str = _cfg.get("xunhupay", {}).get("ali_appid", os.environ.get("XUNHUPAY_ALI_APPID", ""))
+    xunhupay_ali_appsecret: str = _cfg.get("xunhupay", {}).get("ali_appsecret", os.environ.get("XUNHUPAY_ALI_APPSECRET", ""))
+
     # 辅助
     tz_name: str = "Asia/Shanghai"
 

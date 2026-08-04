@@ -41,6 +41,11 @@ services:
       - LINKEDIN_SECRET=${LINKEDIN_SECRET:-linkedin-secret-change-me}
       - LINKEDIN_LI_AT=${LINKEDIN_LI_AT:-}
       - LINKEDIN_JSESSIONID=${LINKEDIN_JSESSIONID:-}
+      # 虎皮椒支付
+      - XUNHUPAY_WX_APPID=${XUNHUPAY_WX_APPID:-}
+      - XUNHUPAY_WX_APPSECRET=${XUNHUPAY_WX_APPSECRET:-}
+      - XUNHUPAY_ALI_APPID=${XUNHUPAY_ALI_APPID:-}
+      - XUNHUPAY_ALI_APPSECRET=${XUNHUPAY_ALI_APPSECRET:-}
       # Proxy (optional, set PROXY_URL in .env if needed, e.g. http://host.docker.internal:7897)
       - HTTPS_PROXY=${PROXY_URL:-}
       - HTTP_PROXY=${PROXY_URL:-}

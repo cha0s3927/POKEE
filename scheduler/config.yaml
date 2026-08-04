@@ -26,3 +26,11 @@ whatsapp:
 # LinkedIn 接入
 linkedin:
   secret: "${LINKEDIN_SECRET:-reminder-agent-linkedin-2026}"
+
+# 虎皮椒支付（积分充值）
+xunhupay:
+  gateway: "${XUNHUPAY_GATEWAY:-https://api.xunhupay.com}"
+  wx_appid: "${XUNHUPAY_WX_APPID:-}"
+  wx_appsecret: "${XUNHUPAY_WX_APPSECRET:-}"
+  ali_appid: "${XUNHUPAY_ALI_APPID:-}"
+  ali_appsecret: "${XUNHUPAY_ALI_APPSECRET:-}"

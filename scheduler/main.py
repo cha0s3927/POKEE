@@ -86,12 +86,14 @@ from routes.chat import router as chat_router
 from routes.reminders import router as reminders_router
 from routes.platforms import router as platforms_router
 from routes.sse import router as sse_router
+from routes.payments import router as payments_router
 
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(reminders_router)
 app.include_router(platforms_router)
 app.include_router(sse_router)
+app.include_router(payments_router)
 
 
 # ── 健康检查 ──
