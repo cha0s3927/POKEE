@@ -1,17 +1,26 @@
 # Secrets
 .env
+wechat-adapter/.env
+whatsapp-adapter/.env
 
 # Python
 __pycache__/
 *.pyc
-data/
+*.db
+scheduler/data/
 
 # Node
 node_modules/
 
 # WhatsApp session (sensitive)
 whatsapp-adapter/auth_info_baileys/
-whatsapp-adapter/.env
+
+# Deploy (contains server credentials)
+deploy.py
+nginx-site.conf
+
+# Docker volumes (runtime data)
+volumes/
 
 # IDE
 .claude/
