@@ -6,6 +6,7 @@ services:
         - HTTP_PROXY=${BUILD_PROXY:-}
         - HTTPS_PROXY=${BUILD_PROXY:-}
         - NO_PROXY=${NO_PROXY:-127.0.0.1,localhost}
+        - PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}
     ports:
       - "127.0.0.1:8000:8000"
     extra_hosts:
@@ -41,11 +42,9 @@ services:
       - LINKEDIN_SECRET=${LINKEDIN_SECRET:-linkedin-secret-change-me}
       - LINKEDIN_LI_AT=${LINKEDIN_LI_AT:-}
       - LINKEDIN_JSESSIONID=${LINKEDIN_JSESSIONID:-}
-      # 虎皮椒支付
-      - XUNHUPAY_WX_APPID=${XUNHUPAY_WX_APPID:-}
-      - XUNHUPAY_WX_APPSECRET=${XUNHUPAY_WX_APPSECRET:-}
-      - XUNHUPAY_ALI_APPID=${XUNHUPAY_ALI_APPID:-}
-      - XUNHUPAY_ALI_APPSECRET=${XUNHUPAY_ALI_APPSECRET:-}
+      # V免签
+      - VMQ_KEY=${VMQ_KEY:-vmq-key-change-me}
+      - VMQ_HOST_PORT=${VMQ_HOST_PORT:-8.161.228.6:8000}
       # Proxy (optional, set PROXY_URL in .env if needed, e.g. http://host.docker.internal:7897)
       - HTTPS_PROXY=${PROXY_URL:-}
       - HTTP_PROXY=${PROXY_URL:-}

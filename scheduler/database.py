@@ -95,22 +95,7 @@ def init_db():
         except Exception:
             pass
 
-        # 支付订单表（虎皮椒积分充值）
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS payment_orders (
-                id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                trade_order_id TEXT NOT NULL UNIQUE,
-                open_order_id TEXT,
-                payment_method TEXT NOT NULL,
-                amount_yuan REAL NOT NULL,
-                points INTEGER NOT NULL,
-                status TEXT NOT NULL DEFAULT 'pending',
-                created_at TEXT NOT NULL,
-                paid_at TEXT
-            )
-        """))
-        conn.commit()
+
 
 
 def get_user_persona(user_id: str) -> str:

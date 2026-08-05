@@ -2,6 +2,7 @@
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
 # ── Stage 1: Node.js 依赖 ──
 FROM node:22-slim AS node-deps
@@ -23,6 +24,7 @@ FROM python:3.12-slim
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ENV HTTP_PROXY=${HTTP_PROXY} HTTPS_PROXY=${HTTPS_PROXY} NO_PROXY=${NO_PROXY}
 
 # 安装 Node.js 22 + supervisor
@@ -36,7 +38,7 @@ WORKDIR /app
 
 # ── Python 依赖 ──
 COPY scheduler/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -i ${PIP_INDEX_URL} -r requirements.txt
 
 # ── Node.js 依赖（从 stage 1 复制） ──
 COPY --from=node-deps /build/wechat/node_modules wechat-adapter/node_modules/
@@ -54,6 +56,8 @@ COPY scheduler/config.yaml .
 COPY scheduler/database.py .
 COPY scheduler/scheduler.py .
 COPY scheduler/tools.py .
+COPY scheduler/vmq.py .
+COPY scheduler/payments.py .
 COPY scheduler/channels/ channels/
 COPY scheduler/adapters/ adapters/
 COPY scheduler/routes/ routes/

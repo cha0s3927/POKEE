@@ -41,7 +41,7 @@ def platforms_status(user: dict = Depends(auth_user)):
         "whatsapp": {
             "connected": "whatsapp" in bindings,
             "label": "WhatsApp",
-            "how": "在 WhatsApp 中给自己发消息即可使用",
+            "how": "点击扫码连接 WhatsApp",
             "has_qr": True,
         },
     }

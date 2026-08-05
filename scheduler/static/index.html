@@ -41,11 +41,11 @@
     padding: 40px 36px; width: 380px; max-width: 90vw;
   }
   .auth-box h1 {
-    font-size: 22px; font-weight: 600; text-align: center; margin-bottom: 4px;
+    font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 4px; letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--accent), #a78bfa);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
-  .auth-box .sub { text-align: center; font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+  .auth-box .sub { text-align: center; font-size: 14px; color: var(--text2); margin-bottom: 24px; }
   .auth-tabs { display: flex; margin-bottom: 24px; border-radius: var(--radius-sm); overflow: hidden; }
   .auth-tabs button {
     flex: 1; padding: 10px; border: 1px solid var(--border); background: var(--surface2);
@@ -79,10 +79,11 @@
   }
   .sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
   .sidebar-header h1 {
-    font-size: 18px; font-weight: 600;
+    font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--accent), #a78bfa);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
+  .sidebar-header .sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
   .sidebar-header .user-info { font-size: 12px; color: var(--text2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* ── Platform status ── */
   .platform-status {
@@ -138,46 +139,43 @@
   }
   .points-label { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
   .points-today { font-size: 11px; color: var(--green); margin-top: 2px; min-height: 16px; }
+  .points-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
   .recharge-btn {
-    display: block; width: 100%; margin-top: 8px; padding: 6px 0; min-height: 30px;
     background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
-    border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;
-    transition: all 0.2s; font-weight: 500;
+    padding: 3px 14px; border-radius: 20px; cursor: pointer; font-size: 11px;
+    transition: all 0.15s; white-space: nowrap; margin-top: 6px;
   }
-  .recharge-btn:hover { background: #f59e0b; color: #0f1117; }
-  .recharge-btn:active { transform: scale(0.97); }
+  .recharge-btn:hover { background: #f59e0b; color: #fff; }
   /* Recharge modal */
-  .recharge-modal { width: 360px; }
-  .recharge-tabs { display: flex; justify-content: center; gap: 0; margin-bottom: 16px; }
-  .recharge-tab {
-    padding: 6px 20px; border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text2); cursor: pointer; font-size: 12px; transition: all .15s;
+  .method-tabs { display: flex; justify-content: center; gap: 0; margin-bottom: 20px; }
+  .method-tab {
+    padding: 8px 28px; border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); cursor: pointer; font-size: 13px; transition: all .15s;
   }
-  .recharge-tab:first-child { border-radius: 6px 0 0 6px; }
-  .recharge-tab:last-child { border-radius: 0 6px 6px 0; }
-  .recharge-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .pkg-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .method-tab:first-child { border-radius: 6px 0 0 6px; }
+  .method-tab:last-child { border-radius: 0 6px 6px 0; }
+  .method-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pkg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
   .pkg-option {
-    padding: 10px 8px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); cursor: pointer; text-align: center; transition: all .15s;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.15s;
   }
   .pkg-option:hover { border-color: var(--accent); }
   .pkg-option.selected { border-color: #f59e0b; background: rgba(245,158,11,0.08); }
   .pkg-option .pkg-amount { font-size: 18px; font-weight: 700; color: #f59e0b; }
-  .pkg-option .pkg-points { font-size: 13px; color: var(--text); margin: 2px 0; }
-  .pkg-option .pkg-label { font-size: 10px; color: var(--text2); }
+  .pkg-option .pkg-points { font-size: 12px; color: var(--text2); }
+  .pkg-option .pkg-label { font-size: 10px; color: var(--accent); margin-top: 2px; }
+  .recharge-qr { margin: 0 auto 12px; width: 200px; height: 200px; display: none; }
+  .recharge-qr img { width: 100%; height: 100%; border-radius: 12px; }
+  .recharge-qr.show { display: block; }
+  .recharge-info { font-size: 13px; color: var(--text2); margin-bottom: 16px; display: none; }
+  .recharge-info.show { display: block; }
   .recharge-confirm {
-    display: none; width: 100%; padding: 10px; background: #f59e0b; color: #000;
-    border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: opacity .2s;
+    width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; transition: all 0.15s;
   }
-  .recharge-confirm.show { display: block; }
-  .recharge-confirm:hover { opacity: 0.85; }
-  .recharge-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
-  .recharge-qr { margin: 0 auto 12px; width: 200px; height: 200px; }
-  .recharge-qr img { width: 100%; height: 100%; }
-  .recharge-amount-info { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
-  .recharge-paid-text { display: none; color: var(--green); font-size: 14px; margin: 16px 0; }
+  .recharge-confirm:hover { background: var(--accent2); }
+  .recharge-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
   /* QR Modal */
   .qr-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
@@ -335,7 +333,7 @@
   <aside class="sidebar">
     <div class="sidebar-header">
       <h1>POKEE</h1>
-      <p class="sub" style="font-size:11px;color:var(--text2);margin-top:2px">Your Personal Reminder</p>
+      <p class="sub">Your Personal Reminder</p>
       <p class="user-info" id="sidebarUser"></p>
     </div>
     <div class="persona-switch" id="personaSwitch" style="display:none">
@@ -348,8 +346,10 @@
     <div class="points-card" id="pointsCard" style="display:none">
       <div class="points-balance" id="pointsBalance">0</div>
       <div class="points-label">积分</div>
-      <div class="points-today" id="pointsToday"></div>
-      <button class="recharge-btn" onclick="showRechargeModal()">充值</button>
+      <div class="points-row">
+        <div class="points-today" id="pointsToday"></div>
+        <button class="recharge-btn" onclick="showRechargeModal()">+ 充值</button>
+      </div>
     </div>
     <div class="platform-status" id="platformStatus">
       <div class="ps-title">平台连接</div>
@@ -430,23 +430,26 @@
   </div>
 </div>
 
-<!-- ── 充值弹窗 ── -->
+<!-- ── 充值 Modal ── -->
 <div class="qr-overlay" id="rechargeOverlay">
-  <div class="qr-modal recharge-modal">
-    <h3 id="rechargeTitle">积分充值</h3>
+  <div class="qr-modal">
+    <h3>充值积分</h3>
     <p class="qr-sub" id="rechargeSub">选择支付方式和积分包</p>
-    <!-- 支付方式 tabs -->
-    <div class="recharge-tabs" id="rechargeMethodTabs">
-      <button class="recharge-tab active" onclick="selectRechargeMethod('wechat')" id="rmTabWechat">微信支付</button>
-      <button class="recharge-tab" onclick="selectRechargeMethod('alipay')" id="rmTabAlipay">支付宝</button>
+    <div class="method-tabs">
+      <button class="method-tab active" onclick="selectMethod('wechat', this)">微信支付</button>
+      <button class="method-tab" onclick="selectMethod('alipay', this)">支付宝</button>
     </div>
-    <!-- 积分包选择 -->
-    <div class="pkg-list" id="pkgList"></div>
-    <button class="recharge-confirm" id="rechargeConfirm" onclick="createRechargeOrder()">确认充值</button>
-    <!-- 支付二维码 -->
-    <div class="recharge-qr" id="rechargeQr" style="display:none"></div>
-    <p class="recharge-amount-info" id="rechargeAmountInfo" style="display:none"></p>
-    <p class="recharge-paid-text" id="rechargePaidText"></p>
+    <div class="pkg-grid" id="pkgGrid"></div>
+    <button class="recharge-confirm" id="rechargeConfirm" disabled onclick="createRechargeOrder()">请选择积分包</button>
+    <div class="recharge-qr" id="rechargeQr">
+      <img id="rechargeQrImg" src="" alt="收款码">
+    </div>
+    <div class="recharge-info" id="rechargeInfo">
+      <p>请打开<span id="rechargeMethodLabel">微信</span>扫一扫</p>
+      <p style="font-weight:700;color:#f59e0b;margin-top:4px">¥<span id="rechargeAmount">0</span></p>
+      <p style="font-size:11px;color:var(--text2);margin-top:4px">支付完成后积分自动到账</p>
+    </div>
+    <div class="qr-success-text" id="rechargeSuccess" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px"><path d="M20 6L9 17l-5-5"/></svg> <span id="rechargeSuccessMsg">充值成功！积分已到账</span></div>
     <button class="qr-close" onclick="closeRechargeModal()">关闭</button>
   </div>
 </div>
@@ -1061,125 +1064,136 @@ async function requestPairing() {
   btn.disabled = false; btn.textContent = '获取配对码';
 }
 
-// ── 积分充值 ──
-let _rechargeMethod = 'wechat';
-let _rechargePkg = null;
-let _rechargePollTimer = null;
-
-async function showRechargeModal() {
-  var overlay = document.getElementById('rechargeOverlay');
-  overlay.classList.add('active');
-  _rechargeMethod = 'wechat';
-  _rechargePkg = null;
-  document.getElementById('rmTabWechat').classList.add('active');
-  document.getElementById('rmTabAlipay').classList.remove('active');
-  document.getElementById('rechargeConfirm').classList.remove('show');
-  document.getElementById('rechargeQr').style.display = 'none';
-  document.getElementById('rechargeAmountInfo').style.display = 'none';
-  document.getElementById('rechargePaidText').style.display = 'none';
-  document.getElementById('rechargeTitle').textContent = '积分充值';
-  document.getElementById('rechargeSub').textContent = '选择支付方式和积分包';
-  document.getElementById('rechargeMethodTabs').style.display = '';
-  // 加载套餐
-  try {
-    var r = await fetch('/api/payments/packages', { headers: authHeaders() });
-    var d = await r.json();
-    var html = '';
-    d.packages.forEach(function(p) {
-      html += '<div class="pkg-option" onclick="selectRechargePkg(this,' + p.amount + ',' + p.points + ')" data-amount="' + p.amount + '">' +
-        '<div class="pkg-amount">¥' + p.amount + '</div>' +
-        '<div class="pkg-points">' + p.points + ' 积分</div>' +
-        '<div class="pkg-label">' + p.label + '</div></div>';
-    });
-    document.getElementById('pkgList').innerHTML = html;
-  } catch (_) {}
-}
-
-function selectRechargeMethod(method) {
-  _rechargeMethod = method;
-  document.getElementById('rmTabWechat').classList.toggle('active', method === 'wechat');
-  document.getElementById('rmTabAlipay').classList.toggle('active', method === 'alipay');
-}
-
-function selectRechargePkg(el, amount, points) {
-  document.querySelectorAll('.pkg-option').forEach(function(p) { p.classList.remove('selected'); });
-  el.classList.add('selected');
-  _rechargePkg = { amount: amount, points: points };
-  document.getElementById('rechargeConfirm').classList.add('show');
-}
-
-async function createRechargeOrder() {
-  if (!_rechargePkg) return;
-  var btn = document.getElementById('rechargeConfirm');
-  btn.disabled = true; btn.textContent = '创建订单中...';
-  try {
-    var r = await fetch('/api/payments/create', {
-      method: 'POST', headers: apiHeaders(),
-      body: JSON.stringify({ method: _rechargeMethod, amount: _rechargePkg.amount, points: _rechargePkg.points }),
-    });
-    var d = await r.json();
-    if (d.url_qrcode) {
-      // 显示二维码
-      document.getElementById('rechargeTitle').textContent = '扫码支付';
-      document.getElementById('rechargeSub').textContent = '¥' + _rechargePkg.amount + ' — ' + _rechargePkg.points + ' 积分';
-      document.getElementById('rechargeMethodTabs').style.display = 'none';
-      document.getElementById('pkgList').style.display = 'none';
-      btn.classList.remove('show');
-      var qrEl = document.getElementById('rechargeQr');
-      qrEl.innerHTML = '<img src="' + d.url_qrcode + '" alt="支付二维码">';
-      qrEl.style.display = 'block';
-      document.getElementById('rechargeAmountInfo').style.display = 'block';
-      // 开始轮询
-      var pollCount = 0;
-      var maxPolls = 120;
-      _rechargePollTimer = setInterval(async function() {
-        pollCount++;
-        try {
-          var sr = await fetch('/api/payments/status/' + d.trade_order_id, { headers: apiHeaders() });
-          var sd = await sr.json();
-          if (sd.status === 'paid') {
-            clearInterval(_rechargePollTimer);
-            _rechargePollTimer = null;
-            qrEl.style.display = 'none';
-            document.getElementById('rechargeAmountInfo').style.display = 'none';
-            document.getElementById('rechargePaidText').style.display = 'block';
-            document.getElementById('rechargePaidText').textContent = '支付成功！积分已到账';
-            loadPoints();
-            setTimeout(closeRechargeModal, 2000);
-            return;
-          }
-        } catch (_) {}
-        if (pollCount >= maxPolls) {
-          clearInterval(_rechargePollTimer);
-          _rechargePollTimer = null;
-          document.getElementById('rechargePaidText').style.display = 'block';
-          document.getElementById('rechargePaidText').style.color = 'var(--text2)';
-          document.getElementById('rechargePaidText').textContent = '支付状态查询超时，如已付款积分将稍后到账';
-        }
-      }, 2000);
-    } else {
-      btn.disabled = false; btn.textContent = '确认充值';
-    }
-  } catch (e) {
-    btn.disabled = false; btn.textContent = '确认充值';
-  }
-}
-
-function closeRechargeModal() {
-  if (_rechargePollTimer) { clearInterval(_rechargePollTimer); _rechargePollTimer = null; }
-  document.getElementById('rechargeOverlay').classList.remove('active');
-  document.getElementById('pkgList').style.display = '';
-  document.querySelectorAll('.pkg-option').forEach(function(p) { p.classList.remove('selected'); });
-  _rechargePkg = null;
-  document.getElementById('rechargeConfirm').classList.remove('show');
-  var cbtn = document.getElementById('rechargeConfirm');
-  cbtn.disabled = false; cbtn.textContent = '确认充值';
-}
-
 function requestNotificationPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
+}
+
+// ── 充值 ──
+var _rechargeMethod = 'wechat';
+var _rechargeAmount = 0;
+var _rechargePoints = 0;
+var _rechargeOrderId = '';
+var _rechargePollTimer = null;
+
+var PACKAGES = [
+  { amount: 1, points: 10, label: '入门' },
+  { amount: 5, points: 60, label: '划算' },
+  { amount: 10, points: 130, label: '超值' },
+  { amount: 20, points: 300, label: '至尊' },
+];
+
+function showRechargeModal() {
+  var overlay = document.getElementById('rechargeOverlay');
+  overlay.classList.add('active');
+  renderPkgGrid();
+  resetRechargeState();
+}
+
+function closeRechargeModal() {
+  document.getElementById('rechargeOverlay').classList.remove('active');
+  if (_rechargePollTimer) { clearInterval(_rechargePollTimer); _rechargePollTimer = null; }
+}
+
+function resetRechargeState() {
+  _rechargeAmount = 0; _rechargePoints = 0; _rechargeOrderId = '';
+  if (_rechargePollTimer) { clearInterval(_rechargePollTimer); _rechargePollTimer = null; }
+  document.getElementById('rechargeConfirm').disabled = true;
+  document.getElementById('rechargeConfirm').textContent = '请选择积分包';
+  document.getElementById('rechargeSub').textContent = '选择支付方式和积分包';
+  document.getElementById('rechargeSub').style.color = 'var(--text2)';
+  document.getElementById('rechargeQr').classList.remove('show');
+  document.getElementById('rechargeInfo').classList.remove('show');
+  document.getElementById('rechargeSuccess').style.display = 'none';
+}
+
+function renderPkgGrid() {
+  var html = '';
+  PACKAGES.forEach(function(p) {
+    html += '<div class="pkg-option" id="pkg_' + p.amount + '" onclick="selectPackage(' + p.amount + ', ' + p.points + ', this)">' +
+      '<div class="pkg-amount">¥' + p.amount + '</div>' +
+      '<div class="pkg-points">' + p.points + ' 积分</div>' +
+      '<div class="pkg-label">' + p.label + '</div>' +
+      '</div>';
+  });
+  document.getElementById('pkgGrid').innerHTML = html;
+}
+
+function selectMethod(method, btn) {
+  _rechargeMethod = method;
+  var tabs = document.querySelectorAll('.method-tab');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  btn.classList.add('active');
+  resetRechargeState();
+  renderPkgGrid();
+}
+
+function selectPackage(amount, points, el) {
+  _rechargeAmount = amount;
+  _rechargePoints = points;
+  var opts = document.querySelectorAll('.pkg-option');
+  for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
+  el.classList.add('selected');
+  document.getElementById('rechargeConfirm').disabled = false;
+  document.getElementById('rechargeConfirm').textContent = '确认充值 ¥' + amount;
+}
+
+async function createRechargeOrder() {
+  if (!_rechargeAmount) return;
+  var btn = document.getElementById('rechargeConfirm');
+  btn.disabled = true;
+  btn.textContent = '创建订单中...';
+
+  try {
+    var resp = await fetch('/api/payments/create', {
+      method: 'POST', headers: apiHeaders(),
+      body: JSON.stringify({ method: _rechargeMethod, amount: _rechargeAmount, points: _rechargePoints }),
+    });
+    var data = await resp.json();
+    if (data.error) { alert(data.error); btn.disabled = false; btn.textContent = '确认充值 ¥' + _rechargeAmount; return; }
+
+    _rechargeOrderId = data.trade_order_id;
+    document.getElementById('rechargeSub').textContent = '请扫码支付';
+    document.getElementById('rechargeSub').style.color = '#f59e0b';
+    document.getElementById('rechargeMethodLabel').textContent = _rechargeMethod === 'wechat' ? '微信' : '支付宝';
+    document.getElementById('rechargeAmount').textContent = _rechargeAmount.toFixed(2);
+
+    // Show QR code (the receive-money QR for the selected method)
+    var methodQr = document.getElementById('rechargeQrImg');
+    methodQr.src = '/qr/' + _rechargeMethod + '.jpg';
+
+    document.getElementById('rechargeQr').classList.add('show');
+    document.getElementById('rechargeInfo').classList.add('show');
+    document.getElementById('pkgGrid').style.display = 'none';
+    document.querySelectorAll('.method-tab').forEach(function(t) { t.style.display = 'none'; });
+    btn.style.display = 'none';
+
+    // Start polling
+    pollPaymentStatus();
+  } catch (_) {
+    alert('网络错误');
+    btn.disabled = false;
+    btn.textContent = '确认充值 ¥' + _rechargeAmount;
+  }
+}
+
+function pollPaymentStatus() {
+  _rechargePollTimer = setInterval(async function() {
+    try {
+      var resp = await fetch('/api/payments/status/' + _rechargeOrderId, { headers: apiHeaders() });
+      var data = await resp.json();
+      if (data.status === 'paid') {
+        clearInterval(_rechargePollTimer);
+        _rechargePollTimer = null;
+        document.getElementById('rechargeQr').classList.remove('show');
+        document.getElementById('rechargeInfo').classList.remove('show');
+        document.getElementById('rechargeSuccess').style.display = 'block';
+        document.getElementById('rechargeSuccessMsg').textContent = '充值成功！' + _rechargePoints + ' 积分已到账';
+        loadPoints();
+      }
+    } catch (_) {}
+  }, 2000);
 }
 </script>
 </body>
