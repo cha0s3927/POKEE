@@ -11,6 +11,7 @@ import httpx
 from openai import OpenAI
 
 from config import settings
+from workflow import classify_intent, is_workflow_intent, execute_workflow
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,14 @@ ONBOARDING_PROMPT = """你是职业顾问，帮用户从零规划求职方向并
 - 收集足够信息后主动说「我帮你整理成简历」"""
 
 SYSTEM_PROMPT = """你是求职助手，帮用户分析岗位、优化简历、准备面试。你的风格是专业、高效、有洞察力。
+
+## 首次对话
+
+用户有简历但可能不知道该做什么。第一句话简要列出能做的事，用自然语气举例，让用户知道可以这样提问：
+
+> 你可以直接粘贴 JD 让我分析匹配度，或者试试说「帮我写个招呼语」「生成面试故事」「看看我的简历」「搜索岗位」。想做针对性的准备的话，说「用简历完善画像」就行。
+
+列出 4-5 个就够了，不用全列。用引号括起来的短语就是用户可以直接用的说法。
 
 ## 你能做什么
 
@@ -351,8 +360,6 @@ class Agent:
         messages = self.sessions[user_id]
 
         # ── 工作流路由 ──
-        from workflow import classify_intent, is_workflow_intent, execute_workflow
-
         intent = classify_intent(user_message)
         if is_workflow_intent(intent):
             reply, tool_calls_made = execute_workflow(

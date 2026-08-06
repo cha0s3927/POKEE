@@ -52,8 +52,44 @@ INTENT_PROMPT = """分析用户消息，只返回一个 JSON: {"intent":"意图�
 4. "我要学X""我想学X""帮我加个任务X" → add_task，不是 update_profile"""
 
 
+# ── 关键词兜底规则（确定性，不调 LLM）──
+# (关键词列表, intent)，按顺序匹配，命中即返回
+KEYWORD_RULES: list[tuple[list[str], str]] = [
+    (["完善画像", "完善我的画像", "完善求职画像", "生成求职画像", "用简历完善", "用我的简历"], "perfect_profile"),
+    (["定制简历", "定制版简历", "针对这个岗位"], "tailor_resume"),
+    (["招呼语", "沟通话术", "打招呼的话", "怎么跟HR说", "BOSS上怎么聊", "帮我写个招呼"], "generate_pitch"),
+    (["求职信", "Cover Letter", "cover letter"], "generate_cover"),
+    (["STAR", "面试故事", "面试用的"], "generate_stories"),
+    (["搜索岗位", "找一下", "帮我搜", "有什么岗位", "搜一下"], "search_jobs"),
+    (["收藏的岗位", "已保存的岗位", "看看收藏", "我收藏了"], "list_saved_jobs"),
+    (["收藏这个", "保存岗位", "把这个存下来", "收藏岗位"], "save_job"),
+    (["学习计划", "成长计划", "我的任务", "待办"], "view_tasks"),
+    (["我要学", "我想学", "添加任务", "加入计划", "加入成长计划", "加个任务"], "add_task"),
+    (["我的求职画像", "我的画像", "查看画像"], "view_profile"),
+    (["薪资改成", "改成", "修改画像", "更新画像"], "update_profile"),
+    (["查看简历", "看看我的简历", "打开简历", "我的简历"], "view_resume"),
+    (["简历有什", "简历诊断", "简历哪里", "帮我改简历"], "diagnose_resume"),
+]
+
+
+def _keyword_match(text: str) -> str | None:
+    """关键词匹配，命中返回 intent，否则返回 None"""
+    for keywords, intent in KEYWORD_RULES:
+        for kw in keywords:
+            if kw in text:
+                logger.info("keyword match: %r → %s", kw, intent)
+                return intent
+    return None
+
+
 def classify_intent(user_message: str) -> str:
-    """分类用户意图，返回 intent name。失败时返回 'chat'。"""
+    """分类用户意图，先关键词兜底，再 LLM 分类。失败时返回 'chat'。"""
+    # 1. 关键词兜底
+    kw = _keyword_match(user_message)
+    if kw:
+        return kw
+
+    # 2. LLM 分类
     try:
         resp = client.chat.completions.create(
             model=settings.llm_model,
@@ -62,9 +98,10 @@ def classify_intent(user_message: str) -> str:
                 {"role": "user", "content": user_message[:2000]},
             ],
             temperature=0.0,
-            max_tokens=30,
+            max_tokens=500,
         )
-        raw = resp.choices[0].message.content.strip()
+        raw = (resp.choices[0].message.content or "").strip()
+        logger.info("intent raw response: %s", raw[:200])
         data = json.loads(raw)
         intent = data.get("intent", "chat")
         logger.info("intent: %s → %s", user_message[:60], intent)
@@ -129,12 +166,17 @@ def execute_workflow(
             logger.warning("Unknown tool in workflow %s: %s", intent, tool_name)
             continue
 
+        # DeepSeek thinking mode 不支持 tool_choice="required"/指定函数，只用 auto + 单工具
+        step_tool = tool_map[tool_name]
         try:
             resp = client.chat.completions.create(
                 model=settings.llm_model,
-                messages=msgs,
-                tools=relevant_tools,
-                tool_choice={"type": "function", "function": {"name": tool_name}},
+                messages=msgs + [{
+                    "role": "system",
+                    "content": f"你现在必须调用工具 {tool_name}，根据已有信息填充参数。如果找不到精确匹配的，就用第一个/默认的。不要输出文字，直接调用工具。"
+                }],
+                tools=[step_tool],
+                tool_choice="auto",
             )
         except Exception as e:
             logger.exception("LLM call failed for workflow %s step %s", intent, tool_name)
@@ -143,19 +185,22 @@ def execute_workflow(
         msg = resp.choices[0].message
 
         if not msg.tool_calls:
-            logger.warning("Workflow %s: LLM refused to call %s", intent, tool_name)
-            # 尝试不强制 tool_choice 重新请求
+            logger.warning("Workflow %s: LLM refused to call %s, retrying", intent, tool_name)
+            # 再试一次
             try:
                 resp = client.chat.completions.create(
                     model=settings.llm_model,
-                    messages=msgs,
-                    tools=relevant_tools,
+                    messages=msgs + [{
+                        "role": "user",
+                        "content": f"请调用 {tool_name} 工具，根据对话上下文填充合适的参数。"
+                    }],
+                    tools=[step_tool],
                     tool_choice="auto",
                 )
                 msg = resp.choices[0].message
-                if not msg.tool_calls:
-                    break
             except Exception:
+                pass
+            if not msg.tool_calls:
                 break
 
         tc = msg.tool_calls[0]
@@ -172,7 +217,8 @@ def execute_workflow(
         tool_calls_made.append(name)
 
         # 将 tool call + result 追加到消息中，供下一步参考
-        msgs.append({
+        # DeepSeek thinking mode 要求后续请求必须带回 reasoning_content
+        assistant_msg = {
             "role": "assistant",
             "content": msg.content,
             "tool_calls": [{
@@ -180,7 +226,11 @@ def execute_workflow(
                 "type": "function",
                 "function": {"name": name, "arguments": tc.function.arguments},
             }],
-        })
+        }
+        reasoning = getattr(msg, "reasoning_content", None)
+        if reasoning:
+            assistant_msg["reasoning_content"] = reasoning
+        msgs.append(assistant_msg)
         msgs.append({
             "role": "tool",
             "tool_call_id": tc.id,

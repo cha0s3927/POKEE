@@ -23,6 +23,7 @@ COPY resume_parser.py .
 COPY cover_letter.py .
 COPY interview.py .
 COPY search.py .
+COPY workflow.py .
 COPY routes/ routes/
 COPY static/ static/
 

@@ -567,9 +567,10 @@ body {
     <div class="messages" id="messages">
       <div class="welcome">
         <h2>Offer大圣</h2>
-        <p>粘贴 JD 让我分析匹配度、定制简历、生成招呼语。</p>
-        <p style="margin-top:12px;font-size:13px;color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容</p>
-        <p style="font-size:13px;color:var(--text2)">也可以说：<em>"帮我搜索上海 Python 后端岗位"</em></p>
+        <p>有简历？直接粘贴给我，帮你分析 JD、定制投递版。</p>
+        <p style="margin-top:10px;font-size:13px;color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</p>
+        <p style="margin-top:16px;font-size:12px;color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容</p>
+        <p style="font-size:12px;color:var(--text2)">也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></p>
       </div>
     </div>
 
@@ -739,6 +740,7 @@ body {
 <script>
 /* ═══ State ═══ */
 let token = localStorage.getItem('job_agent_token') || '';
+const MESSAGES_KEY = 'job_agent_messages';
 let isLogin = true;
 let resumes = [];
 let activeResumeId = null;
@@ -796,6 +798,18 @@ async function showApp(email) {
   $('#authPage').style.display = 'none';
   $('#appMain').classList.add('active');
   $('#userInfo').textContent = email;
+
+  // Restore messages from localStorage
+  const saved = localStorage.getItem(MESSAGES_KEY);
+  if (saved) {
+    try {
+      const msgs = JSON.parse(saved);
+      if (msgs.length) {
+        $('#messages').innerHTML = '';
+        msgs.forEach(m => addMessage(m.role, m.text, false));
+      }
+    } catch (_) {}
+  }
 
   // Auto-scroll
   const obs = new MutationObserver(() => {
@@ -1357,15 +1371,17 @@ function renderSavedJobsDetail(highlightId) {
 /* ═══ Logout & Clear ═══ */
 $('#btnLogout').onclick = () => {
   localStorage.removeItem('job_agent_token');
+  localStorage.removeItem(MESSAGES_KEY);
   token = '';
   $('#appMain').classList.remove('active');
   $('#authPage').style.display = 'flex';
-  $('#messages').innerHTML = `<div class="welcome"><h2>Offer大圣</h2><p>粘贴 JD，我会帮你分析匹配度、定制简历、生成招呼语。</p></div>`;
+  $('#messages').innerHTML = `<div class="welcome"><h2>Offer大圣</h2><p>有简历直接粘贴给我，还没简历就聊聊方向和技能。</p></div>`;
   resumes = []; activeResumeId = null; savedJobs = [];
 };
 
 $('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
   await api('/api/reset', { method: 'POST' });
+  localStorage.removeItem(MESSAGES_KEY);
   $('#messages').innerHTML = `<div class="welcome"><h2>新对话</h2><p>会话已重置，可以开始新的分析。</p></div>`;
 };
 
@@ -1408,7 +1424,7 @@ async function sendMessage() {
   input.focus();
 }
 
-function addMessage(role, text) {
+function addMessage(role, text, persist = true) {
   const welcome = $('#messages').querySelector('.welcome');
   if (welcome) welcome.remove();
 
@@ -1442,6 +1458,12 @@ function addMessage(role, text) {
   div.appendChild(avatar);
   div.appendChild(bubble);
   $('#messages').appendChild(div);
+
+  if (persist) {
+    const msgs = JSON.parse(localStorage.getItem(MESSAGES_KEY) || '[]');
+    msgs.push({ role, text });
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(msgs));
+  }
 }
 
 function renderMarkdown(text) {
