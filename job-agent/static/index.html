@@ -822,17 +822,14 @@ $('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
 async function sendMessage() {
   const input = $('#chatInput');
   const msg = input.value.trim();
-  if (!msg || !activeResumeId) {
-    if (!activeResumeId) toast('请先创建一份简历');
-    return;
-  }
+  if (!msg) return;
 
   input.value = ''; input.style.height = 'auto';
   $('#btnSend').disabled = true;
   addMessage('user', msg);
   showTyping(true);
 
-  // Inject active resume context into message
+  // Inject active resume context into message when available
   const activeResume = resumes.find(r => r.id === activeResumeId);
   const contextMsg = activeResume
     ? `[当前使用简历: ${activeResume.name} (${activeResumeId})]\n${msg}`

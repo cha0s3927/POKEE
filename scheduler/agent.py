@@ -70,9 +70,12 @@ BASE_RULES = """
 - 不要格式化回复（加粗、标题、列表都不要用），就是在闲聊"""
 
 
-def build_system_prompt(persona: str) -> str:
+def build_system_prompt(persona: str, lang: str = "zh") -> str:
     p = PERSONAS.get(persona, PERSONAS["default"])
-    return p["prompt"] + BASE_RULES
+    prompt = p["prompt"] + BASE_RULES
+    if lang == "en":
+        prompt += "\n\n[IMPORTANT] You MUST respond in English only. Do NOT reply in Chinese."
+    return prompt
 
 
 TOOLS = [
@@ -221,18 +224,23 @@ class Agent:
         self.model = model
         self.execute_tool = tool_executor
         self.sessions: dict[str, list[dict]] = {}
-        self._personas: dict[str, str] = {}  # user_id → persona_key，检测人设变更用
+        self._personas: dict[str, str] = {}  # user_id → persona_key
+        self._langs: dict[str, str] = {}  # user_id → lang
 
     def chat(self, user_message: str, user_id: str, persona: str = "default") -> str:
-        prompt = build_system_prompt(persona)
+        from database import get_user_lang
+        lang = get_user_lang(user_id)
+        prompt = build_system_prompt(persona, lang)
 
         if user_id not in self.sessions:
             self.sessions[user_id] = [{"role": "system", "content": prompt}]
             self._personas[user_id] = persona
-        elif self._personas.get(user_id) != persona:
-            # 人设变了，替换 system prompt
+            self._langs[user_id] = lang
+        elif self._personas.get(user_id) != persona or self._langs.get(user_id) != lang:
+            # 人设或语言变了，替换 system prompt
             self.sessions[user_id][0] = {"role": "system", "content": prompt}
             self._personas[user_id] = persona
+            self._langs[user_id] = lang
 
         messages = self.sessions[user_id]
 
@@ -247,6 +255,11 @@ class Agent:
         # 预注入当前时间，省去 get_current_time 工具调用（减少一次 API 往返）
         tz_now = datetime.now(TZ).strftime("%Y-%m-%dT%H:%M:%S")
         messages.append({"role": "system", "content": f"[当前时间: {tz_now} Asia/Shanghai]"})
+        # 每轮注入语言指令，防止多轮对话回退
+        if lang == "en":
+            messages.append({"role": "system", "content": "Reply in English."})
+        else:
+            messages.append({"role": "system", "content": "请用中文回复。"})
         messages.append({"role": "user", "content": user_message})
 
         for _ in range(MAX_TOOL_ITERATIONS):
@@ -311,3 +324,4 @@ class Agent:
     def clear_session(self, user_id: str):
         self.sessions.pop(user_id, None)
         self._personas.pop(user_id, None)
+        self._langs.pop(user_id, None)

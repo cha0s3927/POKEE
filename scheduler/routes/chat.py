@@ -87,6 +87,31 @@ def list_personas():
     return {k: {"name": v["name"], "emoji": v["emoji"]} for k, v in PERSONAS.items()}
 
 
+# ── 语言 ──
+
+@router.get("/api/settings/lang", summary="获取当前语言偏好")
+def get_lang(user: dict = Depends(auth_user)):
+    from database import get_user_lang
+    lang = get_user_lang(user["id"])
+    return {"lang": lang}
+
+
+@router.put("/api/settings/lang", summary="切换语言偏好")
+def set_lang(req: dict, user: dict = Depends(auth_user)):
+    from database import engine
+    from sqlalchemy import text
+    l = req.get("lang", "zh")
+    if l not in ("zh", "en"):
+        raise HTTPException(status_code=400, detail="不支持的语言")
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE users SET lang = :l WHERE id = :uid"),
+            {"l": l, "uid": user["id"]},
+        )
+        conn.commit()
+    return {"status": "ok", "lang": l}
+
+
 # ── 积分 ──
 
 @router.get("/api/me/points", summary="查询积分余额")

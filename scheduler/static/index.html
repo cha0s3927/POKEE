@@ -13,13 +13,11 @@
     --radius: 10px; --radius-sm: 6px;
     --focus-ring: 0 0 0 2px rgba(108,138,255,0.4);
   }
-  /* Focus ring for keyboard nav */
   :focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
     border-radius: var(--radius-sm);
   }
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -70,6 +68,15 @@
   .auth-error { color: var(--red); font-size: 12px; text-align: center; margin-top: 12px; min-height: 18px; }
   .auth-box .logout-hint { text-align: center; font-size: 11px; color: var(--text2); margin-top: 16px; cursor: pointer; }
 
+  /* ── Language switcher ── */
+  .lang-switch {
+    display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+    font-size: 11px; color: var(--text2); padding: 2px 8px; border: 1px solid var(--border);
+    border-radius: 4px; transition: all 0.15s; user-select: none;
+  }
+  .lang-switch:hover { border-color: var(--accent); color: var(--accent); }
+  .auth-lang { position: absolute; top: 16px; right: 20px; }
+
   /* ── Chat layout ── */
   .app { display: none; height: 100vh; }
   .app.active { display: flex; }
@@ -85,6 +92,7 @@
   }
   .sidebar-header .sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
   .sidebar-header .user-info { font-size: 12px; color: var(--text2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-header .header-row { display: flex; align-items: center; justify-content: space-between; }
   /* ── Platform status ── */
   .platform-status {
     padding: 12px 20px; border-bottom: 1px solid var(--border);
@@ -124,7 +132,7 @@
     flex: 1; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text); font-size: 13px; outline: none;
     cursor: pointer; appearance: none; -webkit-appearance: none; min-height: 36px;
-    background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a8b0c0'/%3E%3C/svg%3E\");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a8b0c0'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
   }
   .persona-switch select:focus { border-color: var(--accent); }
@@ -308,22 +316,23 @@
 
 <!-- ── Auth page ── -->
 <div id="authPage" class="auth-container">
-  <div class="auth-box">
+  <div class="auth-box" style="position:relative">
+    <span class="lang-switch auth-lang" onclick="toggleLanguage()" data-i18n="lang.switch">EN</span>
     <h1>POKEE</h1>
     <p class="sub">Your Personal Reminder</p>
     <div class="auth-tabs">
-      <button id="tabLogin" class="active" onclick="switchTab('login')">登录</button>
-      <button id="tabRegister" onclick="switchTab('register')">注册</button>
+      <button id="tabLogin" class="active" onclick="switchTab('login')" data-i18n="auth.login">登录</button>
+      <button id="tabRegister" onclick="switchTab('register')" data-i18n="auth.register">注册</button>
     </div>
     <div class="auth-field">
-      <label>邮箱</label>
+      <label data-i18n="auth.email">邮箱</label>
       <input type="email" id="authEmail" placeholder="example@mail.com" autofocus>
     </div>
     <div class="auth-field">
-      <label>密码（至少6位）</label>
+      <label data-i18n="auth.password">密码（至少6位）</label>
       <input type="password" id="authPassword" placeholder="••••••" onkeydown="if(event.key==='Enter') doAuth()">
     </div>
-    <button class="btn" id="authBtn" onclick="doAuth()">登录</button>
+    <button class="btn" id="authBtn" onclick="doAuth()" data-i18n="auth.login">登录</button>
     <div class="auth-error" id="authError"></div>
   </div>
 </div>
@@ -332,45 +341,48 @@
 <div id="app" class="app">
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1>POKEE</h1>
+      <div class="header-row">
+        <h1>POKEE</h1>
+        <span class="lang-switch" onclick="toggleLanguage()" data-i18n="lang.switch">EN</span>
+      </div>
       <p class="sub">Your Personal Reminder</p>
       <p class="user-info" id="sidebarUser"></p>
     </div>
     <div class="persona-switch" id="personaSwitch" style="display:none">
       <select id="personaSelect" onchange="switchPersona(this.value)">
-        <option value="default">🤞 贴心朋友</option>
-        <option value="cute_girl">🌸 小桃</option>
-        <option value="reliable_guy">☕ 老周</option>
+        <option value="default" data-i18n="persona.friend">🤞 贴心朋友</option>
+        <option value="cute_girl" data-i18n="persona.tao">🌸 小桃</option>
+        <option value="reliable_guy" data-i18n="persona.zhou">☕ 老周</option>
       </select>
     </div>
     <div class="points-card" id="pointsCard" style="display:none">
       <div class="points-balance" id="pointsBalance">0</div>
-      <div class="points-label">积分</div>
+      <div class="points-label" data-i18n="points.label">积分</div>
       <div class="points-row">
         <div class="points-today" id="pointsToday"></div>
-        <button class="recharge-btn" onclick="showRechargeModal()">+ 充值</button>
+        <button class="recharge-btn" onclick="showRechargeModal()" data-i18n="points.recharge">+ 充值</button>
       </div>
     </div>
     <div class="platform-status" id="platformStatus">
-      <div class="ps-title">平台连接</div>
+      <div class="ps-title" data-i18n="platforms.title">平台连接</div>
       <div id="platformList"></div>
     </div>
     <div class="reminder-list" id="reminderList">
-      <div class="empty-state">加载中...</div>
+      <div class="empty-state" data-i18n="reminders.loading">加载中...</div>
     </div>
   </aside>
   <main class="main">
     <div class="chat-header">
-      <div class="status"><span class="dot"></span>在线</div>
+      <div class="status"><span class="dot"></span><span data-i18n="chat.online">在线</span></div>
       <div>
-        <button onclick="resetSession()">新会话</button>
-        <button class="danger" onclick="logout()">退出登录</button>
+        <button onclick="resetSession()" data-i18n="chat.newSession">新会话</button>
+        <button class="danger" onclick="logout()" data-i18n="chat.logout">退出登录</button>
       </div>
     </div>
     <div class="messages" id="messages">
       <div class="msg assistant">
         <div class="msg-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="2"/><path d="M12 6V4"/><circle cx="8.5" cy="14" r="1.5"/><circle cx="15.5" cy="14" r="1.5"/><path d="M9 19h6"/></svg></div>
-        <div class="msg-bubble">
+        <div class="msg-bubble" id="welcomeMsg">
           你好！我是提醒助手 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px"><circle cx="8" cy="8" r="7"/><polyline points="8 4 8 8 10.5 9.5"/></svg><br>
           比如你可以说："明天下午3点提醒我开会"、"10分钟后提醒我看邮件"
         </div>
@@ -380,10 +392,10 @@
       <form autocomplete="off" style="display:contents">
         <input type="text" name="_dummy_user" style="display:none" autocomplete="username">
         <input type="password" name="_dummy_pass" style="display:none" autocomplete="current-password">
-        <input type="text" id="userInput" name="_chat_input" placeholder="输入提醒内容..." autofocus autocomplete="off"
+        <input type="text" id="userInput" name="_chat_input" data-i18n-placeholder="chat.placeholder" placeholder="输入提醒内容..." autofocus autocomplete="off"
                onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage()}">
       </form>
-      <button id="sendBtn" onclick="sendMessage()">发送</button>
+      <button id="sendBtn" onclick="sendMessage()" data-i18n="chat.send">发送</button>
     </div>
   </main>
 </div>
@@ -391,11 +403,11 @@
 <!-- ── QR 弹窗 ── -->
 <div class="qr-overlay" id="qrOverlay">
   <div class="qr-modal">
-    <h3 id="qrTitle">连接平台</h3>
+    <h3 id="qrTitle" data-i18n="qr.title">连接平台</h3>
     <p class="qr-sub" id="qrSub"></p>
     <div class="wa-tabs" id="waTabs" style="display:none">
-      <button class="wa-tab active" onclick="switchWaTab('qr')" id="waTabQr">扫码连接</button>
-      <button class="wa-tab" onclick="switchWaTab('pairing')" id="waTabPairing">配对码连接</button>
+      <button class="wa-tab active" onclick="switchWaTab('qr')" id="waTabQr" data-i18n="qr.scan">扫码连接</button>
+      <button class="wa-tab" onclick="switchWaTab('pairing')" id="waTabPairing" data-i18n="qr.pairing">配对码连接</button>
     </div>
     <div class="wa-tab-panel active" id="waPanelQr">
       <div class="qr-img" id="qrContainer"></div>
@@ -413,50 +425,265 @@
             <option value="81">🇯🇵 +81</option>
             <option value="65">🇸🇬 +65</option>
             <option value="60">🇲🇾 +60</option>
-            <option value="other">其他</option>
+            <option value="other" data-i18n="qr.countryOther">其他</option>
           </select>
-          <input type="tel" id="waPhone" placeholder="手机号"
+          <input type="tel" id="waPhone" data-i18n-placeholder="qr.phone" placeholder="手机号"
             style="flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;text-align:center">
         </div>
-        <button onclick="requestPairing()" id="pairingBtn"
+        <button onclick="requestPairing()" id="pairingBtn" data-i18n="qr.getPairing"
           style="width:100%;margin-top:8px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer">
           获取配对码
         </button>
         <div id="pairingError" style="color:var(--red);font-size:11px;margin-top:6px;min-height:16px"></div>
       </div>
     </div>
-    <div class="qr-success-text" id="qrSuccess"><svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px"><path d="M20 6L9 17l-5-5"/></svg> 连接成功！</div>
-    <button class="qr-close" onclick="closeQrModal()">关闭</button>
+    <div class="qr-success-text" id="qrSuccess"><svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="qr.success">连接成功！</span></div>
+    <button class="qr-close" onclick="closeQrModal()" data-i18n="qr.close">关闭</button>
   </div>
 </div>
 
 <!-- ── 充值 Modal ── -->
 <div class="qr-overlay" id="rechargeOverlay">
   <div class="qr-modal">
-    <h3>充值积分</h3>
-    <p class="qr-sub" id="rechargeSub">选择支付方式和积分包</p>
+    <h3 data-i18n="recharge.title">充值积分</h3>
+    <p class="qr-sub" id="rechargeSub" data-i18n="recharge.sub">选择支付方式和积分包</p>
     <div class="method-tabs">
-      <button class="method-tab active" onclick="selectMethod('wechat', this)">微信支付</button>
-      <button class="method-tab" onclick="selectMethod('alipay', this)">支付宝</button>
+      <button class="method-tab active" onclick="selectMethod('wechat', this)" data-i18n="recharge.wechatPay">微信支付</button>
+      <button class="method-tab" onclick="selectMethod('alipay', this)" data-i18n="recharge.alipay">支付宝</button>
     </div>
     <div class="pkg-grid" id="pkgGrid"></div>
-    <button class="recharge-confirm" id="rechargeConfirm" disabled onclick="createRechargeOrder()">请选择积分包</button>
+    <button class="recharge-confirm" id="rechargeConfirm" disabled onclick="createRechargeOrder()" data-i18n="recharge.selectPackage">请选择积分包</button>
     <div class="recharge-qr" id="rechargeQr">
       <img id="rechargeQrImg" src="" alt="收款码">
     </div>
     <div class="recharge-info" id="rechargeInfo">
-      <p>请打开<span id="rechargeMethodLabel">微信</span>扫一扫</p>
+      <p><span data-i18n="recharge.openApp">请打开</span><span id="rechargeMethodLabel">微信</span><span data-i18n="recharge.scan">扫一扫</span></p>
       <p style="font-weight:700;color:#f59e0b;margin-top:4px">¥<span id="rechargeAmount">0</span></p>
-      <p style="font-size:11px;color:var(--text2);margin-top:4px">支付完成后积分自动到账</p>
+      <p style="font-size:11px;color:var(--text2);margin-top:4px" data-i18n="recharge.autoCredit">支付完成后积分自动到账</p>
     </div>
-    <div class="qr-success-text" id="rechargeSuccess" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px"><path d="M20 6L9 17l-5-5"/></svg> <span id="rechargeSuccessMsg">充值成功！积分已到账</span></div>
-    <button class="qr-close" onclick="closeRechargeModal()">关闭</button>
+    <div class="qr-success-text" id="rechargeSuccess" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px"><path d="M20 6L9 17l-5-5"/></svg> <span id="rechargeSuccessMsg"></span></div>
+    <button class="qr-close" onclick="closeRechargeModal()" data-i18n="qr.close">关闭</button>
   </div>
 </div>
 
 <script>
+// ═══════════════════════════════════════════
+//  I18N
+// ═══════════════════════════════════════════
+var I18N = {
+  zh: {
+    lang: { switch: 'EN' },
+    auth: {
+      login: '登录', register: '注册', email: '邮箱',
+      password: '密码（至少6位）', fillFields: '请填写邮箱和密码',
+      wait: '请稍候...', fail: '操作失败', networkError: '网络错误，请重试'
+    },
+    points: { label: '积分', recharge: '+ 充值' },
+    platforms: { title: '平台连接', tapToConnect: '点击扫码连接', connect: '连接' },
+    persona: { friend: '🤞 贴心朋友', tao: '🌸 小桃', zhou: '☕ 老周' },
+    chat: {
+      online: '在线', newSession: '新会话', logout: '退出登录',
+      welcome1: '你好！我是提醒助手',
+      welcome2: '比如你可以说："明天下午3点提醒我开会"、"10分钟后提醒我看邮件"',
+      placeholder: '输入提醒内容...', send: '发送',
+      error: '抱歉，连接失败，请重试。',
+      reset: '会话已重置，有什么我可以帮你的？',
+      notification: '提醒时间到：'
+    },
+    reminders: {
+      empty: '暂无提醒', emptyHint: '在聊天框中创建一个吧',
+      pending: '待触发', done: '已完成', sent: '已触发', cancelled: '已取消',
+      loading: '加载中...', loadError: '加载失败'
+    },
+    qr: {
+      title: '连接平台', scan: '扫码连接', pairing: '配对码连接',
+      phone: '手机号', getPairing: '获取配对码', success: '连接成功！',
+      close: '关闭', connected: '已连接', loading: '加载中...',
+      adapterDown: '适配器未启动', adapterHint: '请先启动 adapter 后再试',
+      generating: '正在生成二维码...', generatingHint: '请稍后，二维码生成中',
+      requestFail: '请求失败，请确认 adapter 已启动',
+      connectedPlatform: '连接 {platform}',
+      scanHintWechat: '请使用微信扫描二维码',
+      scanHintWa: '请使用 WhatsApp 扫描二维码（设置 → 已关联设备）',
+      scanHintFeishu: '请使用飞书 App 扫描二维码创建 Bot',
+      pairHintWa1: '在 WhatsApp 中输入此配对码',
+      pairHintWa2: 'WhatsApp → 设置 → 已关联设备 → 使用电话号码关联',
+      pairHintFeishu: '将下方配对码发送给机器人即可完成绑定',
+      pairStepsFeishu: '1. 打开飞书，搜索 <b>POKEE</b><br>2. 将上方配对码发送给机器人<br>3. 页面自动检测连接状态',
+      qrFail: '二维码生成失败，请刷新重试', qrLoadFail: '二维码加载失败',
+      enterPhone: '请输入手机号', enterCountryCode: '请手动输入国家码（如 +8613800138000）',
+      requesting: '请求中...', phoneNetworkError: '网络错误',
+      countryOther: '其他'
+    },
+    recharge: {
+      title: '充值积分', sub: '选择支付方式和积分包',
+      wechatPay: '微信支付', alipay: '支付宝',
+      selectPackage: '请选择积分包', scanPay: '请扫码支付',
+      openApp: '请打开', scan: '扫一扫',
+      autoCredit: '支付完成后积分自动到账',
+      success: '充值成功！{points} 积分已到账',
+      confirmPrefix: '确认充值 ¥', creating: '创建订单中...',
+      pkg: { rumen: '入门', huasuan: '划算', chaozhi: '超值', zhizun: '至尊' }
+    }
+  },
+  en: {
+    lang: { switch: '中文' },
+    auth: {
+      login: 'Login', register: 'Register', email: 'Email',
+      password: 'Password (min 6 chars)',
+      fillFields: 'Please fill in email and password',
+      wait: 'Please wait...', fail: 'Operation failed',
+      networkError: 'Network error, please retry'
+    },
+    points: { label: 'Points', recharge: '+ Top Up' },
+    platforms: { title: 'Platforms', tapToConnect: 'Tap to connect', connect: 'Connect' },
+    persona: { friend: '🤞 Buddy', tao: '🌸 Xiao Tao', zhou: '☕ Lao Zhou' },
+    chat: {
+      online: 'Online', newSession: 'New Chat', logout: 'Logout',
+      welcome1: 'Hello! I\'m your reminder assistant',
+      welcome2: 'Try saying: "Remind me to join the meeting at 3pm tomorrow", "Remind me to check email in 10 minutes"',
+      placeholder: 'Type a reminder...', send: 'Send',
+      error: 'Sorry, connection failed. Please retry.',
+      reset: 'Session reset. How can I help you?',
+      notification: 'Reminder: '
+    },
+    reminders: {
+      empty: 'No reminders', emptyHint: 'Create one in the chat',
+      pending: 'Pending', done: 'Completed', sent: 'Sent', cancelled: 'Cancelled',
+      loading: 'Loading...', loadError: 'Failed to load'
+    },
+    qr: {
+      title: 'Connect Platform', scan: 'Scan QR', pairing: 'Pairing Code',
+      phone: 'Phone number', getPairing: 'Get Pairing Code',
+      success: 'Connected!', close: 'Close', connected: 'Connected',
+      loading: 'Loading...', adapterDown: 'Adapter not running',
+      adapterHint: 'Please start the adapter first',
+      generating: 'Generating QR code...',
+      generatingHint: 'Please wait, generating QR code',
+      requestFail: 'Request failed. Please check if adapter is running',
+      connectedPlatform: 'Connect {platform}',
+      scanHintWechat: 'Scan with WeChat',
+      scanHintWa: 'Scan with WhatsApp (Settings → Linked Devices)',
+      scanHintFeishu: 'Scan with Feishu App to create Bot',
+      pairHintWa1: 'Enter this code in WhatsApp',
+      pairHintWa2: 'WhatsApp → Settings → Linked Devices → Link with phone number',
+      pairHintFeishu: 'Send the pairing code below to the bot to complete binding',
+      pairStepsFeishu: '1. Open Feishu, search <b>POKEE</b><br>2. Send the code above to the bot<br>3. This page auto-detects connection',
+      qrFail: 'QR code generation failed, please refresh',
+      qrLoadFail: 'QR code failed to load',
+      enterPhone: 'Please enter phone number',
+      enterCountryCode: 'Please include country code (e.g. +8613800138000)',
+      requesting: 'Requesting...', phoneNetworkError: 'Network error',
+      countryOther: 'Other'
+    },
+    recharge: {
+      title: 'Top Up Points', sub: 'Select payment method and package',
+      wechatPay: 'WeChat Pay', alipay: 'Alipay',
+      selectPackage: 'Select a package', scanPay: 'Scan to Pay',
+      openApp: 'Open', scan: 'to scan',
+      autoCredit: 'Points will be credited automatically after payment',
+      success: 'Top up successful! {points} points credited',
+      confirmPrefix: 'Confirm ¥', creating: 'Creating order...',
+      pkg: { rumen: 'Starter', huasuan: 'Value', chaozhi: 'Bonus', zhizun: 'Premium' }
+    }
+  }
+};
+
+var _lang = localStorage.getItem('rm_lang') || 'zh';
+
+function t(key) {
+  var keys = key.split('.');
+  var val = I18N[_lang];
+  for (var i = 0; i < keys.length; i++) {
+    if (!val) return key;
+    val = val[keys[i]];
+  }
+  return val || key;
+}
+
+function tf(key, replacements) {
+  var s = t(key);
+  if (replacements) {
+    for (var k in replacements) {
+      s = s.replace('{' + k + '}', replacements[k]);
+    }
+  }
+  return s;
+}
+
+function applyLanguage() {
+  // Static data-i18n elements
+  var els = document.querySelectorAll('[data-i18n]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    var key = el.getAttribute('data-i18n');
+    if (key === 'lang.switch') {
+      el.textContent = t('lang.switch');
+      continue;
+    }
+    // Skip persona select options (handled separately)
+    if (el.tagName === 'OPTION' && el.closest('#personaSelect')) continue;
+    // For buttons/inputs that only have text, update textContent
+    if (el.children.length === 0) {
+      el.textContent = t(key);
+    }
+  }
+  // data-i18n-placeholder elements
+  var phEls = document.querySelectorAll('[data-i18n-placeholder]');
+  for (var j = 0; j < phEls.length; j++) {
+    phEls[j].placeholder = t(phEls[j].getAttribute('data-i18n-placeholder'));
+  }
+  // Persona select options
+  var personaSel = document.getElementById('personaSelect');
+  if (personaSel) {
+    personaSel.options[0].textContent = t('persona.friend');
+    personaSel.options[1].textContent = t('persona.tao');
+    personaSel.options[2].textContent = t('persona.zhou');
+  }
+  // Auth button text depends on mode
+  updateAuthBtnText();
+  // Welcome message
+  updateWelcomeMsg();
+  // Points card static text
+  var pointsLabel = document.querySelector('.points-label');
+  if (pointsLabel) pointsLabel.textContent = t('points.label');
+  var rechargeBtn = document.querySelector('.recharge-btn');
+  if (rechargeBtn) rechargeBtn.textContent = t('points.recharge');
+  // Document lang attr
+  document.documentElement.lang = _lang === 'zh' ? 'zh-CN' : 'en';
+  // Only refresh dynamic content if app is active
+  if (document.getElementById('app').classList.contains('active')) {
+    updateWelcomeMsg();
+    loadReminders();
+    loadPlatformStatus();
+  }
+}
+
+function toggleLanguage() {
+  _lang = _lang === 'zh' ? 'en' : 'zh';
+  localStorage.setItem('rm_lang', _lang);
+  applyLanguage();
+  // 同步到后端，agent 回复也会跟随语言
+  if (token && token !== 'skip') {
+    fetch('/api/settings/lang', { method: 'PUT', headers: apiHeaders(), body: JSON.stringify({ lang: _lang }) }).catch(function(){});
+  }
+}
+
+function updateAuthBtnText() {
+  var btn = document.getElementById('authBtn');
+  if (btn && !btn.disabled) {
+    btn.textContent = t('auth.' + authMode);
+  }
+}
+
+function updateWelcomeMsg() {
+  var el = document.getElementById('welcomeMsg');
+  if (!el) return;
+  el.innerHTML = t('chat.welcome1') + ' ' + ICONS.clock + '<br>' + t('chat.welcome2');
+}
+
 // ── SVG Icons ──
-const ICONS = {
+var ICONS = {
   bot: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="2"/><path d="M12 6V4"/><circle cx="8.5" cy="14" r="1.5"/><circle cx="15.5" cy="14" r="1.5"/><path d="M9 19h6"/></svg>',
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>',
   clock: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px"><circle cx="8" cy="8" r="7"/><polyline points="8 4 8 8 10.5 9.5"/></svg>',
@@ -465,13 +692,14 @@ const ICONS = {
 };
 
 // ── State ──
-let token = localStorage.getItem('rm_token') || '';
-let authMode = 'login';
-let isLoading = false;
-let _sse = null;
-let _audioCtx = null;
+var token = localStorage.getItem('rm_token') || '';
+var authMode = 'login';
+var isLoading = false;
+var _sse = null;
+var _audioCtx = null;
 
 // ── Init ──
+applyLanguage();
 if (token) {
   showApp();
 } else {
@@ -483,9 +711,9 @@ function resetAuthForm() {
   document.getElementById('authEmail').value = '';
   document.getElementById('authPassword').value = '';
   document.getElementById('authError').textContent = '';
-  const btn = document.getElementById('authBtn');
+  var btn = document.getElementById('authBtn');
   btn.disabled = false;
-  btn.textContent = authMode === 'login' ? '登录' : '注册';
+  btn.textContent = t('auth.' + authMode);
 }
 
 function switchTab(mode) {
@@ -496,30 +724,30 @@ function switchTab(mode) {
 }
 
 async function doAuth() {
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const errEl = document.getElementById('authError');
-  const btn = document.getElementById('authBtn');
-  if (btn.disabled) return;  // 防重复点击
+  var email = document.getElementById('authEmail').value.trim();
+  var password = document.getElementById('authPassword').value;
+  var errEl = document.getElementById('authError');
+  var btn = document.getElementById('authBtn');
+  if (btn.disabled) return;
   errEl.textContent = '';
-  if (!email || !password) { errEl.textContent = '请填写邮箱和密码'; return; }
+  if (!email || !password) { errEl.textContent = t('auth.fillFields'); return; }
   btn.disabled = true;
-  btn.textContent = '请稍候...';
+  btn.textContent = t('auth.wait');
   try {
-    const resp = await fetch('/api/' + authMode, {
+    var resp = await fetch('/api/' + authMode, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email, password: password }),
     });
-    const data = await resp.json();
-    if (!resp.ok) { errEl.textContent = data.detail || '操作失败'; btn.disabled = false; btn.textContent = authMode === 'login' ? '登录' : '注册'; return; }
+    var data = await resp.json();
+    if (!resp.ok) { errEl.textContent = data.detail || t('auth.fail'); btn.disabled = false; btn.textContent = t('auth.' + authMode); return; }
     token = data.token;
     localStorage.setItem('rm_token', token);
     showApp();
   } catch (e) {
-    errEl.textContent = '网络错误，请重试';
+    errEl.textContent = t('auth.networkError');
     btn.disabled = false;
-    btn.textContent = authMode === 'login' ? '登录' : '注册';
+    btn.textContent = t('auth.' + authMode);
   }
 }
 
@@ -542,9 +770,9 @@ function logout() {
 function showApp() {
   document.getElementById('authPage').style.display = 'none';
   document.getElementById('app').classList.add('active');
-  // 清空聊天记录，显示欢迎消息
+  updateWelcomeMsg();
   document.getElementById('messages').innerHTML =
-    '<div class="msg assistant"><div class="msg-avatar">' + ICONS.bot + '</div><div class="msg-bubble">你好！我是提醒助手 ' + ICONS.clock + '<br>比如你可以说："明天下午3点提醒我开会"、"10分钟后提醒我看邮件"</div></div>';
+    '<div class="msg assistant"><div class="msg-avatar">' + ICONS.bot + '</div><div class="msg-bubble" id="welcomeMsg">' + t('chat.welcome1') + ' ' + ICONS.clock + '<br>' + t('chat.welcome2') + '</div></div>';
   requestNotificationPermission();
   connectSSE();
   loadReminders();
@@ -552,13 +780,13 @@ function showApp() {
   loadPersona();
   loadPoints();
   document.getElementById('userInput').focus();
-  window.addEventListener('beforeunload', () => {
+  window.addEventListener('beforeunload', function() {
     if (_sse) { _sse.close(); _sse = null; }
   });
 }
 
 function apiHeaders() {
-  const h = { 'Content-Type': 'application/json' };
+  var h = { 'Content-Type': 'application/json' };
   if (token && token !== 'skip') h['Authorization'] = 'Bearer ' + token;
   return h;
 }
@@ -573,72 +801,72 @@ function sseTokenParam() {
 }
 
 async function sendMessage() {
-  const input = document.getElementById('userInput');
-  const btn = document.getElementById('sendBtn');
-  const text = input.value.trim();
+  var input = document.getElementById('userInput');
+  var btn = document.getElementById('sendBtn');
+  var text = input.value.trim();
   if (!text || isLoading) return;
   input.value = ''; isLoading = true; btn.disabled = true;
   appendMessage('user', text);
   showTyping();
   try {
-    const resp = await fetch('/api/chat', {
+    var resp = await fetch('/api/chat', {
       method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ message: text }),
     });
     if (resp.status === 401) { removeTyping(); logout(); return; }
-    const data = await resp.json();
+    var data = await resp.json();
     removeTyping();
     appendMessage('assistant', data.reply);
     loadPoints();
   } catch (e) {
     removeTyping();
-    appendMessage('assistant', '抱歉，连接失败，请重试。');
+    appendMessage('assistant', t('chat.error'));
   }
   isLoading = false; btn.disabled = false; input.focus();
   loadReminders();
 }
 
 function appendMessage(role, content) {
-  const msgs = document.getElementById('messages');
-  const div = document.createElement('div');
+  var msgs = document.getElementById('messages');
+  var div = document.createElement('div');
   div.className = 'msg ' + role;
   var avatarDiv = '';
   if (role === 'user') avatarDiv = '<div class="msg-avatar">' + ICONS.user + '</div>';
   else if (role === 'assistant') avatarDiv = '<div class="msg-avatar">' + ICONS.bot + '</div>';
-  div.innerHTML = avatarDiv + '<div class="msg-bubble">' + esc(content) + '</div>';
+  var bubbleHtml = role === 'system' ? content : esc(content);
+  div.innerHTML = avatarDiv + '<div class="msg-bubble">' + bubbleHtml + '</div>';
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
 
 function showTyping() {
-  const msgs = document.getElementById('messages');
-  const div = document.createElement('div');
+  var msgs = document.getElementById('messages');
+  var div = document.createElement('div');
   div.className = 'typing'; div.id = 'typing-indicator';
   div.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
   msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
 }
-function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+function removeTyping() { var el = document.getElementById('typing-indicator'); if (el) el.remove(); }
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
 
 // ── SSE ──
 function connectSSE() {
   if (_sse) { _sse.close(); _sse = null; }
-  if (token === 'skip') return; // 跳过登录时不连 SSE
-  const es = new EventSource('/api/sse?token=' + token);
+  if (token === 'skip') return;
+  var es = new EventSource('/api/sse?token=' + token);
   _sse = es;
-  es.onmessage = (e) => {
+  es.onmessage = function(e) {
     if (!e.data) return;
     try {
-      const data = JSON.parse(e.data);
+      var data = JSON.parse(e.data);
       if (data.type === 'notification') {
         playDing();
-        appendMessage('system', ICONS.clock + ' 提醒时间到：' + data.task);
+        appendMessage('system', ICONS.clock + ' ' + t('chat.notification') + data.task);
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('POKEE', { body: data.task });
         }
         loadReminders();
       } else if (data.type === 'platform_connected') {
-        // 关闭当前 QR 弹窗并刷新平台状态
         if (_qrPollTimer) {
           clearInterval(_qrPollTimer);
           _qrPollTimer = null;
@@ -648,7 +876,7 @@ function connectSSE() {
       }
     } catch (_) {}
   };
-  es.onerror = () => { _sse = null; setTimeout(connectSSE, 3000); };
+  es.onerror = function() { _sse = null; setTimeout(connectSSE, 3000); };
 }
 
 // ── Audio ──
@@ -658,8 +886,9 @@ function getAudioCtx() {
 }
 function playDing() {
   try {
-    const ctx = getAudioCtx();
-    const [gain, osc] = [ctx.createGain(), ctx.createOscillator()];
+    var ctx = getAudioCtx();
+    var gain = ctx.createGain();
+    var osc = ctx.createOscillator();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = 'sine';
     osc.frequency.setValueAtTime(880, ctx.currentTime);
@@ -669,56 +898,56 @@ function playDing() {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
   } catch (_) {}
 }
-document.addEventListener('click', () => { if (_audioCtx?.state === 'suspended') _audioCtx.resume(); }, {once: true});
-document.addEventListener('keydown', () => { if (_audioCtx?.state === 'suspended') _audioCtx.resume(); }, {once: true});
+document.addEventListener('click', function() { if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume(); }, {once: true});
+document.addEventListener('keydown', function() { if (_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume(); }, {once: true});
 
 // ── Reminders ──
 async function loadReminders() {
   if (token === 'skip') return;
   try {
-    const resp = await fetch('/reminders?_=' + Date.now(), { headers: apiHeaders() });
+    var resp = await fetch('/reminders?_=' + Date.now(), { headers: apiHeaders() });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     renderReminderList(await resp.json());
   } catch (e) {
     document.getElementById('reminderList').innerHTML =
-      '<div class="empty-state">加载失败</div>';
+      '<div class="empty-state">' + t('reminders.loadError') + '</div>';
   }
 }
 function renderReminderList(reminders) {
-  const container = document.getElementById('reminderList');
+  var container = document.getElementById('reminderList');
   if (!reminders || reminders.length === 0) {
-    container.innerHTML = '<div class="empty-state">暂无提醒<br>在聊天框中创建一个吧</div>';
+    container.innerHTML = '<div class="empty-state">' + t('reminders.empty') + '<br>' + t('reminders.emptyHint') + '</div>';
     return;
   }
-  const pending = reminders.filter(r => r.status === 'pending');
-  const done = reminders.filter(r => r.status !== 'pending');
-  let html = '';
+  var pending = reminders.filter(function(r) { return r.status === 'pending'; });
+  var done = reminders.filter(function(r) { return r.status !== 'pending'; });
+  var html = '';
   if (pending.length > 0) {
-    html += '<div class="section-title">' + ICONS.clock + ' 待触发 (' + pending.length + ')</div>';
-    pending.forEach(r => {
+    html += '<div class="section-title">' + ICONS.clock + ' ' + t('reminders.pending') + ' (' + pending.length + ')</div>';
+    pending.forEach(function(r) {
       html += '<div class="reminder-card"><div class="task">' + esc(r.task) + '</div>' +
         '<div class="meta"><span>' + ICONS.clock + ' ' + fmt(r.run_at) + '</span><span>#' + r.id + '</span></div></div>';
     });
   }
   if (done.length > 0) {
-    html += '<div class="section-title">' + ICONS.check + ' 已完成 (' + done.length + ')</div>';
-    done.forEach(r => {
-      html += `<div class="reminder-card ${r.status}"><div class="task">${esc(r.task)}</div>
-        <div class="meta"><span>${r.status==='sent'?'已触发':'已取消'}</span><span>#${r.id}</span></div></div>`;
+    html += '<div class="section-title">' + ICONS.check + ' ' + t('reminders.done') + ' (' + done.length + ')</div>';
+    done.forEach(function(r) {
+      html += '<div class="reminder-card ' + r.status + '"><div class="task">' + esc(r.task) + '</div>' +
+        '<div class="meta"><span>' + (r.status === 'sent' ? t('reminders.sent') : t('reminders.cancelled')) + '</span><span>#' + r.id + '</span></div></div>';
     });
   }
   container.innerHTML = html;
 }
 function fmt(iso) {
   if (!iso) return '';
-  const d = new Date(iso), p = n => String(n).padStart(2, '0');
-  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  var d = new Date(iso), p = function(n) { return String(n).padStart(2, '0'); };
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
 function resetSession() {
   fetch('/api/reset', { method: 'POST', headers: apiHeaders() });
   document.getElementById('messages').innerHTML = '';
-  appendMessage('assistant', '会话已重置，有什么我可以帮你的？');
+  appendMessage('assistant', t('chat.reset'));
   loadReminders();
 }
 
@@ -726,11 +955,16 @@ function resetSession() {
 async function loadPersona() {
   if (token === 'skip') { document.getElementById('personaSwitch').style.display = 'none'; return; }
   try {
-    const resp = await fetch('/api/settings/persona', { headers: authHeaders() });
+    var resp = await fetch('/api/settings/persona', { headers: authHeaders() });
     if (!resp.ok) return;
-    const data = await resp.json();
+    var data = await resp.json();
     document.getElementById('personaSelect').value = data.key;
     document.getElementById('personaSwitch').style.display = 'flex';
+    // Update option texts for current language
+    var sel = document.getElementById('personaSelect');
+    sel.options[0].textContent = t('persona.friend');
+    sel.options[1].textContent = t('persona.tao');
+    sel.options[2].textContent = t('persona.zhou');
   } catch (_) {}
 }
 
@@ -740,7 +974,6 @@ async function switchPersona(key) {
       method: 'PUT', headers: apiHeaders(),
       body: JSON.stringify({ persona: key }),
     });
-    // 切换人设后重置会话，让新 prompt 生效
     resetSession();
   } catch (_) {}
 }
@@ -755,7 +988,7 @@ async function loadPoints() {
     document.getElementById('pointsBalance').textContent = data.balance;
     document.getElementById('pointsCard').style.display = 'block';
     if (data.today_earned > 0) {
-      document.getElementById('pointsToday').textContent = '今日 +' + data.today_earned;
+      document.getElementById('pointsToday').textContent = (_lang === 'zh' ? '今日 +' : 'Today +') + data.today_earned;
       document.getElementById('pointsCard').classList.add('credited');
     } else {
       document.getElementById('pointsToday').textContent = '';
@@ -764,50 +997,61 @@ async function loadPoints() {
   } catch (_) {}
 }
 
+// ── Platform status ──
+var PLATFORM_NAMES = {
+  wechat: function() { return _lang === 'zh' ? '微信' : 'WeChat'; },
+  whatsapp: function() { return 'WhatsApp'; },
+  feishu: function() { return _lang === 'zh' ? '飞书' : 'Feishu'; },
+  linkedin: function() { return 'LinkedIn'; }
+};
+
 async function loadPlatformStatus() {
   if (token === 'skip') return;
   try {
-    const resp = await fetch('/api/platforms/status', { headers: authHeaders() });
+    var resp = await fetch('/api/platforms/status', { headers: authHeaders() });
     if (!resp.ok) return;
-    const platforms = await resp.json();
-    const container = document.getElementById('platformList');
-    let html = '';
-    for (const [key, p] of Object.entries(platforms)) {
-      const cls = p.connected ? 'online' : '';
-      const hint = p.connected ? (p.how || '') : '点击扫码连接';
-      const btnClass = p.has_qr ? ' show' : '';
-      html += `<div class="platform-row">
-        <span class="platform-dot ${cls}"></span>
-        <span class="ps-label">${p.label}</span>
-        <span class="ps-hint" style="display:inline">${hint}</span>
-        <span class="ps-connect${btnClass}" onclick="event.stopPropagation();showQrModal('${key}')">连接</span>
-      </div>`;
+    var platforms = await resp.json();
+    var container = document.getElementById('platformList');
+    var html = '';
+    for (var key in platforms) {
+      var p = platforms[key];
+      var cls = p.connected ? 'online' : '';
+      var hintFn = PLATFORM_HINTS[key];
+      var hint = p.connected ? (hintFn ? hintFn() : (p.how || '')) : t('platforms.tapToConnect');
+      var btnClass = p.has_qr ? ' show' : '';
+      var nameFn = PLATFORM_NAMES[key];
+      var label = nameFn ? nameFn() : p.label;
+      html += '<div class="platform-row">' +
+        '<span class="platform-dot ' + cls + '"></span>' +
+        '<span class="ps-label">' + label + '</span>' +
+        '<span class="ps-hint" style="display:inline">' + hint + '</span>' +
+        '<span class="ps-connect' + btnClass + '" onclick="event.stopPropagation();showQrModal(\'' + key + '\')">' + t('platforms.connect') + '</span>' +
+        '</div>';
     }
     container.innerHTML = html;
   } catch (_) {}
-  // 每 30 秒刷新
   setTimeout(loadPlatformStatus, 30000);
 }
 
 // ── QR Modal ──
-let _qrPollTimer = null;
-let _qrLibReady = false;
-let _qrLibLoading = false;
-let _qrPlatform = '';
-let _showingPairingCode = false;
+var _qrPollTimer = null;
+var _qrLibReady = false;
+var _qrLibLoading = false;
+var _qrPlatform = '';
+var _showingPairingCode = false;
 
 function loadQrLib(cb) {
   if (_qrLibReady) { cb(); return; }
-  if (_qrLibLoading) { setTimeout(() => loadQrLib(cb), 200); return; }
+  if (_qrLibLoading) { setTimeout(function() { loadQrLib(cb); }, 200); return; }
   _qrLibLoading = true;
-  const s = document.createElement('script');
+  var s = document.createElement('script');
   s.src = 'https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-  s.onload = () => { _qrLibReady = true; cb(); };
-  s.onerror = () => {
-    const s2 = document.createElement('script');
+  s.onload = function() { _qrLibReady = true; cb(); };
+  s.onerror = function() {
+    var s2 = document.createElement('script');
     s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    s2.onload = () => { _qrLibReady = true; cb(); };
-    s2.onerror = () => { _qrLibReady = true; cb(); };
+    s2.onload = function() { _qrLibReady = true; cb(); };
+    s2.onerror = function() { _qrLibReady = true; cb(); };
     document.head.appendChild(s2);
   };
   document.head.appendChild(s);
@@ -831,28 +1075,30 @@ function switchWaTab(tab) {
   }
 }
 
-async function showQrModal(platform) {
-  const overlay = document.getElementById('qrOverlay');
-  const title = document.getElementById('qrTitle');
-  const sub = document.getElementById('qrSub');
-  const container = document.getElementById('qrContainer');
-  const success = document.getElementById('qrSuccess');
+var PLATFORM_HINTS = {
+  wechat: function() { return _lang === 'zh' ? '在微信中给 Bot 发消息即可使用' : 'Message the bot on WeChat to use'; },
+  whatsapp: function() { return _lang === 'zh' ? '在 WhatsApp 中给自己发消息即可使用' : 'Message yourself on WhatsApp to use'; },
+  feishu: function() { return _lang === 'zh' ? '在飞书中搜索 POKEE 即可对话' : 'Search POKEE on Feishu to chat'; }
+};
 
-  const names = { wechat: '微信', whatsapp: 'WhatsApp', feishu: '飞书' };
-  const hints = {
-    wechat: '在微信中给 Bot 发消息即可使用',
-    whatsapp: '在 WhatsApp 中给自己发消息即可使用',
-    feishu: '在飞书中搜索 POKEE 即可对话',
-  };
-  title.textContent = '连接 ' + (names[platform] || platform);
+async function showQrModal(platform) {
+  var overlay = document.getElementById('qrOverlay');
+  var title = document.getElementById('qrTitle');
+  var sub = document.getElementById('qrSub');
+  var container = document.getElementById('qrContainer');
+  var success = document.getElementById('qrSuccess');
+
+  var nameFn = PLATFORM_NAMES[platform];
+  var pname = nameFn ? nameFn() : platform;
+
+  title.textContent = tf('qr.connectedPlatform', { platform: pname });
   success.style.display = 'none';
-  container.innerHTML = '<span style="color:var(--text2);font-size:13px">加载中...</span>';
+  container.innerHTML = '<span style="color:var(--text2);font-size:13px">' + t('qr.loading') + '</span>';
   overlay.classList.add('active');
 
   if (_qrPollTimer) { clearInterval(_qrPollTimer); _qrPollTimer = null; }
   _qrPlatform = platform;
 
-  // WhatsApp: show tabs; other platforms: hide tabs, show QR panel directly
   var waTabs = document.getElementById('waTabs');
   var waPanelQr = document.getElementById('waPanelQr');
   var waPanelPairing = document.getElementById('waPanelPairing');
@@ -867,24 +1113,20 @@ async function showQrModal(platform) {
 
   function renderConnected(data) {
     success.style.display = 'block';
-    success.innerHTML = ICONS.check + ' 已连接';
+    success.innerHTML = ICONS.check + ' ' + t('qr.connected');
     container.innerHTML = '';
-    sub.textContent = hints[platform] || '';
-    if (platform === 'feishu') {
-      sub.textContent = hints[platform] || '';
-    }
+    sub.textContent = (PLATFORM_HINTS[platform] || function(){return'';})() || '';
   }
 
   function renderQr(data) {
     container.innerHTML = '';
     _showingPairingCode = false;
-    // WhatsApp pairing code → render in pairing panel, switch tab
     if (data.pairing_code && platform === 'whatsapp') {
       _showingPairingCode = true;
       var pairingDisplay = document.getElementById('pairingCodeDisplay');
       pairingDisplay.innerHTML =
-        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">在 WhatsApp 中输入此配对码</div>' +
-        '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">WhatsApp → 设置 → 已关联设备 → 使用电话号码关联</div>' +
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">' + t('qr.pairHintWa1') + '</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">' + t('qr.pairHintWa2') + '</div>' +
         '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
         esc(data.pairing_code) + '</div>';
       pairingDisplay.style.display = 'block';
@@ -893,10 +1135,9 @@ async function showQrModal(platform) {
       sub.textContent = '';
       return;
     }
-    // Feishu: show QR from device-code flow, or pairing code (legacy global bot)
     if (platform === 'feishu' && data.qr_url && !data.pairing_code) {
       container.innerHTML = '';
-      sub.textContent = '请使用飞书 App 扫描二维码创建 Bot';
+      sub.textContent = t('qr.scanHintFeishu');
       loadQrLib(function() {
         try {
           new QRCode(container, {
@@ -904,7 +1145,7 @@ async function showQrModal(platform) {
             colorDark: '#e4e6ed', colorLight: '#1a1d27'
           });
         } catch (_) {
-          container.innerHTML = '<span style="color:var(--red);font-size:13px">二维码生成失败，请刷新重试</span>';
+          container.innerHTML = '<span style="color:var(--red);font-size:13px">' + t('qr.qrFail') + '</span>';
         }
       });
       return;
@@ -912,10 +1153,10 @@ async function showQrModal(platform) {
     if (platform === 'feishu' && data.pairing_code) {
       _showingPairingCode = true;
       container.innerHTML = '<div style="text-align:center">' +
-        '<div style="font-size:13px;color:var(--text);margin-bottom:8px">将下方配对码发送给机器人即可完成绑定</div>' +
+        '<div style="font-size:13px;color:var(--text);margin-bottom:8px">' + t('qr.pairHintFeishu') + '</div>' +
         '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
         esc(data.pairing_code) + '</div>' +
-        '<div style="font-size:12px;color:var(--text2);line-height:1.6">1. 打开飞书，搜索 <b>POKEE</b><br>2. 将上方配对码发送给机器人<br>3. 页面自动检测连接状态</div>' +
+        '<div style="font-size:12px;color:var(--text2);line-height:1.6">' + t('qr.pairStepsFeishu') + '</div>' +
         '</div>';
       sub.textContent = '';
       return;
@@ -924,23 +1165,23 @@ async function showQrModal(platform) {
       var img = document.createElement('img');
       img.src = data.qr_image;
       img.style.width = '220px'; img.style.height = '220px';
-      img.onerror = function() { container.innerHTML = '<span style="color:var(--red);font-size:13px">二维码加载失败</span>'; };
+      img.onerror = function() { container.innerHTML = '<span style="color:var(--red);font-size:13px">' + t('qr.qrLoadFail') + '</span>'; };
       container.appendChild(img);
-      if (platform === 'wechat') sub.textContent = '请使用微信扫描二维码';
-      else if (platform === 'whatsapp') sub.textContent = '请使用 WhatsApp 扫描二维码（设置 → 已关联设备）';
+      if (platform === 'wechat') sub.textContent = t('qr.scanHintWechat');
+      else if (platform === 'whatsapp') sub.textContent = t('qr.scanHintWa');
       return;
     }
     var qrText = data.qr || data.qr_url || data.qr_data || '';
-    if (!qrText) { container.innerHTML = '<span style="color:var(--text2);font-size:13px">正在生成二维码...</span>'; return; }
+    if (!qrText) { container.innerHTML = '<span style="color:var(--text2);font-size:13px">' + t('qr.generating') + '</span>'; return; }
     if (platform === 'wechat' && data.qr_url) {
-      sub.textContent = '请使用微信扫描二维码';
+      sub.textContent = t('qr.scanHintWechat');
     } else if (platform === 'whatsapp') {
-      sub.textContent = '请使用 WhatsApp 扫描二维码（设置 → 已关联设备）';
+      sub.textContent = t('qr.scanHintWa');
     }
     loadQrLib(function() {
       try { new QRCode(container, { text: qrText, width: 220, height: 220,
         colorDark: '#e4e6ed', colorLight: '#1a1d27' }); } catch (_) {
-        container.innerHTML = '<span style="color:var(--red);font-size:13px">二维码生成失败，请刷新重试</span>';
+        container.innerHTML = '<span style="color:var(--red);font-size:13px">' + t('qr.qrFail') + '</span>';
       }
     });
   }
@@ -962,7 +1203,6 @@ async function showQrModal(platform) {
           renderQr(d);
           return;
         }
-        // Don't overwrite a displayed pairing code with QR
         if (_showingPairingCode) return;
         var hasQrNow = d.qr_image || (platform === 'wechat' && d.qr_url) || d.qr || d.qr_data;
         var showingQr = container.querySelector('img') || container.querySelector('canvas');
@@ -978,18 +1218,17 @@ async function showQrModal(platform) {
     if (data.connected) { renderConnected(data); return; }
 
     if (data.error) {
-      container.innerHTML = '<span style="color:var(--red);font-size:13px">适配器未启动</span>';
-      sub.textContent = '请先启动 adapter 后再试';
+      container.innerHTML = '<span style="color:var(--red);font-size:13px">' + t('qr.adapterDown') + '</span>';
+      sub.textContent = t('qr.adapterHint');
       return;
     }
 
-    // WhatsApp: show phone input for pairing code
     if (platform === 'whatsapp') {
       document.getElementById('pairingInput').style.display = 'block';
       document.getElementById('waPhone').value = '';
       document.getElementById('pairingError').textContent = '';
       document.getElementById('pairingBtn').disabled = false;
-      document.getElementById('pairingBtn').textContent = '获取配对码';
+      document.getElementById('pairingBtn').textContent = t('qr.getPairing');
     } else {
       document.getElementById('pairingInput').style.display = 'none';
     }
@@ -1008,13 +1247,13 @@ async function showQrModal(platform) {
         renderQr(data);
         startPoll();
       } else {
-        container.innerHTML = '<span style="color:var(--text2);font-size:13px">正在生成二维码...</span>';
-        sub.textContent = '请稍后，二维码生成中';
+        container.innerHTML = '<span style="color:var(--text2);font-size:13px">' + t('qr.generating') + '</span>';
+        sub.textContent = t('qr.generatingHint');
         startPoll();
       }
     }
   } catch (_) {
-    container.innerHTML = '<span style="color:var(--red);font-size:13px">请求失败，请确认 adapter 已启动</span>';
+    container.innerHTML = '<span style="color:var(--red);font-size:13px">' + t('qr.requestFail') + '</span>';
     sub.textContent = '';
   }
 }
@@ -1033,35 +1272,35 @@ async function requestPairing() {
   var phone = document.getElementById('waPhone').value.trim();
   var errEl = document.getElementById('pairingError');
   var btn = document.getElementById('pairingBtn');
-  if (!phone) { errEl.textContent = '请输入手机号'; return; }
+  if (!phone) { errEl.textContent = t('qr.enterPhone'); return; }
   if (country === 'other' && !phone.startsWith('+')) {
-    errEl.textContent = '请手动输入国家码（如 +8613800138000）';
+    errEl.textContent = t('qr.enterCountryCode');
     return;
   }
   var fullPhone = country === 'other' ? phone.replace(/^\+/, '') : (country + phone);
-  btn.disabled = true; btn.textContent = '请求中...'; errEl.textContent = '';
+  btn.disabled = true; btn.textContent = t('qr.requesting'); errEl.textContent = '';
   try {
     var r = await fetch('/api/platforms/qr/whatsapp/pairing', {
       method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ phone: fullPhone }),
     });
     var d = await r.json();
-    if (d.error) { errEl.textContent = d.error; btn.disabled = false; btn.textContent = '获取配对码'; return; }
+    if (d.error) { errEl.textContent = d.error; btn.disabled = false; btn.textContent = t('qr.getPairing'); return; }
     if (d.pairing_code) {
       _showingPairingCode = true;
       document.getElementById('pairingInput').style.display = 'none';
       var pairingDisplay = document.getElementById('pairingCodeDisplay');
       pairingDisplay.innerHTML =
-        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">在 WhatsApp 中输入此配对码</div>' +
-        '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">WhatsApp → 设置 → 已关联设备 → 使用电话号码关联</div>' +
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">' + t('qr.pairHintWa1') + '</div>' +
+        '<div style="font-size:11px;color:var(--text2);margin-bottom:8px">' + t('qr.pairHintWa2') + '</div>' +
         '<div style="font-size:28px;font-weight:700;letter-spacing:4px;color:#fff;padding:16px;background:var(--surface2);border-radius:8px;margin-bottom:12px">' +
         esc(d.pairing_code) + '</div>';
       pairingDisplay.style.display = 'block';
     }
   } catch (_) {
-    errEl.textContent = '网络错误';
+    errEl.textContent = t('qr.phoneNetworkError');
   }
-  btn.disabled = false; btn.textContent = '获取配对码';
+  btn.disabled = false; btn.textContent = t('qr.getPairing');
 }
 
 function requestNotificationPermission() {
@@ -1078,15 +1317,20 @@ var _rechargeOrderId = '';
 var _rechargePollTimer = null;
 
 var PACKAGES = [
-  { amount: 1, points: 10, label: '入门' },
-  { amount: 5, points: 60, label: '划算' },
-  { amount: 10, points: 130, label: '超值' },
-  { amount: 20, points: 300, label: '至尊' },
+  { amount: 1, points: 10, labelKey: 'recharge.pkg.rumen' },
+  { amount: 5, points: 60, labelKey: 'recharge.pkg.huasuan' },
+  { amount: 10, points: 130, labelKey: 'recharge.pkg.chaozhi' },
+  { amount: 20, points: 300, labelKey: 'recharge.pkg.zhizun' },
 ];
 
 function showRechargeModal() {
   var overlay = document.getElementById('rechargeOverlay');
   overlay.classList.add('active');
+  // Re-apply modal static texts
+  document.querySelector('#rechargeOverlay h3').textContent = t('recharge.title');
+  var methodTabs = document.querySelectorAll('#rechargeOverlay .method-tab');
+  if (methodTabs[0]) methodTabs[0].textContent = t('recharge.wechatPay');
+  if (methodTabs[1]) methodTabs[1].textContent = t('recharge.alipay');
   renderPkgGrid();
   resetRechargeState();
 }
@@ -1100,8 +1344,8 @@ function resetRechargeState() {
   _rechargeAmount = 0; _rechargePoints = 0; _rechargeOrderId = '';
   if (_rechargePollTimer) { clearInterval(_rechargePollTimer); _rechargePollTimer = null; }
   document.getElementById('rechargeConfirm').disabled = true;
-  document.getElementById('rechargeConfirm').textContent = '请选择积分包';
-  document.getElementById('rechargeSub').textContent = '选择支付方式和积分包';
+  document.getElementById('rechargeConfirm').textContent = t('recharge.selectPackage');
+  document.getElementById('rechargeSub').textContent = t('recharge.sub');
   document.getElementById('rechargeSub').style.color = 'var(--text2)';
   document.getElementById('rechargeQr').classList.remove('show');
   document.getElementById('rechargeInfo').classList.remove('show');
@@ -1113,8 +1357,8 @@ function renderPkgGrid() {
   PACKAGES.forEach(function(p) {
     html += '<div class="pkg-option" id="pkg_' + p.amount + '" onclick="selectPackage(' + p.amount + ', ' + p.points + ', this)">' +
       '<div class="pkg-amount">¥' + p.amount + '</div>' +
-      '<div class="pkg-points">' + p.points + ' 积分</div>' +
-      '<div class="pkg-label">' + p.label + '</div>' +
+      '<div class="pkg-points">' + p.points + ' ' + t('points.label') + '</div>' +
+      '<div class="pkg-label">' + t(p.labelKey) + '</div>' +
       '</div>';
   });
   document.getElementById('pkgGrid').innerHTML = html;
@@ -1136,14 +1380,14 @@ function selectPackage(amount, points, el) {
   for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
   el.classList.add('selected');
   document.getElementById('rechargeConfirm').disabled = false;
-  document.getElementById('rechargeConfirm').textContent = '确认充值 ¥' + amount;
+  document.getElementById('rechargeConfirm').textContent = t('recharge.confirmPrefix') + amount;
 }
 
 async function createRechargeOrder() {
   if (!_rechargeAmount) return;
   var btn = document.getElementById('rechargeConfirm');
   btn.disabled = true;
-  btn.textContent = '创建订单中...';
+  btn.textContent = t('recharge.creating');
 
   try {
     var resp = await fetch('/api/payments/create', {
@@ -1151,15 +1395,14 @@ async function createRechargeOrder() {
       body: JSON.stringify({ method: _rechargeMethod, amount: _rechargeAmount, points: _rechargePoints }),
     });
     var data = await resp.json();
-    if (data.error) { alert(data.error); btn.disabled = false; btn.textContent = '确认充值 ¥' + _rechargeAmount; return; }
+    if (data.error) { alert(data.error); btn.disabled = false; btn.textContent = t('recharge.confirmPrefix') + _rechargeAmount; return; }
 
     _rechargeOrderId = data.trade_order_id;
-    document.getElementById('rechargeSub').textContent = '请扫码支付';
+    document.getElementById('rechargeSub').textContent = t('recharge.scanPay');
     document.getElementById('rechargeSub').style.color = '#f59e0b';
-    document.getElementById('rechargeMethodLabel').textContent = _rechargeMethod === 'wechat' ? '微信' : '支付宝';
+    document.getElementById('rechargeMethodLabel').textContent = _rechargeMethod === 'wechat' ? t('recharge.wechatPay') : t('recharge.alipay');
     document.getElementById('rechargeAmount').textContent = _rechargeAmount.toFixed(2);
 
-    // Show QR code (the receive-money QR for the selected method)
     var methodQr = document.getElementById('rechargeQrImg');
     methodQr.src = '/qr/' + _rechargeMethod + '.jpg';
 
@@ -1169,12 +1412,11 @@ async function createRechargeOrder() {
     document.querySelectorAll('.method-tab').forEach(function(t) { t.style.display = 'none'; });
     btn.style.display = 'none';
 
-    // Start polling
     pollPaymentStatus();
   } catch (_) {
-    alert('网络错误');
+    alert(t('auth.networkError'));
     btn.disabled = false;
-    btn.textContent = '确认充值 ¥' + _rechargeAmount;
+    btn.textContent = t('recharge.confirmPrefix') + _rechargeAmount;
   }
 }
 
@@ -1189,7 +1431,7 @@ function pollPaymentStatus() {
         document.getElementById('rechargeQr').classList.remove('show');
         document.getElementById('rechargeInfo').classList.remove('show');
         document.getElementById('rechargeSuccess').style.display = 'block';
-        document.getElementById('rechargeSuccessMsg').textContent = '充值成功！' + _rechargePoints + ' 积分已到账';
+        document.getElementById('rechargeSuccessMsg').textContent = tf('recharge.success', { points: _rechargePoints });
         loadPoints();
       }
     } catch (_) {}

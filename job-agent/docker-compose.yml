@@ -1,0 +1,25 @@
+services:
+  job-agent:
+    build:
+      context: .
+      args:
+        - HTTP_PROXY=${BUILD_PROXY:-}
+        - HTTPS_PROXY=${BUILD_PROXY:-}
+        - NO_PROXY=${NO_PROXY:-127.0.0.1,localhost}
+        - PIP_INDEX_URL=${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
+      - SERVER_URL=${SERVER_URL:-http://localhost:8000}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - HTTPS_PROXY=${PROXY_URL:-}
+      - HTTP_PROXY=${PROXY_URL:-}
+      - NO_PROXY=${NO_PROXY:-127.0.0.1,localhost,api.deepseek.com}
+    restart: unless-stopped

@@ -94,6 +94,12 @@ def init_db():
             conn.commit()
         except Exception:
             pass
+        # 补加 lang 列（兼容已有表）
+        try:
+            conn.execute(text("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'zh'"))
+            conn.commit()
+        except Exception:
+            pass
 
 
 
@@ -110,6 +116,15 @@ def get_user_persona(user_id: str) -> str:
             text("SELECT persona FROM persona_prefs WHERE user_id = :uid"), {"uid": user_id}
         ).fetchone()
     return row.persona if row else "default"
+
+
+def get_user_lang(user_id: str) -> str:
+    """查用户的语言偏好，不存在返回 zh"""
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT lang FROM users WHERE id = :uid"), {"uid": user_id}
+        ).fetchone()
+    return row.lang if row and row.lang else "zh"
 
 
 def add_points(user_id: str, amount: int, reason: str, ref_id: Optional[str] = None) -> int:
