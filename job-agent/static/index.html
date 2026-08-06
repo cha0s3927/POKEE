@@ -66,6 +66,15 @@ body {
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 .sidebar-header .user-info { font-size: 12px; color: var(--text2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.points-card { padding: 14px 20px; border-bottom: 1px solid var(--border); text-align: center; }
+.points-balance { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.points-label { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
+.points-today { font-size: 11px; color: var(--green); margin-top: 2px; min-height: 16px; }
+.points-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.daily-btn { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 3px 14px; border-radius: 20px; cursor: pointer; font-size: 11px; transition: all 0.15s; white-space: nowrap; }
+.daily-btn:hover { background: var(--green); color: #fff; }
+.daily-btn.done { opacity: 0.5; cursor: default; border-color: var(--text2); color: var(--text2); }
+.daily-btn.done:hover { background: transparent; color: var(--text2); }
 .sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
 .sidebar-body::-webkit-scrollbar { width: 4px; }
 .sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -338,6 +347,148 @@ body {
   .messages { padding: 16px; }
   .input-area { padding: 12px 16px; }
 }
+
+/* Profile card */
+.profile-card {
+  padding: 10px 20px; border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: background 0.15s;
+}
+.profile-card:hover { background: rgba(108,138,255,0.04); }
+.profile-card .pc-title { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+.profile-card .pc-target { font-size: 14px; font-weight: 600; color: var(--accent); }
+.profile-card .pc-empty { font-size: 12px; color: var(--text2); font-style: italic; }
+.profile-card .pc-meta { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.profile-card .pc-meta span { margin-right: 10px; }
+
+/* Profile modal */
+.profile-modal-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.profile-modal-tabs button {
+  flex: 1; padding: 10px 12px; background: transparent; border: none; border-bottom: 2px solid transparent;
+  color: var(--text2); cursor: pointer; font-size: 13px; transition: all 0.15s;
+}
+.profile-modal-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.profile-modal-tabs button:hover { color: var(--text); }
+.profile-tab { display: none; }
+.profile-tab.active { display: block; }
+
+/* Tag input */
+.tag-input-wrap { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); min-height: 36px; cursor: text; }
+.tag-input-wrap:focus-within { border-color: var(--accent); }
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px;
+  background: rgba(108,138,255,0.12); color: var(--accent); border-radius: 4px;
+  font-size: 12px;
+}
+.tag-chip .tag-x { cursor: pointer; font-size: 14px; opacity: 0.6; margin-left: 2px; }
+.tag-chip .tag-x:hover { opacity: 1; color: var(--red); }
+.tag-input-wrap input { border: none; background: transparent; color: var(--text); font-size: 13px; outline: none; min-width: 80px; flex: 1; padding: 2px; }
+
+/* Growth tasks */
+.growth-list { max-height: 300px; overflow-y: auto; }
+.growth-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 4px;
+  font-size: 13px; transition: all 0.15s;
+}
+.growth-item:hover { background: var(--bg); }
+.growth-item .gi-status {
+  width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border);
+  cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+}
+.growth-item .gi-status.done { background: var(--green); border-color: var(--green); }
+.growth-item .gi-status.in_progress { background: var(--accent); border-color: var(--accent); }
+.growth-item .gi-title { flex: 1; }
+.growth-item .gi-title.done { text-decoration: line-through; color: var(--text2); }
+.growth-item .gi-cat { font-size: 10px; padding: 1px 5px; border-radius: 8px; background: var(--surface); color: var(--text2); white-space: nowrap; }
+.growth-item .gi-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; opacity: 0; transition: opacity 0.1s; }
+.growth-item:hover .gi-del { opacity: 0.6; }
+.growth-item:hover .gi-del:hover { opacity: 1; color: var(--red); }
+.growth-add { display: flex; gap: 6px; margin-top: 8px; }
+.growth-add input { flex: 1; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; outline: none; }
+.growth-add input:focus { border-color: var(--accent); }
+.growth-add select { padding: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 12px; outline: none; cursor: pointer; }
+.growth-add button { padding: 8px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; white-space: nowrap; }
+
+/* Browse modals — master-detail */
+.browse-item {
+  background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px;
+  margin-bottom: 6px; cursor: pointer; transition: all 0.15s; display: flex;
+  align-items: center; gap: 10px; font-size: 13px; border: 1px solid transparent;
+}
+.browse-item:hover { border-color: var(--border); }
+.browse-item .bi-icon { width: 32px; height: 32px; border-radius: 6px; background: var(--surface); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.browse-item .bi-info { flex: 1; min-width: 0; }
+.browse-item .bi-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browse-item .bi-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.browse-item .bi-arrow { color: var(--text2); opacity: 0.4; }
+.browse-item:hover .bi-arrow { opacity: 1; }
+
+/* Clickable section labels */
+.section-label.clickable { cursor: pointer; transition: color 0.15s; }
+.section-label.clickable:hover { color: var(--accent); }
+
+/* Master-detail layout */
+.md-container { display: flex; height: 62vh; min-height: 380px; gap: 0; }
+.md-left {
+  width: 230px; flex-shrink: 0; overflow-y: auto; padding-right: 12px;
+  border-right: 1px solid var(--border);
+}
+.md-left::-webkit-scrollbar { width: 3px; }
+.md-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.md-right {
+  flex: 1; overflow-y: auto; padding-left: 20px; display: flex; flex-direction: column;
+}
+.md-right::-webkit-scrollbar { width: 4px; }
+.md-right::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Master-detail list item */
+.md-item {
+  padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: all 0.15s; margin-bottom: 4px; border-left: 2px solid transparent;
+  font-size: 13px;
+}
+.md-item:hover { background: var(--surface2); }
+.md-item.active { border-left-color: var(--accent); background: rgba(108,138,255,0.06); }
+.md-item .md-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-item .md-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.md-item .md-tags { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+.md-item .md-tag { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--surface); color: var(--text2); }
+
+/* Master-detail right panel */
+.md-detail-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; color: var(--text2); font-size: 13px; text-align: center;
+}
+.md-detail-empty svg { margin-bottom: 12px; opacity: 0.4; }
+.md-preview {
+  font-size: 14px; line-height: 1.8; color: var(--text);
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.md-preview h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+.md-preview h2 { font-size: 15px; font-weight: 600; margin: 18px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+.md-preview h3 { font-size: 13px; font-weight: 600; margin: 12px 0 4px; color: var(--accent); }
+.md-preview p { margin-bottom: 6px; color: var(--text2); }
+.md-preview ul { padding-left: 18px; margin: 6px 0; }
+.md-preview li { margin-bottom: 3px; }
+.md-preview strong { color: #fff; }
+.md-preview em { color: var(--text2); font-style: italic; }
+.md-preview hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* Score badges in job list */
+.md-score { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 8px; margin-top: 2px; }
+.md-score.high { background: rgba(74,222,128,0.15); color: var(--green); }
+.md-score.mid { background: rgba(251,191,36,0.15); color: var(--yellow); }
+.md-score.low { background: rgba(248,113,113,0.15); color: var(--red); }
+
+/* Job detail in right panel */
+.job-detail-view { animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.job-detail-view .jdv-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.job-detail-view .jdv-meta { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+.job-detail-view .jdv-row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+.job-detail-view .jdv-link { font-size: 12px; color: var(--accent); word-break: break-all; }
+.job-detail-view .jdv-section { margin-bottom: 14px; }
+.job-detail-view .jdv-section h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+.job-detail-view .jdv-section p { font-size: 13px; line-height: 1.7; color: var(--text2); }
 </style>
 </head>
 <body>
@@ -371,20 +522,29 @@ body {
       <h1>Offer大圣</h1>
       <div class="user-info" id="userInfo"></div>
     </div>
+    <div class="points-card" id="pointsCard">
+      <div class="points-balance" id="pointsBalance">0</div>
+      <div class="points-label">积分</div>
+      <div class="points-row">
+        <div class="points-today" id="pointsToday"></div>
+        <button class="daily-btn" id="btnDaily" onclick="dailyBonus()">签到</button>
+      </div>
+    </div>
+    <div class="profile-card" id="profileCard" onclick="openProfileModal()">
+      <div class="pc-title"><span>求职画像</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div>
+      <div class="pc-target" id="pcTarget"></div>
+      <div class="pc-empty" id="pcEmpty">点击完善求职画像</div>
+      <div class="pc-meta" id="pcMeta"></div>
+    </div>
     <div class="sidebar-body">
-      <div class="section-label">
+      <div class="section-label clickable" onclick="openResumeBrowse()">
         <span>我的简历</span>
         <span class="count" id="resumeCount">0</span>
       </div>
-      <div id="resumeList"></div>
-      <button class="mini-btn" id="btnNewResume">+ 新建简历</button>
-
-      <div class="section-label" style="margin-top:16px;">
-        <span>收藏岗位</span>
+      <div class="section-label clickable" style="margin-top:12px;" onclick="openJobBrowse()">
+        <span>目标岗位</span>
         <span class="count" id="savedJobCount">0</span>
       </div>
-      <div id="savedJobsList"></div>
-      <button class="mini-btn" id="btnViewSaved" style="display:none;">查看全部</button>
     </div>
     <div class="sidebar-footer">
       <button id="btnClearChat">清除对话</button>
@@ -443,13 +603,133 @@ body {
   </div>
 </div>
 
-<!-- ═══ Saved Jobs Modal ═══ -->
-<div class="modal-overlay" id="savedJobsModal">
+<!-- ═══ Browse Modal (resumes + jobs) ═══ -->
+<div class="modal-overlay" id="browseModal">
+  <div class="modal-box" style="max-width:880px;padding:24px 28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 id="browseTitle" style="margin:0;">浏览</h3>
+      <button class="btn-cancel" id="btnBrowseClose" style="font-size:11px;padding:4px 12px;">关闭</button>
+    </div>
+    <div class="md-container">
+      <div class="md-left" id="mdLeft"></div>
+      <div class="md-right" id="mdRight">
+        <div class="md-detail-empty" id="mdEmpty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>选择左侧项目查看详情</span>
+        </div>
+        <div id="mdDetail" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Keep original savedJobsModal for backward compat (delete job, etc.) -->
+<div class="modal-overlay" id="savedJobsModal" style="display:none;">
   <div class="modal-box" style="max-width:700px;">
     <h3>收藏的岗位</h3>
     <div id="savedJobsDetail"></div>
     <div class="modal-btns">
       <button class="btn-cancel" id="btnJobsModalClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Profile Modal ═══ -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-box" style="max-width:620px;">
+    <h3>求职画像</h3>
+    <div class="profile-modal-tabs">
+      <button class="active" data-tab="tabStatus">我的现状</button>
+      <button data-tab="tabTarget">我的目标</button>
+      <button data-tab="tabGrowth">成长计划</button>
+    </div>
+
+    <!-- Tab 1: 现状 -->
+    <div class="profile-tab active" id="tabStatus">
+      <div class="field">
+        <label>学校</label>
+        <input type="text" id="pfSchool" placeholder="XX大学">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;">
+          <label>专业</label>
+          <input type="text" id="pfMajor" placeholder="计算机科学与技术">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>学历</label>
+          <select id="pfDegree">
+            <option value="">--</option>
+            <option value="高中">高中</option>
+            <option value="大专">大专</option>
+            <option value="本科">本科</option>
+            <option value="硕士">硕士</option>
+            <option value="博士">博士</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>技能 / 技术栈（输入后按回车添加）</label>
+        <div class="tag-input-wrap" id="pfSkills">
+          <input type="text" id="pfSkillsInput" placeholder="如 Python, Go, React...">
+        </div>
+      </div>
+      <div class="field">
+        <label>工作经历摘要（一句话描述）</label>
+        <input type="text" id="pfExpSummary" placeholder="如: 3年SaaS后端开发经验">
+      </div>
+      <div class="field">
+        <label>项目 / 作品集（输入后按回车添加）</label>
+        <div class="tag-input-wrap" id="pfProjects">
+          <input type="text" id="pfProjectsInput" placeholder="项目名或链接">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 目标 -->
+    <div class="profile-tab" id="tabTarget">
+      <div class="field">
+        <label>目标岗位</label>
+        <input type="text" id="pfTargetRole" placeholder="如: 高级后端工程师">
+      </div>
+      <div class="field">
+        <label>目标行业</label>
+        <input type="text" id="pfTargetIndustry" placeholder="如: SaaS、金融科技">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;">
+          <label>最低薪资 (K/月)</label>
+          <input type="number" id="pfSalaryMin" placeholder="如 20" min="0">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>最高薪资 (K/月)</label>
+          <input type="number" id="pfSalaryMax" placeholder="如 35" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>意向城市（输入后按回车添加）</label>
+        <div class="tag-input-wrap" id="pfCities">
+          <input type="text" id="pfCitiesInput" placeholder="如 上海、远程">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: 成长计划 -->
+    <div class="profile-tab" id="tabGrowth">
+      <div class="growth-list" id="growthList"></div>
+      <div class="growth-add">
+        <input type="text" id="growthInput" placeholder="新的待办事项...">
+        <select id="growthCategory">
+          <option value="skill">技能学习</option>
+          <option value="project">项目实战</option>
+          <option value="action">求职行动</option>
+        </select>
+        <button id="btnGrowthAdd">添加</button>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" id="btnProfileClose">关闭</button>
+      <button class="btn-save" id="btnProfileSave">保存画像</button>
     </div>
   </div>
 </div>
@@ -526,7 +806,231 @@ async function showApp(email) {
 
   await refreshResumes();
   await refreshSavedJobs();
+  fetchPoints();
+  fetchProfile();
+  fetchGrowthTasks();
 }
+
+/* ═══ Points ═══ */
+async function fetchPoints() {
+  const res = await api('/api/me/points');
+  if (!res.ok) return;
+  const d = await res.json();
+  $('#pointsBalance').textContent = d.balance;
+  $('#pointsToday').textContent = d.today_earned > 0 ? `今日 +${d.today_earned}` : '';
+}
+
+async function dailyBonus() {
+  const res = await api('/api/me/daily-bonus', { method: 'POST' });
+  if (!res.ok) return;
+  const d = await res.json();
+  $('#pointsBalance').textContent = d.balance;
+  $('#pointsToday').textContent = d.today_earned > 0 ? `今日 +${d.today_earned}` : '';
+  const btn = $('#btnDaily');
+  if (d.credited) {
+    toast(`签到成功! +5.0 积分`);
+    btn.textContent = '已签到';
+    btn.classList.add('done');
+  } else {
+    btn.textContent = '已签到';
+    btn.classList.add('done');
+  }
+}
+
+/* ═══ Profile ═══ */
+let profileData = {};
+let growthTasks = [];
+
+async function fetchProfile() {
+  const res = await api('/api/me/profile');
+  if (!res.ok) return;
+  const d = await res.json();
+  profileData = d.profile || {};
+  renderProfileCard();
+}
+
+function renderProfileCard() {
+  const p = profileData;
+  const hasTarget = p.target_role;
+  const hasSkills = (p.skills || []).length > 0;
+  const hasProjects = (p.projects || []).length > 0;
+  const hasEdu = (p.education && p.education.school);
+
+  $('#pcTarget').style.display = hasTarget ? '' : 'none';
+  $('#pcEmpty').style.display = hasTarget || hasEdu || hasSkills ? 'none' : '';
+  $('#pcMeta').style.display = hasSkills || hasProjects || hasEdu ? '' : 'none';
+
+  if (hasTarget) $('#pcTarget').textContent = p.target_role;
+  const parts = [];
+  if (hasEdu) parts.push(p.education.school + (p.education.major ? ' ' + p.education.major : ''));
+  if (hasSkills) parts.push(p.skills.length + ' 项技能');
+  if (hasProjects) parts.push(p.projects.length + ' 个项目');
+  $('#pcMeta').textContent = parts.join(' · ');
+}
+
+async function openProfileModal() {
+  // Populate form fields
+  const p = profileData;
+  $('#pfSchool').value = (p.education && p.education.school) || '';
+  $('#pfMajor').value = (p.education && p.education.major) || '';
+  $('#pfDegree').value = (p.education && p.education.degree) || '';
+  $('#pfExpSummary').value = p.experience_summary || '';
+  $('#pfTargetRole').value = p.target_role || '';
+  $('#pfTargetIndustry').value = p.target_industry || '';
+  $('#pfSalaryMin').value = p.salary_min || '';
+  $('#pfSalaryMax').value = p.salary_max || '';
+
+  // Render tags
+  renderTags('pfSkills', p.skills || []);
+  renderTags('pfProjects', (p.projects || []).map(pj => typeof pj === 'string' ? pj : pj.name || ''));
+  renderTags('pfCities', p.preferred_cities || []);
+
+  $('#profileModal').classList.add('active');
+  // Reset to first tab
+  document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.querySelectorAll('#profileModal .profile-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+}
+
+function renderTags(wrapId, items) {
+  const wrap = document.getElementById(wrapId);
+  const input = wrap.querySelector('input');
+  wrap.querySelectorAll('.tag-chip').forEach(c => c.remove());
+  items.forEach((item, idx) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${esc(item)}<span class="tag-x" data-idx="${idx}" data-wrap="${wrapId}">&times;</span>`;
+    wrap.insertBefore(chip, input);
+  });
+}
+
+async function saveProfile() {
+  const skills = Array.from(document.querySelectorAll('#pfSkills .tag-chip')).map(c => c.childNodes[0].textContent);
+  const projects = Array.from(document.querySelectorAll('#pfProjects .tag-chip')).map(c => ({ name: c.childNodes[0].textContent, description: '', url: '' }));
+  const cities = Array.from(document.querySelectorAll('#pfCities .tag-chip')).map(c => c.childNodes[0].textContent);
+
+  const payload = {
+    education: { school: $('#pfSchool').value.trim(), major: $('#pfMajor').value.trim(), degree: $('#pfDegree').value },
+    skills,
+    experience_summary: $('#pfExpSummary').value.trim(),
+    projects,
+    target_role: $('#pfTargetRole').value.trim(),
+    target_industry: $('#pfTargetIndustry').value.trim(),
+    salary_min: parseInt($('#pfSalaryMin').value) || null,
+    salary_max: parseInt($('#pfSalaryMax').value) || null,
+    preferred_cities: cities,
+  };
+
+  const res = await api('/api/me/profile', { method: 'PUT', body: JSON.stringify(payload) });
+  if (res.ok) {
+    const d = await res.json();
+    profileData = d.profile;
+    renderProfileCard();
+    $('#profileModal').classList.remove('active');
+    toast('画像已保存');
+  } else {
+    const d = await res.json();
+    toast(d.detail || '保存失败');
+  }
+}
+
+$('#btnProfileSave').onclick = saveProfile;
+$('#btnProfileClose').onclick = () => $('#profileModal').classList.remove('active');
+$('#profileModal').onclick = (e) => { if (e.target === $('#profileModal')) $('#profileModal').classList.remove('active'); };
+
+// Profile modal tabs
+document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#profileModal .profile-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  };
+});
+
+// Tag input handlers
+['pfSkills', 'pfProjects', 'pfCities'].forEach(wrapId => {
+  const wrap = document.getElementById(wrapId);
+  const input = wrap.querySelector('input');
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = input.value.trim();
+      if (!val) return;
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `${esc(val)}<span class="tag-x" data-wrap="${wrapId}">&times;</span>`;
+      wrap.insertBefore(chip, input);
+      input.value = '';
+    }
+    if (e.key === 'Backspace' && !input.value) {
+      const last = wrap.querySelector('.tag-chip:last-child');
+      if (last) last.remove();
+    }
+  };
+  wrap.onclick = () => input.focus();
+  wrap.addEventListener('click', (e) => {
+    if (e.target.classList.contains('tag-x')) {
+      e.target.parentElement.remove();
+      input.focus();
+    }
+  });
+});
+
+/* ═══ Growth Tasks ═══ */
+async function fetchGrowthTasks() {
+  const res = await api('/api/me/growth-tasks');
+  if (!res.ok) return;
+  const d = await res.json();
+  growthTasks = d.tasks || [];
+  renderGrowthList();
+}
+
+function renderGrowthList() {
+  const container = $('#growthList');
+  if (!growthTasks.length) {
+    container.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;font-size:13px;">暂无计划，添加你的第一个学习任务吧</p>';
+    return;
+  }
+  const catLabels = { skill: '学习', project: '项目', action: '行动' };
+  container.innerHTML = growthTasks.map(t => `
+    <div class="growth-item" data-tid="${t.id}">
+      <span class="gi-status ${t.status}" onclick="toggleGrowthTask('${t.id}')" title="点击切换状态"></span>
+      <span class="gi-title ${t.status === 'done' ? 'done' : ''}">${esc(t.title)}</span>
+      <span class="gi-cat">${catLabels[t.category] || t.category}</span>
+      <button class="gi-del" onclick="deleteGrowthTask('${t.id}')" title="删除">&times;</button>
+    </div>
+  `).join('');
+}
+
+async function cycleGrowthStatus(tid) {
+  const t = growthTasks.find(x => x.id === tid);
+  if (!t) return;
+  const next = t.status === 'pending' ? 'in_progress' : t.status === 'in_progress' ? 'done' : 'pending';
+  await api(`/api/me/growth-tasks/${tid}`, {
+    method: 'PUT', body: JSON.stringify({ title: t.title, category: t.category, status: next, sort_order: t.sort_order }),
+  });
+  await fetchGrowthTasks();
+}
+
+async function toggleGrowthTask(tid) { await cycleGrowthStatus(tid); }
+
+async function deleteGrowthTask(tid) {
+  await api(`/api/me/growth-tasks/${tid}`, { method: 'DELETE' });
+  await fetchGrowthTasks();
+}
+
+$('#btnGrowthAdd').onclick = async () => {
+  const input = $('#growthInput');
+  const title = input.value.trim();
+  if (!title) return;
+  const category = $('#growthCategory').value;
+  await api('/api/me/growth-tasks', {
+    method: 'POST', body: JSON.stringify({ title, category, status: 'pending', sort_order: growthTasks.length }),
+  });
+  input.value = '';
+  await fetchGrowthTasks();
+};
+$('#growthInput').onkeydown = (e) => { if (e.key === 'Enter') $('#btnGrowthAdd').click(); };
 
 /* ═══ Resume management ═══ */
 async function refreshResumes() {
@@ -535,56 +1039,8 @@ async function refreshResumes() {
   const data = await res.json();
   resumes = data.resumes || [];
   activeResumeId = resumes.find(r => r.is_default)?.id || resumes[0]?.id || null;
-  renderResumeList();
-  renderResumeSelect();
-}
-
-function renderResumeList() {
-  const container = $('#resumeList');
   $('#resumeCount').textContent = resumes.length;
-
-  if (!resumes.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px;">暂无简历</div>';
-    return;
-  }
-
-  container.innerHTML = resumes.map(r => `
-    <div class="resume-item ${r.id === activeResumeId ? 'active' : ''}" data-rid="${r.id}">
-      <span class="r-dot"></span>
-      <span class="r-name" title="${esc(r.name)}">${esc(r.name)}</span>
-      ${r.is_default ? '<span class="r-badge">默认</span>' : ''}
-      <span class="r-actions">
-        <button class="r-act view" data-action="view" data-rid="${r.id}" title="查看"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        ${!r.is_default ? `<button class="r-act" data-action="setdefault" data-rid="${r.id}" title="设为默认"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>` : ''}
-        <button class="r-act del" data-action="delete" data-rid="${r.id}" title="删除"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </span>
-    </div>
-  `).join('');
-
-  // Click handlers
-  container.querySelectorAll('.resume-item').forEach(el => {
-    el.onclick = (e) => {
-      if (e.target.closest('.r-act')) return;
-      activeResumeId = el.dataset.rid;
-      renderResumeList();
-      renderResumeSelect();
-    };
-  });
-  container.querySelectorAll('.r-act').forEach(btn => {
-    btn.onclick = async (e) => {
-      e.stopPropagation();
-      const rid = btn.dataset.rid;
-      const action = btn.dataset.action;
-      if (action === 'edit' || action === 'view') await openResume(rid);
-      else if (action === 'setdefault') { await api(`/api/resume/${rid}/default`, { method: 'POST' }); await refreshResumes(); toast('已设为默认简历'); }
-      else if (action === 'delete') {
-        if (!confirm('确定删除这份简历吗？')) return;
-        const r = await api(`/api/resume/${rid}`, { method: 'DELETE' });
-        if (r.ok) { await refreshResumes(); toast('简历已删除'); }
-        else { const d = await r.json(); toast(d.detail || '删除失败'); }
-      }
-    };
-  });
+  renderResumeSelect();
 }
 
 function renderResumeSelect() {
@@ -598,7 +1054,6 @@ function renderResumeSelect() {
   ).join('');
   sel.onchange = () => {
     activeResumeId = sel.value;
-    renderResumeList();
     renderResumeSelect();
   };
 }
@@ -621,7 +1076,7 @@ async function openResume(rid) {
   }
 }
 
-$('#btnNewResume').onclick = () => {
+function openNewResume() {
   $('#resumeModalTitle').textContent = '新建简历';
   $('#resumeName').value = '';
   $('#resumePreview').style.display = 'none';
@@ -631,7 +1086,143 @@ $('#btnNewResume').onclick = () => {
   $('#resumeModal').dataset.mode = 'create';
   delete $('#resumeModal').dataset.rid;
   $('#resumeModal').classList.add('active');
-};
+}
+
+/* ── Browse Modal (master-detail) ── */
+
+let browseMode = '';  // 'resume' or 'job'
+
+function openResumeBrowse() {
+  browseMode = 'resume';
+  renderMdLeft();
+  $('#browseTitle').textContent = '我的简历';
+  $('#mdDetail').style.display = 'none';
+  $('#mdEmpty').style.display = 'flex';
+  $('#browseModal').classList.add('active');
+}
+
+function openJobBrowse() {
+  browseMode = 'job';
+  renderMdLeft();
+  $('#browseTitle').textContent = '目标岗位';
+  $('#mdDetail').style.display = 'none';
+  $('#mdEmpty').style.display = 'flex';
+  $('#browseModal').classList.add('active');
+}
+
+function renderMdLeft() {
+  const container = $('#mdLeft');
+  if (browseMode === 'resume') {
+    if (!resumes.length) {
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px;">暂无简历<br><br><button class="mini-btn" onclick="event.stopPropagation();$(\'#browseModal\').classList.remove(\'active\');openNewResume();" style="font-size:11px;">+ 新建简历</button></div>';
+      return;
+    }
+    container.innerHTML = resumes.map((r, idx) => `
+      <div class="md-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" onclick="selectMdItem(${idx})">
+        <div class="md-name">${esc(r.name)}</div>
+        <div class="md-meta">${r.created_at ? r.created_at.slice(0,10) : ''}${r.is_default ? ' · 默认' : ''}</div>
+      </div>
+    `).join('');
+  } else {
+    if (!savedJobs.length) {
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:12px;">暂无目标岗位<br><br><span style="font-size:11px;">在对话中分析岗位后可保存</span></div>';
+      return;
+    }
+    container.innerHTML = savedJobs.map((j, idx) => `
+      <div class="md-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" onclick="selectMdItem(${idx})">
+        <div class="md-name">${esc(j.title)}</div>
+        <div class="md-meta">${esc(j.company)} · ${esc(j.platform)}</div>
+        ${j.score_total != null ? `<span class="md-score ${verdictClass(j.score_total)}">${j.score_total}分 ${verdictLabel(j.verdict)}</span>` : ''}
+      </div>
+    `).join('');
+  }
+}
+
+function selectMdItem(idx) {
+  // Highlight
+  document.querySelectorAll('#mdLeft .md-item').forEach((el, i) => el.classList.toggle('active', i === idx));
+  // Render detail
+  $('#mdEmpty').style.display = 'none';
+  const detail = $('#mdDetail');
+  detail.style.display = 'block';
+  detail.style.animation = 'none';
+  detail.offsetHeight; // trigger reflow
+  detail.style.animation = '';
+
+  if (browseMode === 'resume') {
+    const r = resumes[idx];
+    if (!r) return;
+    // Fetch resume content for detail
+    api(`/api/resume/${r.id}`).then(res => {
+      if (!res.ok) { detail.innerHTML = '<p style="color:var(--text2);">加载失败</p>'; return; }
+      res.json().then(data => {
+        const mdHtml = typeof marked !== 'undefined' ? marked.parse(data.content || '') : renderMd(data.content || '');
+        detail.innerHTML = `
+          <div class="md-preview">${mdHtml}</div>
+          <div style="margin-top:16px;display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);">
+            <button class="btn-save" style="font-size:11px;padding:6px 14px;" onclick="event.stopPropagation();openResume('${r.id}');$('#browseModal').classList.remove('active');">编辑</button>
+            ${!r.is_default ? `<button style="font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);cursor:pointer;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">设为默认</button>` : ''}
+          </div>`;
+      });
+    });
+  } else {
+    const j = savedJobs[idx];
+    if (!j) return;
+    const details = j.score_details || {};
+    const dims = Object.entries(details).map(([k,v]) => `<span class="md-tag" style="display:inline-block;font-size:10px;padding:2px 7px;border-radius:8px;background:var(--surface);color:var(--text2);margin:2px;">${k}: ${v}</span>`).join('');
+    detail.innerHTML = `
+      <div class="job-detail-view">
+        <div class="jdv-title">${esc(j.title)}</div>
+        <div class="jdv-meta">${esc(j.company)} · ${esc(j.platform)} · ${j.created_at ? j.created_at.slice(0,10) : ''}</div>
+        <div class="jdv-row">
+          ${j.score_total != null ? `<span class="md-score ${verdictClass(j.score_total)}" style="font-size:14px;">${j.score_total}分</span>` : ''}
+          <span style="font-size:13px;color:var(--text2);">${verdictLabel(j.verdict)}</span>
+        </div>
+        ${dims ? `<div style="margin-bottom:14px;">${dims}</div>` : ''}
+        ${j.url ? `<div class="jdv-link" style="margin-bottom:14px;"><a href="${esc(j.url)}" target="_blank" style="color:var(--accent);">${esc(j.url)}</a></div>` : ''}
+        ${j.jd_text ? `<div class="jdv-section"><h3>JD 内容</h3><p>${esc(j.jd_text).substring(0, 800)}${j.jd_text.length > 800 ? '...' : ''}</p></div>` : ''}
+        <div style="padding-top:12px;border-top:1px solid var(--border);">
+          <button style="font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:var(--radius-sm);cursor:pointer;" onclick="event.stopPropagation();deleteSavedJob('${j.id}');">删除</button>
+        </div>
+      </div>`;
+  }
+}
+
+function renderMd(md) {
+  // Simple markdown to HTML renderer
+  if (!md) return '';
+  let html = esc(md);
+  // Basic markdown rendering
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/^\- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/^---$/gm, '<hr>');
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+  html = '<p>' + html + '</p>';
+  return html;
+}
+
+async function deleteSavedJob(jid) {
+  const r = await api(`/api/saved-jobs/${jid}`, { method: 'DELETE' });
+  if (r.ok) {
+    toast('已删除');
+    await refreshSavedJobs();
+    browseMode = 'job';
+    renderMdLeft();
+    $('#mdDetail').style.display = 'none';
+    $('#mdEmpty').style.display = 'flex';
+  }
+}
+
+$('#btnBrowseClose').onclick = () => $('#browseModal').classList.remove('active');
+$('#browseModal').onclick = (e) => { if (e.target === $('#browseModal')) $('#browseModal').classList.remove('active'); };
+
+/* ═══ Saved Jobs browsing (legacy showSavedJobDetail) ═══ */
 
 $('#btnModalClose').onclick = () => { $('#resumeModal').classList.remove('active'); };
 /* ═══ File upload ═══ */
@@ -722,53 +1313,13 @@ async function refreshSavedJobs() {
   if (!res.ok) return;
   const data = await res.json();
   savedJobs = data.jobs || [];
-  renderSavedJobsSidebar();
-}
-
-function renderSavedJobsSidebar() {
   $('#savedJobCount').textContent = savedJobs.length;
-  const container = $('#savedJobsList');
-  const btn = $('#btnViewSaved');
-
-  if (!savedJobs.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px;">暂无收藏</div>';
-    btn.style.display = 'none';
-    return;
-  }
-
-  // Show top 3 in sidebar
-  const top = savedJobs.slice(0, 3);
-  container.innerHTML = top.map(j => `
-    <div class="saved-job-item" data-jid="${j.id}">
-      <div>${esc(j.title)}</div>
-      <div class="sj-company">${esc(j.company)} · ${esc(j.platform)}</div>
-      ${j.score_total != null ? `<span class="sj-score ${verdictClass(j.score_total)}">${j.score_total}分</span>` : ''}
-    </div>
-  `).join('');
-
-  container.querySelectorAll('.saved-job-item').forEach(el => {
-    el.onclick = () => showSavedJobDetail(el.dataset.jid);
-  });
-
-  btn.style.display = savedJobs.length > 3 ? 'block' : 'none';
-}
-
-$('#btnViewSaved').onclick = () => {
-  renderSavedJobsDetail();
-  $('#savedJobsModal').classList.add('active');
-};
-$('#btnJobsModalClose').onclick = () => { $('#savedJobsModal').classList.remove('active'); };
-$('#savedJobsModal').onclick = (e) => { if (e.target === $('#savedJobsModal')) $('#savedJobsModal').classList.remove('active'); };
-
-function showSavedJobDetail(jid) {
-  renderSavedJobsDetail(jid);
-  $('#savedJobsModal').classList.add('active');
 }
 
 function renderSavedJobsDetail(highlightId) {
   const container = $('#savedJobsDetail');
   if (!savedJobs.length) {
-    container.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;">暂无收藏岗位</p>';
+    container.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;">暂无目标岗位</p>';
     return;
   }
   container.innerHTML = savedJobs.map(j => {
@@ -841,9 +1392,14 @@ async function sendMessage() {
   if (res.ok) {
     const data = await res.json();
     addMessage('assistant', data.reply);
+    if (data.balance !== undefined) fetchPoints();
     // Refresh after chat (may have saved jobs, new resume, etc.)
     refreshResumes();
     refreshSavedJobs();
+  } else if (res.status === 402) {
+    const data = await res.json();
+    addMessage('assistant', data.detail || '积分不足');
+    toast('积分不足，请签到或充值');
   } else {
     const data = await res.json();
     addMessage('assistant', data.detail || '处理出错，请重试');

@@ -10,7 +10,7 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      - ./data:/app/data
+      - /root/reminder-agent/scheduler/data:/app/data
     env_file:
       - .env
     environment:

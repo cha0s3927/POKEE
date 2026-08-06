@@ -1,23 +1,48 @@
 """
-认证 — 注册 / 登录 / JWT
+认证 — 注册 / 登录 / Token（与 POKEE 提醒服务共享 users 表）
 """
+import hashlib
+import os
+import re
+import secrets
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 
-import bcrypt
-import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
-from config import settings
 from database import engine
 
 router = APIRouter(tags=["auth"])
 
-JWT_SECRET = settings.jwt_secret
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRE_HOURS = 720  # 30 days
+EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+ITERATIONS = 600_000
+
+
+def _now_iso() -> str:
+    return datetime.utcnow().isoformat()
+
+
+def hash_password(password: str) -> str:
+    salt = os.urandom(32)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, ITERATIONS)
+    return f"pbkdf2:sha256:{ITERATIONS}:{salt.hex()}:{dk.hex()}"
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    try:
+        _, algo, iters, salt_hex, dk_hex = hashed.split(":")
+        salt = bytes.fromhex(salt_hex)
+        dk = bytes.fromhex(dk_hex)
+        new_dk = hashlib.pbkdf2_hmac(algo, password.encode(), salt, int(iters))
+        return secrets.compare_digest(dk, new_dk)
+    except Exception:
+        return False
+
+
+def new_token() -> str:
+    return secrets.token_hex(32)
 
 
 # ── Pydantic models ──
@@ -30,21 +55,6 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
-
-
-# ── Helpers ──
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def _create_token(user_id: str) -> str:
-    payload = {
-        "sub": user_id,
-        "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRE_HOURS),
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
 # ── Endpoints ──
@@ -63,13 +73,13 @@ def register(req: RegisterRequest):
             raise HTTPException(409, "该邮箱已注册")
 
         uid = str(uuid.uuid4())
-        password_hash = bcrypt.hashpw(req.password.encode(), bcrypt.gensalt()).decode()
-        token = _create_token(uid)
+        password_hash = hash_password(req.password)
+        token = new_token()
         now = _now_iso()
 
         conn.execute(
-            text("INSERT INTO users (id, email, password_hash, token, created_at) "
-                 "VALUES (:id, :email, :ph, :token, :now)"),
+            text("INSERT INTO users (id, email, password_hash, token, created_at, persona, points, lang) "
+                 "VALUES (:id, :email, :ph, :token, :now, 'default', 50, 'zh')"),
             {"id": uid, "email": email, "ph": password_hash, "token": token, "now": now},
         )
         conn.commit()
@@ -83,22 +93,22 @@ def login(req: LoginRequest):
 
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id, password_hash FROM users WHERE email = :email"),
+            text("SELECT id, password_hash, token FROM users WHERE email = :email"),
             {"email": email},
         ).fetchone()
 
     if not row:
         raise HTTPException(401, "邮箱或密码错误")
-
-    if not bcrypt.checkpw(req.password.encode(), row.password_hash.encode()):
+    if not verify_password(req.password, row.password_hash):
         raise HTTPException(401, "邮箱或密码错误")
 
-    token = _create_token(row.id)
+    token = new_token()
+    now = _now_iso()
 
     with engine.connect() as conn:
         conn.execute(
-            text("UPDATE users SET token = :token WHERE id = :uid"),
-            {"token": token, "uid": row.id},
+            text("UPDATE users SET token = :token, last_login_at = :now WHERE id = :uid"),
+            {"token": token, "uid": row.id, "now": now},
         )
         conn.commit()
 
@@ -108,30 +118,19 @@ def login(req: LoginRequest):
 # ── Auth dependency ──
 
 def auth_user(req: Request) -> dict:
-    """从 Authorization header 解析 JWT，返回用户信息"""
+    """从 Authorization header 解析 token，返回用户信息"""
     auth_header = req.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         raise HTTPException(401, "请先登录")
 
     token = auth_header[7:]
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(401, "登录已过期，请重新登录")
-    except jwt.InvalidTokenError:
-        raise HTTPException(401, "无效的登录凭证")
-
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(401, "无效的登录凭证")
-
-    # Verify user still exists
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id, email FROM users WHERE id = :uid"),
-            {"uid": user_id},
+            text("SELECT id, email, points FROM users WHERE token = :t"),
+            {"t": token},
         ).fetchone()
-    if not row:
-        raise HTTPException(401, "用户不存在")
 
-    return {"id": row.id, "email": row.email}
+    if not row:
+        raise HTTPException(401, "登录已过期，请重新登录")
+
+    return {"id": row.id, "email": row.email, "points": row.points}

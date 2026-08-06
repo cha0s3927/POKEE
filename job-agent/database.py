@@ -1,5 +1,6 @@
 """
 数据库 — engine + 建表
+共享 POKEE 提醒服务的 reminders.db
 """
 from pathlib import Path
 
@@ -13,16 +14,22 @@ engine = create_engine(settings.database_url, connect_args={"check_same_thread":
 
 
 def init_db():
+    """只创建求职助手专属表，users 表由 POKEE 管理"""
     with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY,
-                email TEXT NOT NULL UNIQUE,
-                password_hash TEXT NOT NULL,
-                token TEXT NOT NULL UNIQUE,
-                created_at TEXT NOT NULL
-            )
-        """))
+        # 兼容 POKEE users 表可能缺少的列
+        for col, defn in [
+            ("persona", "TEXT NOT NULL DEFAULT 'default'"),
+            ("points", "INTEGER NOT NULL DEFAULT 0"),
+            ("lang", "TEXT NOT NULL DEFAULT 'zh'"),
+            ("profile", "TEXT NOT NULL DEFAULT '{}'"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {defn}"))
+                conn.commit()
+            except Exception:
+                pass
+
+        # ── 求职助手专属表 ──
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS resumes (
                 id TEXT PRIMARY KEY,
@@ -67,23 +74,46 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """))
-        # Migrate: move data from old master_resumes to new resumes table
-        try:
-            old = conn.execute(text("SELECT user_id, content, created_at FROM master_resumes")).fetchall()
-            for row in old:
-                existing = conn.execute(
-                    text("SELECT id FROM resumes WHERE user_id = :uid AND name = '默认简历'"),
-                    {"uid": row.user_id},
-                ).fetchone()
-                if not existing:
-                    import uuid
-                    conn.execute(
-                        text("INSERT INTO resumes (id, user_id, name, content, is_default, created_at, updated_at) "
-                             "VALUES (:id, :uid, :name, :content, 1, :cat, :uat)"),
-                        {"id": str(uuid.uuid4()), "uid": row.user_id, "name": "默认简历",
-                         "content": row.content, "cat": row.created_at, "uat": row.created_at},
-                    )
-            conn.commit()
-        except Exception:
-            pass
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS growth_tasks (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                category TEXT NOT NULL DEFAULT 'skill',
+                status TEXT NOT NULL DEFAULT 'pending',
+                sort_order INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """))
         conn.commit()
+
+
+def spend_points(user_id: str, amount: int, reason: str, ref_id: str = None) -> int:
+    """扣减积分，amount 为正数（内部单位）。余额不足抛出 ValueError。返回扣后余额。"""
+    from datetime import datetime
+
+    now = datetime.utcnow().isoformat()
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT points FROM users WHERE id = :uid"), {"uid": user_id}
+        ).fetchone()
+        current = row.points if row else 0
+
+        if current < amount:
+            raise ValueError(f"积分不足（需要 {round(amount / 10, 1)}，当前 {round(current / 10, 1)}）")
+
+        conn.execute(
+            text("UPDATE users SET points = points - :amt WHERE id = :uid"),
+            {"amt": amount, "uid": user_id},
+        )
+        conn.execute(
+            text("INSERT INTO points_ledger (user_id, amount, reason, ref_id, created_at) "
+                 "VALUES (:uid, :amt, :reason, :ref, :now)"),
+            {"uid": user_id, "amt": -amount, "reason": reason, "ref": ref_id, "now": now},
+        )
+        conn.commit()
+
+        new_balance = current - amount
+    return new_balance

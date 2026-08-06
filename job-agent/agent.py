@@ -20,6 +20,21 @@ client = OpenAI(
     http_client=httpx.Client(transport=httpx.HTTPTransport(retries=0), timeout=httpx.Timeout(90.0, connect=10.0)),
 )
 
+ONBOARDING_PROMPT = """你是职业顾问，帮用户从零规划求职方向并生成简历。
+
+用户还没有上传简历，也没想清楚具体方向。你的任务是：
+
+1. **了解现状**：现在在做什么？有什么技能？做过哪些项目？
+2. **明确方向**：想找什么岗位？倾向什么行业？
+3. **确认偏好**：目标薪资范围？城市？
+
+通过自然对话逐步收集信息，一次只问 1-2 个问题。每轮对话中，只要收集到了新信息（技能、教育、目标岗位、薪资、城市等），就立刻调用 update_my_profile 把当前已知的信息存入画像，不要等到最后。信息收集完毕后，先确认画像已更新，再调用 save_my_resume 帮用户生成第一份简历（Markdown 格式），简历名用"{岗位方向} - 初始版"。
+
+## 对话风格
+- 轻松友好，像职业顾问聊天，不是 HR 审简历
+- 不用加粗、标题、列表
+- 收集足够信息后主动说「我帮你整理成简历」"""
+
 SYSTEM_PROMPT = """你是求职助手，帮用户分析岗位、优化简历、准备面试。你的风格是专业、高效、有洞察力。
 
 ## 你能做什么
@@ -33,6 +48,8 @@ SYSTEM_PROMPT = """你是求职助手，帮用户分析岗位、优化简历、�
 7. **收藏岗位**：把高评分岗位保存下来，方便后续查看和比较。
 8. **STAR 故事库**：帮用户从简历中提取 STAR 故事，用于面试准备。
 9. **简历诊断**：读取用户简历的完整内容，检查表达是否量化、是否有硬伤、技能栈是否过时，给出具体的修改建议。
+10. **求职画像**：查看和更新用户的求职画像（教育背景、技能、目标岗位、薪资范围等），画像信息用于更精准的岗位匹配。
+11. **成长计划**：帮用户管理学习任务的待办清单。
 
 ## 工作流程
 
@@ -45,6 +62,9 @@ SYSTEM_PROMPT = """你是求职助手，帮用户分析岗位、优化简历、�
 - 用户要搜索岗位 → 调用 search_jobs，展示结果，询问要不要保存
 - 用户要生成 STAR 故事 → 调用 generate_star_stories
 - 用户提到"收藏""保存"某个岗位 → 调用 save_job
+- 用户询问/修改求职画像、目标方向、薪资预期 → 先调用 get_my_profile 查看当前画像，再根据需要调用 update_my_profile 保存
+- 用户说「根据简历完善画像」「用简历生成画像」→ 先 get_my_resume 读取简历内容，分析后必须调用 update_my_profile 把提取到的 education/skills/target_role/preferred_cities 等结构化字段写入数据库，再调用 add_my_task 把行动清单逐条加入成长计划。不要只输出文字——必须调用工具写入。
+- 用户提到想学/要做的事情 → 调用 add_my_task 加入成长计划；询问成长计划时调用 list_my_tasks
 
 ## 对话风格
 - 说人话，不是在写文档。不用加粗、不用标题、不用列表格式。
@@ -249,6 +269,61 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_my_profile",
+            "description": "获取用户的求职画像，包括教育背景、技能、经历摘要、项目、目标岗位/行业、薪资范围、意向城市。",
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_my_profile",
+            "description": "更新用户求职画像中的字段。只传需要更新的字段，不传的保持不变。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "education": {"type": "object", "description": "{school, major, degree}"},
+                    "skills": {"type": "array", "items": {"type": "string"}, "description": "技能列表"},
+                    "experience_summary": {"type": "string", "description": "工作经历摘要"},
+                    "projects": {"type": "array", "description": "[{name, description, url}]"},
+                    "target_role": {"type": "string", "description": "目标岗位"},
+                    "target_industry": {"type": "string", "description": "目标行业"},
+                    "salary_min": {"type": "integer", "description": "最低薪资(K)"},
+                    "salary_max": {"type": "integer", "description": "最高薪资(K)"},
+                    "preferred_cities": {"type": "array", "items": {"type": "string"}, "description": "意向城市"},
+                },
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_my_tasks",
+            "description": "获取用户的成长计划任务列表，包括待学习技能、待做事项等。",
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_my_task",
+            "description": "向成长计划中添加一个任务。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "任务标题"},
+                    "category": {"type": "string", "description": "类型: skill/project/action，默认 skill"},
+                    "status": {"type": "string", "description": "状态: pending/in_progress/done，默认 pending"},
+                },
+                "required": ["title"],
+                "additionalProperties": False,
+            },
+        },
+    },
 ]
 
 MAX_TOOL_ITERATIONS = 5
@@ -262,7 +337,16 @@ class Agent:
 
     def chat(self, user_id: str, user_message: str) -> str:
         if user_id not in self.sessions:
-            self.sessions[user_id] = [{"role": "system", "content": SYSTEM_PROMPT}]
+            from database import engine
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT id FROM resumes WHERE user_id = :uid LIMIT 1"),
+                    {"uid": user_id},
+                ).fetchone()
+            has_resume = row is not None
+            prompt = SYSTEM_PROMPT if has_resume else ONBOARDING_PROMPT
+            self.sessions[user_id] = [{"role": "system", "content": prompt}]
 
         messages = self.sessions[user_id]
         messages.append({"role": "user", "content": user_message})
@@ -486,6 +570,37 @@ class Agent:
             from interview import generate_star_stories
             stories = generate_star_stories(user_id, markdown, resume_id)
             return {"stories": stories, "message": f"已生成 {len(stories)} 个 STAR 故事"}
+
+        elif name == "get_my_profile":
+            from routes.platforms import api_get_profile
+            result = api_get_profile(user={"id": user_id})
+            return result["profile"]
+
+        elif name == "update_my_profile":
+            from routes.platforms import api_update_profile, ProfilePayload
+            allowed = {
+                "education", "skills", "experience_summary", "projects",
+                "target_role", "target_industry", "salary_min", "salary_max", "preferred_cities",
+            }
+            payload = {k: v for k, v in args.items() if k in allowed and v is not None}
+            if not payload:
+                return {"error": "no_fields", "message": "请至少指定一个要更新的字段"}
+            profile = api_update_profile(ProfilePayload(**payload), user={"id": user_id})
+            return {"status": "ok", "profile": profile["profile"]}
+
+        elif name == "list_my_tasks":
+            from routes.platforms import api_list_growth_tasks
+            result = api_list_growth_tasks(user={"id": user_id})
+            return result
+
+        elif name == "add_my_task":
+            from routes.platforms import api_create_growth_task, GrowthTaskPayload
+            task = api_create_growth_task(GrowthTaskPayload(
+                title=args["title"],
+                category=args.get("category", "skill"),
+                status=args.get("status", "pending"),
+            ), user={"id": user_id})
+            return task
 
         return {"error": "unknown_tool"}
 

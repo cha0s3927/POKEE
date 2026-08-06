@@ -155,15 +155,29 @@ def api_tailor_resume(req: TailorRequest, user: dict = Depends(auth_user)):
             resume_id = r["id"]
     if not resume_id:
         raise HTTPException(400, "请先上传简历")
+    from database import spend_points, engine
+    from sqlalchemy import text
+    try:
+        spend_points(user["id"], 10, "tailor_resume")
+    except ValueError as e:
+        raise HTTPException(402, str(e))
     try:
         markdown = tailor_resume(resume_id, req.jd_text)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return {"markdown": markdown, "resume_id": resume_id}
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT points FROM users WHERE id = :uid"), {"uid": user["id"]}).fetchone()
+    return {"markdown": markdown, "resume_id": resume_id, "balance": round((row.points if row else 0) / 10, 1)}
 
 
 @router.post("/api/cover-letter", summary="生成招呼语/Cover Letter")
 def api_cover_letter(req: CoverRequest, user: dict = Depends(auth_user)):
+    from database import spend_points, engine
+    from sqlalchemy import text
+    try:
+        spend_points(user["id"], 10, "cover_letter")
+    except ValueError as e:
+        raise HTTPException(402, str(e))
     try:
         if req.style == "cover":
             text = generate_cover(user["id"], req.jd_text, req.resume_id)
@@ -171,4 +185,6 @@ def api_cover_letter(req: CoverRequest, user: dict = Depends(auth_user)):
             text = generate_pitch(user["id"], req.jd_text, req.resume_id)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return {"text": text}
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT points FROM users WHERE id = :uid"), {"uid": user["id"]}).fetchone()
+    return {"text": text, "balance": round((row.points if row else 0) / 10, 1)}
