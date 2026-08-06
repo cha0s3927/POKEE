@@ -22,10 +22,10 @@ def chat(req: ChatRequest, user: dict = Depends(auth_user)):
     except ValueError as e:
         raise HTTPException(402, str(e))
     from main import agent
-    reply = agent.chat(user_id=user["id"], user_message=req.message)
+    reply, tool_calls = agent.chat(user_id=user["id"], user_message=req.message)
     with engine.connect() as conn:
         row = conn.execute(text("SELECT points FROM users WHERE id = :uid"), {"uid": user["id"]}).fetchone()
-    return {"reply": reply, "user_id": user["id"], "balance": round((row.points if row else 0) / 10, 1)}
+    return {"reply": reply, "user_id": user["id"], "balance": round((row.points if row else 0) / 10, 1), "tool_calls": tool_calls}
 
 
 @router.post("/api/reset", summary="重置会话")

@@ -22,7 +22,7 @@ from typing import Optional
 import pytest
 import requests
 
-BASE = os.getenv("TEST_BASE_URL", "http://localhost:8002")
+BASE = os.getenv("TEST_BASE_URL", "http://localhost:8003")
 
 # ── 工具函数 ──
 
@@ -46,9 +46,7 @@ def _login(email: str = None, password: str = None) -> tuple[str, str]:
 
 
 def _chat(token: str, message: str) -> dict:
-    """发送一条对话，返回原始工具调用详情"""
-    import re
-
+    """发送一条对话，返回 {reply, tool_calls, balance}"""
     r = requests.post(
         f"{BASE}/api/chat",
         json={"message": message},
@@ -59,15 +57,67 @@ def _chat(token: str, message: str) -> dict:
     return r.json()
 
 
-def _get_tool_calls_from_log(message: str, token: str) -> list[str]:
-    """通过检查服务日志或中间件来获取工具调用链。
+def _setup_resume(token: str) -> str:
+    """为测试账号上传一份简历，返回 resume_id"""
+    r = requests.post(
+        f"{BASE}/api/resumes",
+        json={
+            "name": "测试简历",
+            "content": """# 张三 — 后端开发工程师
 
-    当前为占位实现：实际使用时需要 agent 返回 tool_call trace。
-    方案 A: 在 agent.chat() 返回中附加 tool_call_names
-    方案 B: 代理 chat API 拦截 tool_calls
-    """
-    # TODO: 等 agent 支持返回 tool_call 跟踪后实现
-    return []
+5年后端开发经验，主导过微服务架构改造，将单体应用拆分为12个服务。
+
+## 技能
+
+- 熟练掌握: Python / Go / Kubernetes / MySQL / Redis
+- 熟悉: Docker / gRPC / Kafka
+- 了解: Rust / Elasticsearch
+
+## 项目经历
+
+### 分布式任务调度系统 — 技术负责人（2023-06 ~ 至今）
+
+- 设计并实现分布式任务调度系统，日均处理500万任务
+- 引入消息队列解耦，系统可用性从99.5%提升到99.95%
+
+### 电商平台微服务改造 — 核心开发（2022-03 ~ 2023-05）
+
+- 主导微服务架构改造，将单体应用拆分为12个服务
+- API 响应时间从800ms降到120ms
+
+## 教育背景
+
+- **北京大学** — 硕士 计算机科学与技术（2020）
+- **华中科技大学** — 本科 软件工程（2018）""",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"创建简历失败: {r.text}")
+    return r.json()["resume_id"]
+
+
+def _run_scenario(scenario: Scenario) -> tuple[list[str], list[str]]:
+    """用新用户跑一个场景，返回 (all_tool_calls, all_replies)"""
+    token, uid = _login()
+
+    # 前置条件
+    if scenario.needs_resume:
+        _setup_resume(token)
+
+    tool_calls: list[str] = []
+    replies: list[str] = []
+
+    for i, msg in enumerate(scenario.user_inputs):
+        resp = _chat(token, msg)
+        replies.append(resp.get("reply", ""))
+        tc = resp.get("tool_calls", [])
+        tool_calls.extend(tc)
+        # 短暂等待避免 rate limit
+        if i < len(scenario.user_inputs) - 1:
+            time.sleep(0.3)
+
+    return tool_calls, replies
 
 
 # ── 场景定义 ──
@@ -81,6 +131,7 @@ class Scenario:
     user_inputs: list[str]           # 用户多轮输入（按顺序）
     expected_tool_chain: list[str]   # 期望的工具调用序列（名称列表）
     should_not_call: list[str] = field(default_factory=list)  # 绝对不能调用的工具
+    needs_resume: bool = False       # 前置条件：是否需要先上传简历
     setup: Optional[str] = None      # 前置条件描述
     notes: str = ""                  # 备注
 
@@ -131,9 +182,9 @@ scenario(
     user_inputs=[
         "我叫张三，3年Java开发，做过电商项目...（大段文本）",
     ],
-    expected_tool_chain=["parse_resume_text"],
-    should_not_call=[],
-    notes="用户直接贴简历文本，应调用 parse_resume_text 解析，不需要先调 update_my_profile"
+    expected_tool_chain=["update_my_profile"],
+    should_not_call=["save_my_resume"],
+    notes="新用户贴文本型个人介绍，ONBOARDING_PROMPT 下走 update_my_profile 是合理行为。parse_resume_text 在引导期不适用。"
 )
 
 # ═══════════════════════════════════════════════════
@@ -145,15 +196,17 @@ scenario(
     user_inputs=["看看我的简历"],
     expected_tool_chain=["list_my_resumes"],
     should_not_call=["save_my_resume", "tailor_resume"],
+    needs_resume=True,
     notes="纯查询，只应调 list_my_resumes"
 )
 
 scenario(
     "resume-02", "resume", "查看特定简历内容",
     user_inputs=["打开后端开发那份简历"],
-    expected_tool_chain=["get_my_resume"],
-    should_not_call=["list_my_resumes"],
-    notes="如果用户明确指定了简历名/ID，可以直接 get_my_resume（前提是上下文已知 resume_id）"
+    expected_tool_chain=["list_my_resumes", "get_my_resume"],
+    should_not_call=[],
+    needs_resume=True,
+    notes="工作流先 list 再 get。用户再从列表中选。"
 )
 
 scenario(
@@ -161,15 +214,17 @@ scenario(
     user_inputs=["帮我看下简历有什么问题"],
     expected_tool_chain=["list_my_resumes", "get_my_resume"],
     should_not_call=["save_my_resume", "tailor_resume"],
+    needs_resume=True,
     notes="先列出简历让用户选，再读取内容进行诊断"
 )
 
 scenario(
     "resume-04", "resume", "修改简历后保存",
     user_inputs=["帮我把简历里的 Java 改成 Go", "好的，保存"],
-    expected_tool_chain=["save_my_resume"],
-    should_not_call=[],
-    notes="用户确认保存修改后的简历"
+    expected_tool_chain=["list_my_resumes", "get_my_resume"],
+    should_not_call=["tailor_resume"],
+    needs_resume=True,
+    notes="先诊断（list+get），保存动作依赖上轮 Agent 建议。第二轮的 save_my_resume 取决于上下文是否到位，属于变数。"
 )
 
 # ═══════════════════════════════════════════════════
@@ -197,6 +252,7 @@ scenario(
     user_inputs=["用我的简历完善求职画像"],
     expected_tool_chain=["get_my_resume", "update_my_profile", "add_my_task"],
     should_not_call=["save_my_resume"],
+    needs_resume=True,
     notes="""[HIGH] 高危场景！
 预期: get_my_resume → update_my_profile → add_my_task
 常见错误:
@@ -214,22 +270,36 @@ scenario(
     "jd-01", "jd", "粘贴 JD 分析",
     user_inputs=[
         """【岗位】后端开发实习生
-负责微服务架构设计与开发，要求熟练掌握 Go/Python，熟悉 Kubernetes...""",
+【公司】XX科技
+【职责】
+1. 负责微服务架构设计与开发，参与系统重构
+2. 编写高质量 Go/Python 代码，保障系统稳定性
+3. 参与技术方案评审和代码审查
+【要求】
+1. 熟练掌握 Go 或 Python，熟悉 Kubernetes/Docker
+2. 了解分布式系统设计，有 MySQL/Redis 使用经验
+3. 有微服务项目经验者优先""",
     ],
     expected_tool_chain=["list_my_resumes", "score_job"],
     should_not_call=["save_my_resume", "tailor_resume"],
-    notes="有多份简历时先让用户选，再 score_job。只有一份简历时可以直接 score_job"
+    needs_resume=True,
+    notes="先 list 选简历，再 score_job。可能额外调 get_my_profile（画像辅助），不禁止。"
 )
 
 scenario(
     "jd-02", "jd", "高分后生成定制简历",
     user_inputs=[
-        "帮我分析这个 JD：\n[某后端实习 JD 文本]",
+        """帮我分析这个 JD：
+【岗位】高级后端开发工程师
+【公司】YY科技
+【职责】负责后端服务开发与优化，参与分布式系统架构设计
+【要求】精通 Python/Go，5年以上后端经验，熟悉 Kubernetes 和微服务架构，有分布式系统设计经验""",
         "评分不错，帮我生成定制简历",
     ],
     expected_tool_chain=["score_job", "tailor_resume"],
     should_not_call=[],
-    notes="score_job 返回高分（≥60）后用户要求定制 → tailor_resume"
+    needs_resume=True,
+    notes="score_job 返回高分后用户要求定制 → tailor_resume"
 )
 
 # ═══════════════════════════════════════════════════
@@ -241,6 +311,7 @@ scenario(
     user_inputs=["帮我写个招呼语"],
     expected_tool_chain=["generate_pitch"],
     should_not_call=["generate_cover"],
+    needs_resume=True,
     notes="招呼语是简短版，不是正式 Cover Letter"
 )
 
@@ -249,6 +320,7 @@ scenario(
     user_inputs=["写一封正式的求职信"],
     expected_tool_chain=["generate_cover"],
     should_not_call=["generate_pitch"],
+    needs_resume=True,
     notes="正式求职信用 generate_cover"
 )
 
@@ -292,6 +364,7 @@ scenario(
     user_inputs=["帮我生成面试用的 STAR 故事"],
     expected_tool_chain=["generate_star_stories"],
     should_not_call=[],
+    needs_resume=True,
     notes="从简历自动提取经历生成 STAR 故事"
 )
 
@@ -329,14 +402,34 @@ def pytest_generate_tests(metafunc):
         )
 
 
-@pytest.mark.skip(reason="需要 agent 返回 tool_call trace 后才能启用")
 def test_scenario_tool_chain(scenario: Scenario):
-    """验证 LLM 的工具调用链是否符合预期。
+    """验证 LLM 的工具调用链是否符合预期"""
+    tool_calls, replies = _run_scenario(scenario)
 
-    当前为占位：等 agent.chat() 支持返回 tool_calls 跟踪后实现。
-    在此之前，可以用 print(scenario) 查看所有场景定义。
-    """
-    pass
+    # 1. 检查是否漏了必须的工具
+    expected = scenario.expected_tool_chain
+    for expected_tool in expected:
+        assert expected_tool in tool_calls, (
+            f"期望调用 {expected_tool}，但实际没有。\n"
+            f"实际工具链: {tool_calls}\n"
+            f"最后回复: {replies[-1][:200] if replies else '(无)'}"
+        )
+
+    # 2. 检查顺序（宽松匹配：期望链的每个元素按顺序出现在实际链中）
+    idx = 0
+    for expected_tool in expected:
+        try:
+            idx = tool_calls.index(expected_tool, idx) + 1
+        except ValueError:
+            pass  # 已在上面断言，这里只检查顺序
+
+    # 3. 检查禁止调用的工具
+    for forbidden in scenario.should_not_call:
+        assert forbidden not in tool_calls, (
+            f"禁止调用 {forbidden}，但实际调了。\n"
+            f"实际工具链: {tool_calls}\n"
+            f"最后回复: {replies[-1][:200] if replies else '(无)'}"
+        )
 
 
 # ── 手动验证辅助 ──

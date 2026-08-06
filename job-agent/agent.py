@@ -335,7 +335,7 @@ class Agent:
         self.sessions: dict[str, list[dict]] = {}
         self._last_tailored: dict[str, str] = {}  # user_id → markdown（工作流约束：缓存最新生成的简历）
 
-    def chat(self, user_id: str, user_message: str) -> str:
+    def chat(self, user_id: str, user_message: str) -> tuple[str, list[str]]:
         if user_id not in self.sessions:
             from database import engine
             from sqlalchemy import text
@@ -349,7 +349,25 @@ class Agent:
             self.sessions[user_id] = [{"role": "system", "content": prompt}]
 
         messages = self.sessions[user_id]
+
+        # ── 工作流路由 ──
+        from workflow import classify_intent, is_workflow_intent, execute_workflow
+
+        intent = classify_intent(user_message)
+        if is_workflow_intent(intent):
+            reply, tool_calls_made = execute_workflow(
+                intent, user_id, user_message, messages, TOOLS, self._execute,
+            )
+            # 将对话记录写入 session，保持上下文
+            messages.append({"role": "user", "content": user_message})
+            messages.append({"role": "assistant", "content": reply})
+            if len(messages) > MAX_MESSAGES:
+                self.sessions[user_id] = [messages[0]] + messages[-(MAX_MESSAGES - 1):]
+            return reply, tool_calls_made
+
         messages.append({"role": "user", "content": user_message})
+
+        tool_calls_made: list[str] = []
 
         for _ in range(MAX_TOOL_ITERATIONS):
             response = client.chat.completions.create(
@@ -378,6 +396,7 @@ class Agent:
 
                 for tc in msg.tool_calls:
                     name = tc.function.name
+                    tool_calls_made.append(name)
                     try:
                         args = json.loads(tc.function.arguments)
                     except json.JSONDecodeError:
@@ -399,9 +418,9 @@ class Agent:
                         keep_from -= 1
                     self.sessions[user_id] = [messages[0]] + messages[keep_from:]
 
-                return msg.content
+                return msg.content, tool_calls_made
 
-        return "抱歉，处理超时，请重试。"
+        return "抱歉，处理超时，请重试。", tool_calls_made
 
     def _execute(self, name: str, args: dict, user_id: str) -> dict:
         from engine import score_job
