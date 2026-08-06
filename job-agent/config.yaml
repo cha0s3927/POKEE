@@ -1,0 +1,16 @@
+database:
+  url: sqlite:///data/job_agent.db
+
+llm:
+  api_key: ${DEEPSEEK_API_KEY}
+  base_url: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}
+  model: ${LLM_MODEL:-deepseek-chat}
+
+server_url: ${SERVER_URL:-http://localhost:8001}
+
+search:
+  http_proxy: ${HTTP_PROXY:-}
+  serper_api_key: ${SERPER_API_KEY:-}
+
+auth:
+  jwt_secret: ${JWT_SECRET:-job-agent-secret-change-me-in-production}

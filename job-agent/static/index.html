@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offer大圣 — AI Agent</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117; --surface: #1a1d27; --surface2: #22252f; --border: #2a2d38;
+  --text: #e4e6ed; --text2: #a8b0c0; --accent: #6c8aff; --accent2: #5b7af0;
+  --green: #4ade80; --yellow: #fbbf24; --red: #f87171; --purple: #a78bfa;
+  --radius: 10px; --radius-sm: 6px;
+}
+:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(108,138,255,0.4); border-radius: var(--radius-sm); }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg); color: var(--text); height: 100vh; overflow: hidden;
+}
+
+/* Auth */
+.auth-container { display: flex; align-items: center; justify-content: center; height: 100vh; }
+.auth-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 40px 36px; width: 380px; max-width: 90vw;
+}
+.auth-box h1 {
+  font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.auth-box .sub { text-align: center; font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+.auth-tabs { display: flex; margin-bottom: 24px; border-radius: var(--radius-sm); overflow: hidden; }
+.auth-tabs button {
+  flex: 1; padding: 10px; border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); cursor: pointer; font-size: 14px; transition: all 0.2s;
+}
+.auth-tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.auth-field { margin-bottom: 16px; }
+.auth-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+.auth-field input {
+  width: 100%; padding: 12px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s;
+}
+.auth-field input:focus { border-color: var(--accent); }
+.auth-box .btn {
+  width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: background 0.2s; margin-top: 8px;
+}
+.auth-box .btn:hover { background: var(--accent2); }
+.auth-box .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-error { color: var(--red); font-size: 12px; text-align: center; margin-top: 12px; min-height: 18px; }
+
+/* App */
+.app { display: none; height: 100vh; }
+.app.active { display: flex; }
+.sidebar {
+  width: 260px; background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
+.sidebar-header h1 {
+  font-size: 22px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.sidebar-header .user-info { font-size: 12px; color: var(--text2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
+.sidebar-body::-webkit-scrollbar { width: 4px; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sidebar-body .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); padding: 8px 4px 4px; display: flex; justify-content: space-between; align-items: center; }
+.sidebar-body .section-label .count { font-size: 10px; background: var(--surface2); padding: 1px 6px; border-radius: 10px; }
+
+/* Resume list */
+.resume-item {
+  background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px;
+  margin-bottom: 4px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center;
+  gap: 8px; font-size: 13px; border: 1px solid transparent;
+}
+.resume-item:hover { border-color: var(--border); }
+.resume-item.active { border-color: var(--accent); background: rgba(108,138,255,0.08); }
+.resume-item .r-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #4a4d5a; }
+.resume-item.active .r-dot { background: var(--accent); }
+.resume-item .r-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resume-item .r-badge { font-size: 9px; padding: 1px 5px; border-radius: 8px; background: rgba(108,138,255,0.15); color: var(--accent); white-space: nowrap; }
+.resume-item .r-actions { display: none; gap: 2px; }
+.resume-item:hover .r-actions { display: flex; }
+.resume-item .r-act {
+  background: none; border: none; color: var(--text2); cursor: pointer; font-size: 11px;
+  padding: 2px 4px; border-radius: 3px; transition: all 0.1s;
+}
+.resume-item .r-act:hover { background: var(--surface); color: var(--text); }
+.resume-item .r-act.del:hover { color: var(--red); }
+
+/* Saved jobs list */
+.saved-job-item {
+  background: var(--surface2); border-radius: var(--radius-sm); padding: 8px 10px;
+  margin-bottom: 4px; font-size: 12px; cursor: pointer; transition: all 0.15s;
+  border: 1px solid transparent; line-height: 1.5;
+}
+.saved-job-item:hover { border-color: var(--border); }
+.saved-job-item .sj-company { color: var(--text2); font-size: 11px; }
+.saved-job-item .sj-score {
+  display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 8px;
+  margin-top: 2px; font-weight: 600;
+}
+.sj-score.high { background: rgba(74,222,128,0.15); color: var(--green); }
+.sj-score.mid { background: rgba(251,191,36,0.15); color: var(--yellow); }
+.sj-score.low { background: rgba(248,113,113,0.15); color: var(--red); }
+
+.mini-btn {
+  display: block; width: 100%; margin-top: 4px; padding: 7px 12px; background: transparent;
+  border: 1px dashed var(--border); color: var(--text2); border-radius: var(--radius-sm);
+  font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+.sidebar-footer button {
+  background: transparent; border: 1px solid var(--border); color: var(--text2);
+  padding: 6px 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: 11px;
+  flex: 1; transition: all 0.15s; white-space: nowrap;
+}
+.sidebar-footer button:hover { border-color: var(--accent); color: var(--accent); }
+.sidebar-footer button.logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* Main chat area */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.chat-header {
+  padding: 14px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chat-header .status { font-size: 12px; display: flex; align-items: center; gap: 6px; color: var(--text2); }
+.chat-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.chat-header .active-resume { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.chat-header .active-resume select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; outline: none;
+}
+.chat-header .active-resume select:focus { border-color: var(--accent); }
+.chat-header button {
+  background: transparent; border: 1px solid var(--border); color: var(--text2);
+  padding: 5px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px;
+  transition: all 0.15s; margin-left: 8px;
+}
+.chat-header button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Messages */
+.messages {
+  flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.msg { display: flex; gap: 10px; max-width: 80%; animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg.assistant { align-self: flex-start; }
+.msg-avatar {
+  width: 34px; height: 34px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px;
+}
+.msg.user .msg-avatar { background: var(--accent); }
+.msg.assistant .msg-avatar { background: linear-gradient(135deg, #6c8aff, var(--purple)); }
+.msg-bubble {
+  padding: 12px 16px; border-radius: var(--radius); font-size: 14px;
+  line-height: 1.65; word-break: break-word;
+}
+.msg.user .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 2px; }
+.msg.assistant .msg-bubble { background: var(--surface2); border-bottom-left-radius: 2px; }
+
+/* Markdown */
+.msg-bubble h1, .msg-bubble h2, .msg-bubble h3 { font-size: 15px; font-weight: 600; margin: 10px 0 6px; }
+.msg-bubble h2 { font-size: 14px; }
+.msg-bubble ul, .msg-bubble ol { padding-left: 18px; margin: 6px 0; }
+.msg-bubble li { margin: 2px 0; }
+.msg-bubble p { margin: 6px 0; }
+.msg-bubble strong { font-weight: 600; }
+.msg-bubble code {
+  background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 3px;
+  font-size: 13px; font-family: 'SF Mono','Fira Code',monospace;
+}
+.msg-bubble pre {
+  background: var(--bg); padding: 12px; border-radius: var(--radius-sm); overflow-x: auto;
+  margin: 8px 0; font-size: 12px; white-space: pre-wrap;
+}
+.msg-bubble blockquote {
+  border-left: 2px solid var(--accent); padding-left: 10px; color: var(--text2);
+  margin: 6px 0; font-size: 13px;
+}
+
+/* Copy button on code blocks */
+.copy-btn {
+  position: absolute; top: 6px; right: 6px; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text2); padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;
+  opacity: 0; transition: opacity 0.15s;
+}
+.msg-bubble pre { position: relative; }
+.msg-bubble pre:hover .copy-btn { opacity: 1; }
+
+/* Typing */
+.typing { align-self: flex-start; display: flex; align-items: center; gap: 8px; padding-left: 44px; }
+.typing .dots { display: flex; gap: 5px; }
+.typing .dots span {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--text2);
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+.typing .dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing .dots span:nth-child(2) { animation-delay: -0.16s; }
+.typing .dots span:nth-child(3) { animation-delay: 0s; }
+@keyframes bounce { 0%,80%,100% { transform: scale(0.5); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+
+/* Input */
+.input-area { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.input-area textarea {
+  flex: 1; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 14px; outline: none;
+  min-width: 0; font-family: inherit; line-height: 1.5; resize: none; min-height: 44px;
+  max-height: 200px; transition: border-color 0.2s;
+}
+.input-area textarea:focus { border-color: var(--accent); }
+.input-area textarea::placeholder { color: #4f5365; }
+.input-area button {
+  padding: 10px 22px; background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer;
+  min-height: 44px; transition: background 0.15s, transform 0.1s; flex-shrink: 0;
+}
+.input-area button:active { transform: scale(0.97); }
+.input-area button:hover { background: var(--accent2); }
+.input-area button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* Welcome */
+.welcome {
+  align-self: center; text-align: center; padding: 60px 20px; color: var(--text2);
+}
+.welcome h2 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+.welcome p { font-size: 14px; line-height: 1.6; margin-bottom: 4px; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 100; align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 28px; width: 640px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+}
+.modal-box h3 { font-size: 16px; margin-bottom: 12px; }
+.modal-box .field { margin-bottom: 14px; }
+.modal-box .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+.modal-box .field input {
+  width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none;
+}
+.modal-box .field input:focus { border-color: var(--accent); }
+.modal-box textarea {
+  width: 100%; min-height: 280px; padding: 12px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text);
+  font-size: 12px; font-family: 'SF Mono','Fira Code',monospace; line-height: 1.5;
+  resize: vertical; outline: none;
+}
+.modal-box textarea:focus { border-color: var(--accent); }
+.modal-box .field select {
+  width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; cursor: pointer;
+}
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-btns button {
+  padding: 8px 20px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+.btn-cancel:hover { border-color: var(--red); color: var(--red); }
+.btn-save { background: var(--accent); color: #fff; border: none; }
+.btn-save:hover { background: var(--accent2); }
+
+/* Markdown preview */
+.resume-preview {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 20px 24px; min-height: 120px; max-height: 450px; overflow-y: auto;
+  font-size: 14px; line-height: 1.8; color: var(--text); display: none; margin-bottom: 14px;
+}
+.resume-preview h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+.resume-preview h2 { font-size: 16px; font-weight: 600; margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.resume-preview h3 { font-size: 14px; font-weight: 600; margin: 14px 0 4px; color: var(--accent); }
+.resume-preview p { margin-bottom: 6px; color: var(--text2); }
+.resume-preview ul { padding-left: 18px; margin: 6px 0; }
+.resume-preview li { margin-bottom: 4px; }
+.resume-preview code { background: var(--surface); padding: 1px 6px; border-radius: 3px; font-size: 12px; color: var(--accent); }
+.resume-preview em { color: var(--text2); font-style: italic; }
+.resume-preview strong { color: #fff; }
+.resume-preview hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* Sidebar view-resume button */
+.btn-danger:hover { opacity: 0.85; }
+
+/* File upload area */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 20px;
+  text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 10px;
+  font-size: 13px; color: var(--text2);
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(108,138,255,0.04); color: var(--accent); }
+.upload-zone input[type="file"] { display: none; }
+.upload-zone .upload-hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.upload-zone.loading { pointer-events: none; opacity: 0.6; }
+.upload-status { font-size: 12px; text-align: center; margin-bottom: 8px; min-height: 18px; }
+
+/* Saved jobs modal */
+.job-detail-card {
+  background: var(--surface2); border-radius: var(--radius-sm); padding: 14px;
+  margin-bottom: 10px; font-size: 13px; line-height: 1.6;
+}
+.job-detail-card .jd-title { font-size: 15px; font-weight: 600; }
+.job-detail-card .jd-meta { font-size: 12px; color: var(--text2); margin: 4px 0; }
+.job-detail-card .jd-score-row { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+.job-detail-card .jd-score-pill {
+  font-size: 14px; font-weight: 700; padding: 2px 10px; border-radius: 10px;
+}
+.job-detail-card .jd-verdict { font-size: 11px; color: var(--text2); }
+.job-detail-card .jd-url { font-size: 11px; color: var(--accent); word-break: break-all; margin-top: 4px; }
+
+/* Toast */
+.toast {
+  position: fixed; top: 20px; right: 20px; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 20px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: none;
+}
+.toast.show { display: block; animation: fadeIn 0.25s ease; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .msg { max-width: 90%; }
+  .messages { padding: 16px; }
+  .input-area { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ Auth ═══ -->
+<div class="auth-container" id="authPage">
+  <div class="auth-box">
+    <h1>Offer大圣</h1>
+    <p class="sub">AI 求职 Agent — 聊天式交互</p>
+    <div class="auth-tabs">
+      <button id="tabLogin" class="active">登录</button>
+      <button id="tabRegister">注册</button>
+    </div>
+    <div class="auth-field">
+      <label>邮箱</label>
+      <input type="email" id="authEmail" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>密码</label>
+      <input type="password" id="authPassword" placeholder="至少6位" autocomplete="current-password">
+    </div>
+    <button class="btn" id="authBtn">登录</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- ═══ App ═══ -->
+<div class="app" id="appMain">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>Offer大圣</h1>
+      <div class="user-info" id="userInfo"></div>
+    </div>
+    <div class="sidebar-body">
+      <div class="section-label">
+        <span>我的简历</span>
+        <span class="count" id="resumeCount">0</span>
+      </div>
+      <div id="resumeList"></div>
+      <button class="mini-btn" id="btnNewResume">+ 新建简历</button>
+
+      <div class="section-label" style="margin-top:16px;">
+        <span>收藏岗位</span>
+        <span class="count" id="savedJobCount">0</span>
+      </div>
+      <div id="savedJobsList"></div>
+      <button class="mini-btn" id="btnViewSaved" style="display:none;">查看全部</button>
+    </div>
+    <div class="sidebar-footer">
+      <button id="btnClearChat">清除对话</button>
+      <button id="btnLogout" class="logout-btn">退出</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="chat-header">
+      <div class="status"><span class="dot"></span> DeepSeek · 在线</div>
+      <div style="display:flex;align-items:center;">
+        <div class="active-resume">
+          <span>当前简历:</span>
+          <select id="activeResumeSelect"></select>
+        </div>
+        <button id="btnHeaderClear">新对话</button>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="welcome">
+        <h2>Offer大圣</h2>
+        <p>粘贴 JD 让我分析匹配度、定制简历、生成招呼语。</p>
+        <p style="margin-top:12px;font-size:13px;color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容</p>
+        <p style="font-size:13px;color:var(--text2)">也可以说：<em>"帮我搜索上海 Python 后端岗位"</em></p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <textarea id="chatInput" rows="1" placeholder="粘贴 JD 或输入消息…（Shift+Enter 换行，Enter 发送）"></textarea>
+      <button id="btnSend">发送</button>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ Resume Modal ═══ -->
+<div class="modal-overlay" id="resumeModal">
+  <div class="modal-box">
+    <h3 id="resumeModalTitle">编辑简历</h3>
+    <div class="field">
+      <label>简历名称（如"后端开发""产品经理"）</label>
+      <input type="text" id="resumeName" placeholder="未命名简历">
+    </div>
+    <div class="upload-zone" id="uploadZone">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px;opacity:0.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      <div>上传简历文件自动解析</div>
+      <div class="upload-hint">支持 PDF / Word / Markdown / TXT / JSON，上限 10MB</div>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt,.md,.markdown,.json">
+    </div>
+    <div class="upload-status" id="uploadStatus"></div>
+    <div class="resume-preview" id="resumePreview"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="btnModalClose">取消</button>
+      <button class="btn-save" id="btnModalSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Saved Jobs Modal ═══ -->
+<div class="modal-overlay" id="savedJobsModal">
+  <div class="modal-box" style="max-width:700px;">
+    <h3>收藏的岗位</h3>
+    <div id="savedJobsDetail"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="btnJobsModalClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ State ═══ */
+let token = localStorage.getItem('job_agent_token') || '';
+let isLogin = true;
+let resumes = [];
+let activeResumeId = null;
+let savedJobs = [];
+let currentModalContent = null;  // resume Markdown content being edited
+
+/* ═══ Helpers ═══ */
+const $ = s => document.querySelector(s);
+function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+}
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.className = 'toast show';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function verdictLabel(v) {
+  const map = { strong_match: '强烈推荐', apply: '建议投递', maybe: '可以试试', skip: '不建议' };
+  return map[v] || v || '';
+}
+function verdictClass(total) {
+  if (total >= 80) return 'high';
+  if (total >= 60) return 'mid';
+  return 'low';
+}
+
+/* ═══ Auth ═══ */
+$('#tabLogin').onclick = () => { isLogin = true; $('#tabLogin').classList.add('active'); $('#tabRegister').classList.remove('active'); $('#authBtn').textContent = '登录'; $('#authError').textContent = ''; };
+$('#tabRegister').onclick = () => { isLogin = false; $('#tabRegister').classList.add('active'); $('#tabLogin').classList.remove('active'); $('#authBtn').textContent = '注册'; $('#authError').textContent = ''; };
+
+$('#authBtn').onclick = async () => {
+  const email = $('#authEmail').value.trim();
+  const pw = $('#authPassword').value;
+  if (!email || !pw) { $('#authError').textContent = '请填写邮箱和密码'; return; }
+  $('#authBtn').disabled = true;
+  const ep = isLogin ? '/api/login' : '/api/register';
+  const res = await api(ep, { method: 'POST', body: JSON.stringify({ email, password: pw }) });
+  const data = await res.json();
+  if (res.ok) {
+    token = data.token;
+    localStorage.setItem('job_agent_token', token);
+    showApp(data.email);
+  } else {
+    $('#authError').textContent = data.detail || '操作失败';
+  }
+  $('#authBtn').disabled = false;
+};
+['#authEmail','#authPassword'].forEach(s => $(s).onkeydown = e => { if (e.key === 'Enter') $('#authBtn').click(); });
+
+/* ═══ App ═══ */
+async function showApp(email) {
+  $('#authPage').style.display = 'none';
+  $('#appMain').classList.add('active');
+  $('#userInfo').textContent = email;
+
+  // Auto-scroll
+  const obs = new MutationObserver(() => {
+    const m = $('#messages');
+    m.scrollTop = m.scrollHeight;
+  });
+  obs.observe($('#messages'), { childList: true, subtree: true });
+
+  await refreshResumes();
+  await refreshSavedJobs();
+}
+
+/* ═══ Resume management ═══ */
+async function refreshResumes() {
+  const res = await api('/api/resumes');
+  if (!res.ok) return;
+  const data = await res.json();
+  resumes = data.resumes || [];
+  activeResumeId = resumes.find(r => r.is_default)?.id || resumes[0]?.id || null;
+  renderResumeList();
+  renderResumeSelect();
+}
+
+function renderResumeList() {
+  const container = $('#resumeList');
+  $('#resumeCount').textContent = resumes.length;
+
+  if (!resumes.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px;">暂无简历</div>';
+    return;
+  }
+
+  container.innerHTML = resumes.map(r => `
+    <div class="resume-item ${r.id === activeResumeId ? 'active' : ''}" data-rid="${r.id}">
+      <span class="r-dot"></span>
+      <span class="r-name" title="${esc(r.name)}">${esc(r.name)}</span>
+      ${r.is_default ? '<span class="r-badge">默认</span>' : ''}
+      <span class="r-actions">
+        <button class="r-act view" data-action="view" data-rid="${r.id}" title="查看"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        ${!r.is_default ? `<button class="r-act" data-action="setdefault" data-rid="${r.id}" title="设为默认"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>` : ''}
+        <button class="r-act del" data-action="delete" data-rid="${r.id}" title="删除"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </span>
+    </div>
+  `).join('');
+
+  // Click handlers
+  container.querySelectorAll('.resume-item').forEach(el => {
+    el.onclick = (e) => {
+      if (e.target.closest('.r-act')) return;
+      activeResumeId = el.dataset.rid;
+      renderResumeList();
+      renderResumeSelect();
+    };
+  });
+  container.querySelectorAll('.r-act').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const rid = btn.dataset.rid;
+      const action = btn.dataset.action;
+      if (action === 'edit' || action === 'view') await openResume(rid);
+      else if (action === 'setdefault') { await api(`/api/resume/${rid}/default`, { method: 'POST' }); await refreshResumes(); toast('已设为默认简历'); }
+      else if (action === 'delete') {
+        if (!confirm('确定删除这份简历吗？')) return;
+        const r = await api(`/api/resume/${rid}`, { method: 'DELETE' });
+        if (r.ok) { await refreshResumes(); toast('简历已删除'); }
+        else { const d = await r.json(); toast(d.detail || '删除失败'); }
+      }
+    };
+  });
+}
+
+function renderResumeSelect() {
+  const sel = $('#activeResumeSelect');
+  if (!resumes.length) {
+    sel.innerHTML = '<option value="">无简历</option>';
+    return;
+  }
+  sel.innerHTML = resumes.map(r =>
+    `<option value="${r.id}" ${r.id === activeResumeId ? 'selected' : ''}>${esc(r.name)}${r.is_default ? ' (默认)' : ''}</option>`
+  ).join('');
+  sel.onchange = () => {
+    activeResumeId = sel.value;
+    renderResumeList();
+    renderResumeSelect();
+  };
+}
+
+async function openResume(rid) {
+  const r = await api(`/api/resume/${rid}`);
+  if (!r.ok) { toast('加载简历失败'); return; }
+  const data = await r.json();
+  currentModalContent = data.content;
+  $('#resumeModalTitle').textContent = data.name || '查看简历';
+  $('#resumeName').value = data.name || '';
+  $('#resumeModal').dataset.mode = 'edit';
+  $('#resumeModal').dataset.rid = rid;
+  $('#resumeModal').classList.add('active');
+
+  // content is already Markdown, render directly
+  if (currentModalContent && typeof marked !== 'undefined') {
+    $('#resumePreview').innerHTML = marked.parse(currentModalContent);
+    $('#resumePreview').style.display = 'block';
+  }
+}
+
+$('#btnNewResume').onclick = () => {
+  $('#resumeModalTitle').textContent = '新建简历';
+  $('#resumeName').value = '';
+  $('#resumePreview').style.display = 'none';
+  $('#resumePreview').innerHTML = '';
+  $('#uploadStatus').textContent = '';
+  currentModalContent = null;
+  $('#resumeModal').dataset.mode = 'create';
+  delete $('#resumeModal').dataset.rid;
+  $('#resumeModal').classList.add('active');
+};
+
+$('#btnModalClose').onclick = () => { $('#resumeModal').classList.remove('active'); };
+/* ═══ File upload ═══ */
+const uploadZone = $('#uploadZone');
+const fileInput = $('#fileInput');
+const uploadStatus = $('#uploadStatus');
+
+uploadZone.onclick = () => fileInput.click();
+uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.classList.add('drag'); };
+uploadZone.ondragleave = () => { uploadZone.classList.remove('drag'); };
+uploadZone.ondrop = (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files[0]);
+};
+fileInput.onchange = () => {
+  if (fileInput.files.length) handleFileUpload(fileInput.files[0]);
+  fileInput.value = '';
+};
+
+async function handleFileUpload(file) {
+  uploadZone.classList.add('loading');
+  uploadStatus.textContent = '正在解析文件...';
+  uploadStatus.style.color = 'var(--accent)';
+
+  const form = new FormData();
+  form.append('file', file);
+
+  try {
+    const res = await fetch('/api/resume/parse', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (res.ok) {
+      $('#resumeName').value = data.name || '';
+      currentModalContent = data.content;  // Markdown string
+      uploadStatus.textContent = '解析成功！请确认预览后保存';
+      uploadStatus.style.color = 'var(--green)';
+      if (typeof marked !== 'undefined' && currentModalContent) {
+        $('#resumePreview').innerHTML = marked.parse(currentModalContent);
+        $('#resumePreview').style.display = 'block';
+      }
+      toast('简历解析完成，请确认后保存');
+    } else {
+      uploadStatus.textContent = data.detail || '解析失败';
+      uploadStatus.style.color = 'var(--red)';
+    }
+  } catch (e) {
+    uploadStatus.textContent = '网络错误，请重试';
+    uploadStatus.style.color = 'var(--red)';
+  }
+  uploadZone.classList.remove('loading');
+}
+
+$('#btnModalSave').onclick = async () => {
+  const name = $('#resumeName').value.trim() || '未命名简历';
+  if (!currentModalContent) { toast('请先上传简历文件'); return; }
+
+  const mode = $('#resumeModal').dataset.mode;
+  let res;
+  if (mode === 'edit' && $('#resumeModal').dataset.rid) {
+    res = await api(`/api/resume/${$('#resumeModal').dataset.rid}`, {
+      method: 'PUT', body: JSON.stringify({ name, content: currentModalContent }),
+    });
+  } else {
+    res = await api('/api/resumes', {
+      method: 'POST', body: JSON.stringify({ name, content: currentModalContent }),
+    });
+  }
+  if (res.ok) {
+    toast('简历已保存');
+    $('#resumeModal').classList.remove('active');
+    currentModalContent = null;
+    await refreshResumes();
+  } else {
+    const d = await res.json();
+    toast(d.detail || '保存失败');
+  }
+};
+
+$('#resumeModal').onclick = (e) => { if (e.target === $('#resumeModal')) $('#resumeModal').classList.remove('active'); };
+
+/* ═══ Saved Jobs ═══ */
+async function refreshSavedJobs() {
+  const res = await api('/api/saved-jobs');
+  if (!res.ok) return;
+  const data = await res.json();
+  savedJobs = data.jobs || [];
+  renderSavedJobsSidebar();
+}
+
+function renderSavedJobsSidebar() {
+  $('#savedJobCount').textContent = savedJobs.length;
+  const container = $('#savedJobsList');
+  const btn = $('#btnViewSaved');
+
+  if (!savedJobs.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px;">暂无收藏</div>';
+    btn.style.display = 'none';
+    return;
+  }
+
+  // Show top 3 in sidebar
+  const top = savedJobs.slice(0, 3);
+  container.innerHTML = top.map(j => `
+    <div class="saved-job-item" data-jid="${j.id}">
+      <div>${esc(j.title)}</div>
+      <div class="sj-company">${esc(j.company)} · ${esc(j.platform)}</div>
+      ${j.score_total != null ? `<span class="sj-score ${verdictClass(j.score_total)}">${j.score_total}分</span>` : ''}
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.saved-job-item').forEach(el => {
+    el.onclick = () => showSavedJobDetail(el.dataset.jid);
+  });
+
+  btn.style.display = savedJobs.length > 3 ? 'block' : 'none';
+}
+
+$('#btnViewSaved').onclick = () => {
+  renderSavedJobsDetail();
+  $('#savedJobsModal').classList.add('active');
+};
+$('#btnJobsModalClose').onclick = () => { $('#savedJobsModal').classList.remove('active'); };
+$('#savedJobsModal').onclick = (e) => { if (e.target === $('#savedJobsModal')) $('#savedJobsModal').classList.remove('active'); };
+
+function showSavedJobDetail(jid) {
+  renderSavedJobsDetail(jid);
+  $('#savedJobsModal').classList.add('active');
+}
+
+function renderSavedJobsDetail(highlightId) {
+  const container = $('#savedJobsDetail');
+  if (!savedJobs.length) {
+    container.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;">暂无收藏岗位</p>';
+    return;
+  }
+  container.innerHTML = savedJobs.map(j => {
+    const details = j.score_details || {};
+    const dims = Object.entries(details).map(([k,v]) => `${k}: ${v}`).join(' / ');
+    return `
+    <div class="job-detail-card" style="${j.id === highlightId ? 'border:1px solid var(--accent);' : ''}">
+      <div class="jd-title">${esc(j.title)}</div>
+      <div class="jd-meta">${esc(j.company)} · ${esc(j.platform)} · ${j.created_at?.slice(0,10) || ''}</div>
+      <div class="jd-score-row">
+        ${j.score_total != null ? `<span class="jd-score-pill sj-score ${verdictClass(j.score_total)}">${j.score_total}分</span>` : ''}
+        <span class="jd-verdict">${verdictLabel(j.verdict)}</span>
+      </div>
+      ${dims ? `<div class="jd-meta">${dims}</div>` : ''}
+      ${j.url ? `<div class="jd-url"><a href="${esc(j.url)}" target="_blank" style="color:var(--accent);">${esc(j.url)}</a></div>` : ''}
+      <div style="margin-top:8px;">
+        <button class="r-act del" data-action="delete-job" data-jid="${j.id}">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('[data-action="delete-job"]').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const r = await api(`/api/saved-jobs/${btn.dataset.jid}`, { method: 'DELETE' });
+      if (r.ok) {
+        toast('已删除');
+        await refreshSavedJobs();
+        renderSavedJobsDetail();
+      }
+    };
+  });
+}
+
+/* ═══ Logout & Clear ═══ */
+$('#btnLogout').onclick = () => {
+  localStorage.removeItem('job_agent_token');
+  token = '';
+  $('#appMain').classList.remove('active');
+  $('#authPage').style.display = 'flex';
+  $('#messages').innerHTML = `<div class="welcome"><h2>Offer大圣</h2><p>粘贴 JD，我会帮你分析匹配度、定制简历、生成招呼语。</p></div>`;
+  resumes = []; activeResumeId = null; savedJobs = [];
+};
+
+$('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
+  await api('/api/reset', { method: 'POST' });
+  $('#messages').innerHTML = `<div class="welcome"><h2>新对话</h2><p>会话已重置，可以开始新的分析。</p></div>`;
+};
+
+/* ═══ Chat ═══ */
+async function sendMessage() {
+  const input = $('#chatInput');
+  const msg = input.value.trim();
+  if (!msg || !activeResumeId) {
+    if (!activeResumeId) toast('请先创建一份简历');
+    return;
+  }
+
+  input.value = ''; input.style.height = 'auto';
+  $('#btnSend').disabled = true;
+  addMessage('user', msg);
+  showTyping(true);
+
+  // Inject active resume context into message
+  const activeResume = resumes.find(r => r.id === activeResumeId);
+  const contextMsg = activeResume
+    ? `[当前使用简历: ${activeResume.name} (${activeResumeId})]\n${msg}`
+    : msg;
+
+  const res = await api('/api/chat', { method: 'POST', body: JSON.stringify({ message: contextMsg }) });
+  showTyping(false);
+
+  if (res.ok) {
+    const data = await res.json();
+    addMessage('assistant', data.reply);
+    // Refresh after chat (may have saved jobs, new resume, etc.)
+    refreshResumes();
+    refreshSavedJobs();
+  } else {
+    const data = await res.json();
+    addMessage('assistant', data.detail || '处理出错，请重试');
+  }
+  $('#btnSend').disabled = false;
+  input.focus();
+}
+
+function addMessage(role, text) {
+  const welcome = $('#messages').querySelector('.welcome');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = role === 'user' ? 'U' : 'AI';
+  avatar.style.fontSize = '12px';
+  avatar.style.fontWeight = '600';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = renderMarkdown(text);
+
+  // Add copy buttons to code blocks
+  bubble.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '复制';
+    btn.onclick = () => {
+      navigator.clipboard.writeText(pre.textContent || '').then(() => {
+        btn.textContent = '已复制!';
+        setTimeout(() => btn.textContent = '复制', 1500);
+      });
+    };
+    pre.appendChild(btn);
+  });
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  $('#messages').appendChild(div);
+}
+
+function renderMarkdown(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  let html = div.innerHTML;
+
+  html = html
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  return '<p>' + html + '</p>';
+}
+
+function showTyping(show) {
+  const existing = $('#messages').querySelector('.typing');
+  if (show && !existing) {
+    const div = document.createElement('div');
+    div.className = 'typing';
+    div.innerHTML = '<div class="msg-avatar" style="background:linear-gradient(135deg,#6c8aff,' + getComputedStyle(document.documentElement).getPropertyValue('--purple').trim() + ');font-size:12px;font-weight:600">AI</div><div class="dots"><span></span><span></span><span></span></div>';
+    $('#messages').appendChild(div);
+  } else if (!show && existing) {
+    existing.remove();
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function jsonToMarkdown(c) {
+  const L = [];
+  const name = c.name || '', title = c.title || '';
+  if (name) { let h = '# ' + name; if (title) h += ' — ' + title; L.push(h, ''); }
+  if (c.summary) { L.push(c.summary, ''); }
+  const skills = c.skills || [];
+  if (skills.length) { L.push('## 技能', '', skills.map(s => '`' + s + '`').join(' | '), ''); }
+  (c.experience || []).forEach(e => {
+    L.push('## ' + (e.company || '') + ' — ' + (e.title || ''));
+    L.push('*' + (e.start || '') + ' - ' + (e.end || '至今') + '*', '');
+    (e.highlights || []).forEach(h => L.push('- ' + h));
+    L.push('');
+  });
+  (c.education || []).forEach(e => {
+    let el = '**' + (e.school || '') + '**';
+    if (e.degree || e.major) el += ' — ' + (e.degree || '') + ' ' + (e.major || '');
+    if (e.year) el += '（' + e.year + '）';
+    L.push('- ' + el);
+  });
+  if ((c.education || []).length) L.push('');
+  (c.certifications || []).forEach(cert => L.push('- ' + (typeof cert === 'string' ? cert : (cert.name || ''))));
+  if ((c.certifications || []).length) L.push('');
+  return L.join('\n').trim();
+}
+
+/* ═══ Input ═══ */
+$('#btnSend').onclick = sendMessage;
+const textarea = $('#chatInput');
+textarea.onkeydown = e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+};
+textarea.oninput = () => {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+};
+
+/* ═══ Init ═══ */
+if (token) {
+  api('/api/resumes').then(async res => {
+    if (res.ok) {
+      const data = await res.json();
+      resumes = data.resumes || [];
+      activeResumeId = resumes.find(r => r.is_default)?.id || resumes[0]?.id || null;
+      showApp('已登录');
+    } else if (res.status === 401) {
+      localStorage.removeItem('job_agent_token');
+      token = '';
+    }
+  });
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+</body>
+</html>
