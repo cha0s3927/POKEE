@@ -613,7 +613,7 @@ body {
       <div class="status"><span class="dot"></span> <span data-i18n="chat.online">DeepSeek · 在线</span></div>
       <div style="display:flex;align-items:center;">
         <div class="active-resume">
-          <span>当前简历:</span>
+          <span data-i18n="chat.currentResume">当前简历:</span>
           <select id="activeResumeSelect"></select>
         </div>
         <button id="btnHeaderClear" data-i18n="chat.newSession">新对话</button>
@@ -621,12 +621,9 @@ body {
     </div>
 
     <div class="messages" id="messages">
-      <div class="welcome">
+      <div class="welcome" id="welcomeMsg">
         <h2>Offer大圣</h2>
-        <p>有简历？直接粘贴给我，帮你分析 JD、定制投递版。</p>
-        <p style="margin-top:10px;font-size:13px;color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</p>
-        <p style="margin-top:16px;font-size:12px;color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容</p>
-        <p style="font-size:12px;color:var(--text2)">也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></p>
+        <p>有简历？直接粘贴给我，帮你分析 JD、定制投递版。<br><br><span style="color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</span><br><br><span style="color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容<br>也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></span></p>
       </div>
     </div>
 
@@ -819,10 +816,10 @@ var I18N = {
     },
     chat: {
       online: 'DeepSeek · 在线', newSession: '新会话',
+      currentResume: '当前简历:',
       placeholder: '粘贴 JD 或输入消息…（Shift+Enter 换行，Enter 发送）',
       send: '发送', welcomeTitle: 'Offer大圣',
-      welcomeBody: '有简历直接粘贴给我，还没简历就聊聊方向和技能。',
-      welcomeHint: '还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。',
+      welcomeHtml: '有简历？直接粘贴给我，帮你分析 JD、定制投递版。<br><br><span style="color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</span><br><br><span style="color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容<br>也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></span>',
       error: '抱歉，连接失败，请重试。',
       noPoints: '积分不足', noPointsHint: '积分不足，请签到或充值',
       reset: '会话已重置，有什么我可以帮你的？',
@@ -877,10 +874,10 @@ var I18N = {
     },
     chat: {
       online: 'DeepSeek · Online', newSession: 'New Chat',
+      currentResume: 'Resume:',
       placeholder: 'Paste JD or type message… (Shift+Enter for newline, Enter to send)',
       send: 'Send', welcomeTitle: 'OfferDash',
-      welcomeBody: 'Share your resume or let\'s chat about your career goals.',
-      welcomeHint: 'No resume yet? Tell me your direction and skills, I\'ll help you build your profile and first resume.',
+      welcomeHtml: 'Got a resume? Paste it and I\'ll analyze JDs and tailor applications.<br><br><span style="color:var(--text2)">No resume? Tell me your direction and skills — I\'ll build your profile and first resume.</span><br><br><span style="color:var(--text2)">Try saying: <em>"Analyze this job for me"</em> then paste the JD<br>Or: <em>"I\'m looking for backend dev internships, I know Python and Go"</em></span>',
       error: 'Sorry, connection failed. Please retry.',
       noPoints: 'Insufficient points', noPointsHint: 'Insufficient points, please check in or top up',
       reset: 'Session reset. How can I help you?',
@@ -1000,22 +997,11 @@ function updateDynamicI18n() {
   // Send button
   var sb = document.getElementById('btnSend');
   if (sb) sb.textContent = t('chat.send');
-  // Profile card labels
-  var pcLabels = document.querySelectorAll('.pc-label');
-  var labelKeys = { '教育': 'profile.education', '目标': 'profile.target', '项目': 'profile.projects', '技能': 'profile.skills' };
-  var labelKeysEn = { 'Education': 'profile.education', 'Target': 'profile.target', 'Projects': 'profile.projects', 'Skills': 'profile.skills' };
-  for (var i = 0; i < pcLabels.length; i++) {
-    var txt = pcLabels[i].textContent.trim();
-    if (labelKeys[txt]) pcLabels[i].textContent = t(labelKeys[txt]);
-    else if (labelKeysEn[txt]) pcLabels[i].textContent = t(labelKeysEn[txt]);
-  }
-  // Pending text
-  var pvs = document.querySelectorAll('.pc-val');
-  for (var j = 0; j < pvs.length; j++) {
-    if (pvs[j].textContent.trim() === '待完善' || pvs[j].textContent.trim() === 'Not set') {
-      pvs[j].textContent = t('profile.pending');
-    }
-  }
+  // Welcome message
+  var wm = document.getElementById('welcomeMsg');
+  if (wm) wm.innerHTML = '<h2>' + t('chat.welcomeTitle') + '</h2><p>' + t('chat.welcomeHtml') + '</p>';
+  // Profile card — full re-render
+  if (typeof renderProfileCard === 'function') renderProfileCard();
   // Section labels
   var sls = document.querySelectorAll('.section-label span:first-child, .section-label.clickable span:first-child');
   var slMap = { '我的简历': 'sidebar.myResumes', '目标岗位': 'sidebar.targetJobs', '成长计划': 'sidebar.growth' };
@@ -1741,7 +1727,7 @@ $('#btnLogout').onclick = () => {
   token = '';
   $('#appMain').classList.remove('active');
   $('#authPage').style.display = 'flex';
-  $('#messages').innerHTML = `<div class="welcome"><h2>${t('chat.welcomeTitle')}</h2><p>${t('chat.welcomeBody')}</p></div>`;
+  $('#messages').innerHTML = `<div class="welcome" id="welcomeMsg"><h2>${t('chat.welcomeTitle')}</h2><p>${t('chat.welcomeHtml')}</p></div>`;
   resumes = []; activeResumeId = null; savedJobs = [];
 };
 
