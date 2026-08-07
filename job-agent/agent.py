@@ -624,10 +624,21 @@ class Agent:
         elif name == "update_my_profile":
             from routes.platforms import api_update_profile, ProfilePayload
             allowed = {
-                "education", "skills", "experience_summary", "projects",
+                "name", "education", "skills", "experience_summary", "projects",
                 "target_role", "target_industry", "salary_min", "salary_max", "preferred_cities",
+                "summary",
             }
-            payload = {k: v for k, v in args.items() if k in allowed and v is not None}
+            payload = {}
+            for k, v in args.items():
+                if k not in allowed or v is None:
+                    continue
+                if k == "education" and not isinstance(v, dict):
+                    continue  # LLM sometimes passes education as string
+                if k in ("salary_min", "salary_max") and not isinstance(v, (int, float)):
+                    continue  # LLM sometimes passes salary as string
+                if k in ("skills", "projects", "preferred_cities") and not isinstance(v, list):
+                    continue
+                payload[k] = v
             if not payload:
                 return {"error": "no_fields", "message": "请至少指定一个要更新的字段"}
             profile = api_update_profile(ProfilePayload(**payload), user={"id": user_id})
