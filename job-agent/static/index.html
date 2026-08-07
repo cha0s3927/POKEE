@@ -578,11 +578,10 @@ body {
       </div>
     </div>
     <div class="profile-card" id="profileCard" onclick="openProfileModal()">
-      <div class="pc-title"><span data-i18n="profile.title">求职画像</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div>
+      <div class="pc-title"><span data-i18n="profile.title">我的画像</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div>
       <div class="pc-empty" id="pcEmpty" data-i18n="profile.empty">点击完善求职画像</div>
       <div id="pcContent" style="display:none">
         <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span class="pc-label" data-i18n="profile.education">教育</span><span class="pc-val" id="pcEdu">-</span></div>
-        <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span class="pc-label" data-i18n="profile.target">目标</span><span class="pc-val" id="pcTarget">-</span></div>
         <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><span class="pc-label" data-i18n="profile.projects">项目</span><span class="pc-val" id="pcProjects">-</span></div>
         <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg><span class="pc-label" data-i18n="profile.skills">技能</span><span class="pc-tags" id="pcSkills"></span></div>
       </div>
@@ -592,10 +591,10 @@ body {
         <span data-i18n="sidebar.myResumes">我的简历</span>
         <span class="count" id="resumeCount">0</span>
       </div>
-      <div class="section-label clickable" style="margin-top:12px;" onclick="openJobBrowse()">
-        <span data-i18n="sidebar.targetJobs">目标岗位</span>
-        <span class="count" id="savedJobCount">0</span>
+      <div class="section-label">
+        <span data-i18n="sidebar.myTarget">我的目标</span>
       </div>
+      <div id="sidebarTarget" style="padding: 0 0 8px;"></div>
       <div class="section-label" style="margin-top:12px;">
         <span data-i18n="sidebar.growth">成长计划</span>
         <span class="count" id="growthCount">0</span>
@@ -806,12 +805,12 @@ var I18N = {
     },
     points: { label: '积分', checkin: '签到', checkedIn: '已签到', bonus: '签到成功! +5.0 积分' },
     profile: {
-      title: '求职画像', empty: '点击完善求职画像',
-      education: '教育', target: '目标', projects: '项目', skills: '技能',
+      title: '我的画像', empty: '点击完善我的画像',
+      education: '教育', projects: '项目', skills: '技能',
       pending: '待完善'
     },
     sidebar: {
-      myResumes: '我的简历', targetJobs: '目标岗位', growth: '成长计划',
+      myResumes: '我的简历', myTarget: '我的目标', growth: '成长计划',
       logout: '退出', clearChat: '清除对话'
     },
     chat: {
@@ -864,12 +863,12 @@ var I18N = {
     },
     points: { label: 'Points', checkin: 'Check-in', checkedIn: 'Checked in', bonus: 'Check-in success! +5.0 points' },
     profile: {
-      title: 'Profile', empty: 'Click to complete profile',
-      education: 'Education', target: 'Target', projects: 'Projects', skills: 'Skills',
+      title: 'My Profile', empty: 'Click to complete profile',
+      education: 'Education', projects: 'Projects', skills: 'Skills',
       pending: 'Not set'
     },
     sidebar: {
-      myResumes: 'My Resumes', targetJobs: 'Target Jobs', growth: 'Growth Plan',
+      myResumes: 'My Resumes', myTarget: 'My Target', growth: 'Growth Plan',
       logout: 'Logout', clearChat: 'Clear Chat'
     },
     chat: {
@@ -1004,8 +1003,8 @@ function updateDynamicI18n() {
   if (typeof renderProfileCard === 'function') renderProfileCard();
   // Section labels
   var sls = document.querySelectorAll('.section-label span:first-child, .section-label.clickable span:first-child');
-  var slMap = { '我的简历': 'sidebar.myResumes', '目标岗位': 'sidebar.targetJobs', '成长计划': 'sidebar.growth' };
-  var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'Target Jobs': 'sidebar.targetJobs', 'Growth Plan': 'sidebar.growth' };
+  var slMap = { '我的简历': 'sidebar.myResumes', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth' };
+  var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'My Target': 'sidebar.myTarget', 'Growth Plan': 'sidebar.growth' };
   for (var k = 0; k < sls.length; k++) {
     var st = sls[k].textContent.trim();
     if (slMap[st]) sls[k].textContent = t(slMap[st]);
@@ -1179,12 +1178,6 @@ function renderProfileCard() {
   const pending = t('profile.pending');
   $('#pcEdu').textContent = eduText || pending;
 
-  // 目标
-  const targetParts = [p.target_role];
-  if (p.salary_range) targetParts.push(p.salary_range);
-  if ((p.target_locations || []).length) targetParts.push(p.target_locations.join('/'));
-  $('#pcTarget').textContent = targetParts.filter(Boolean).join(' · ') || pending;
-
   // 项目
   if (projects.length) {
     const names = projects.map(pj => typeof pj === 'string' ? pj : pj.name || '').filter(Boolean);
@@ -1198,6 +1191,42 @@ function renderProfileCard() {
   $('#pcSkills').innerHTML = skills.length
     ? skills.slice(0, 6).map(s => `<span class="pc-tag">${escHtml(s)}</span>`).join('')
     : `<span style="color:var(--text2);font-size:11px">${pending}</span>`;
+
+  renderSidebarTarget();
+}
+
+function renderSidebarTarget() {
+  const p = profileData;
+  const container = $('#sidebarTarget');
+  if (!container) return;
+
+  const parts = [];
+  if (p.target_role) parts.push({ label: t('profileModal.targetRole') || '岗位', val: p.target_role });
+  if (p.target_industry) parts.push({ label: t('profileModal.targetIndustry') || '行业', val: p.target_industry });
+
+  let salaryText = '';
+  if (p.salary_range) salaryText = p.salary_range;
+  else if (p.salary_min || p.salary_max) {
+    if (p.salary_min && p.salary_max) salaryText = `${p.salary_min}K-${p.salary_max}K`;
+    else if (p.salary_min) salaryText = `${p.salary_min}K起`;
+    else salaryText = `最高${p.salary_max}K`;
+  }
+  if (salaryText) parts.push({ label: '💰', val: salaryText });
+
+  const locs = p.target_locations || p.preferred_cities || [];
+  if (locs.length) parts.push({ label: '📍', val: locs.join(' / ') });
+
+  if (!parts.length) {
+    container.innerHTML = `<div style="padding:4px 0;color:var(--text2);font-size:11px">${t('profile.pending')}</div>`;
+    return;
+  }
+
+  container.innerHTML = parts.map(pt => `
+    <div class="sg-item" style="cursor:default">
+      <span style="font-size:10px;color:var(--text2);width:32px;flex-shrink:0">${escHtml(pt.label)}</span>
+      <span style="font-size:11px;color:var(--text1)">${escHtml(pt.val)}</span>
+    </div>
+  `).join('');
 }
 
 async function openProfileModal() {
@@ -1469,7 +1498,7 @@ function openResumeBrowse() {
 function openJobBrowse() {
   browseMode = 'job';
   renderMdLeft();
-  $('#browseTitle').textContent = t('sidebar.targetJobs');
+  $('#browseTitle').textContent = _lang === 'en' ? 'Saved Jobs' : '收藏岗位';
   $('#mdDetail').style.display = 'none';
   $('#mdEmpty').style.display = 'flex';
   $('#browseModal').classList.add('active');
@@ -1678,7 +1707,8 @@ async function refreshSavedJobs() {
   if (!res.ok) return;
   const data = await res.json();
   savedJobs = data.jobs || [];
-  $('#savedJobCount').textContent = savedJobs.length;
+  var sjc = $('#savedJobCount');
+  if (sjc) sjc.textContent = savedJobs.length;
 }
 
 function renderSavedJobsDetail(highlightId) {
