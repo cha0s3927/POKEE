@@ -22,6 +22,7 @@ def init_db():
             ("points", "INTEGER NOT NULL DEFAULT 0"),
             ("lang", "TEXT NOT NULL DEFAULT 'zh'"),
             ("profile", "TEXT NOT NULL DEFAULT '{}'"),
+            ("last_login_at", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {defn}"))

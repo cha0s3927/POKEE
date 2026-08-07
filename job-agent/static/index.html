@@ -1299,18 +1299,24 @@ $('#authBtn').onclick = async () => {
   if (!email || !pw) { $('#authError').textContent = t('auth.fillFields'); return; }
   $('#authBtn').disabled = true;
   $('#authBtn').textContent = t('auth.wait');
-  const ep = isLogin ? '/api/login' : '/api/register';
-  const res = await api(ep, { method: 'POST', body: JSON.stringify({ email, password: pw }) });
-  const data = await res.json();
-  if (res.ok) {
-    token = data.token;
-    localStorage.setItem('job_agent_token', token);
-    localStorage.setItem('job_agent_email', data.email);
-    showApp(data.email);
-  } else {
-    $('#authError').textContent = data.detail || t('auth.fail');
+  try {
+    const ep = isLogin ? '/api/login' : '/api/register';
+    const res = await api(ep, { method: 'POST', body: JSON.stringify({ email, password: pw }) });
+    const data = await res.json();
+    if (res.ok) {
+      token = data.token;
+      localStorage.setItem('job_agent_token', token);
+      localStorage.setItem('job_agent_email', data.email);
+      showApp(data.email);
+      return;
+    } else {
+      $('#authError').textContent = data.detail || t('auth.fail');
+    }
+  } catch (e) {
+    $('#authError').textContent = '网络错误，请检查连接后重试';
   }
   $('#authBtn').disabled = false;
+  $('#authBtn').textContent = t('auth.login');
 };
 ['#authEmail','#authPassword'].forEach(s => $(s).onkeydown = e => { if (e.key === 'Enter') $('#authBtn').click(); });
 

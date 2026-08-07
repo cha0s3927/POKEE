@@ -1,5 +1,5 @@
 database:
-  url: sqlite:///D:/项目研究/reminder-agent/scheduler/data/reminders.db
+  url: ${DATABASE_URL:-sqlite:///D:/项目研究/reminder-agent/scheduler/data/reminders.db}
 
 llm:
   api_key: ${DEEPSEEK_API_KEY}
