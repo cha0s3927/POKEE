@@ -88,7 +88,8 @@ body {
 .sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
 .sidebar-body::-webkit-scrollbar { width: 4px; }
 .sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.sidebar-body .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: var(--text); padding: 8px 4px 4px; display: flex; justify-content: space-between; align-items: center; }
+.sidebar-body .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: var(--text); padding: 8px 4px 4px; display: flex; gap: 6px; align-items: center; }
+.sidebar-body .section-label > span[data-i18n] { flex: 1; }
 .sidebar-body .section-label .count { font-size: 10px; background: var(--surface2); padding: 1px 6px; border-radius: 10px; }
 
 /* Resume list */
@@ -181,7 +182,7 @@ body {
   align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px;
 }
 .msg.user .msg-avatar { background: var(--accent); }
-.msg.assistant .msg-avatar { background: linear-gradient(135deg, #6c8aff, var(--purple)); }
+.msg.assistant .msg-avatar { background: url(monkey-avatar.png) center/cover no-repeat; }
 .msg-bubble {
   padding: 12px 16px; border-radius: var(--radius); font-size: 14px;
   line-height: 1.65; word-break: break-word;
@@ -248,6 +249,21 @@ body {
 .input-area button:active { transform: scale(0.97); }
 .input-area button:hover { background: var(--accent2); }
 .input-area button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.mic-btn {
+  width: 44px; height: 44px; padding: 0; background: var(--surface2); color: var(--text2);
+  border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.15s; font-size: 18px;
+}
+.mic-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mic-btn.recording { background: var(--red); border-color: var(--red); color: #fff; animation: micPulse 1.2s ease-in-out infinite; }
+@keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); } 50% { box-shadow: 0 0 0 8px rgba(248,113,113,0); } }
+.tts-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11px; color: var(--text2); user-select: none; }
+.tts-toggle input { display: none; }
+.tts-toggle .tts-switch { width: 32px; height: 18px; background: var(--border); border-radius: 9px; position: relative; transition: background 0.2s; }
+.tts-toggle .tts-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
+.tts-toggle input:checked + .tts-switch { background: var(--accent); }
+.tts-toggle input:checked + .tts-switch::after { transform: translateX(14px); }
 
 /* Welcome */
 .welcome {
@@ -285,7 +301,7 @@ body {
   width: 100%; padding: 10px; background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--radius-sm); color: var(--text); font-size: 14px; outline: none; cursor: pointer;
 }
-.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-btns { display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 16px; }
 .modal-btns button {
   padding: 8px 20px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer;
   transition: all 0.15s;
@@ -326,6 +342,29 @@ body {
 .upload-zone .upload-hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
 .upload-zone.loading { pointer-events: none; opacity: 0.6; }
 .upload-status { font-size: 12px; text-align: center; margin-bottom: 8px; min-height: 18px; }
+
+/* Export buttons */
+.btn-export {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; background: transparent; border: 1px solid var(--border);
+  color: var(--text2); border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 12px; font-weight: 500; transition: all 0.15s;
+}
+.btn-export:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,138,255,0.06); }
+.btn-export svg { opacity: 0.7; }
+.btn-export:hover svg { opacity: 1; }
+
+/* Print styles for PDF export */
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 40px 48px; }
+  #printArea h1 { font-size: 24px; margin-bottom: 6px; }
+  #printArea h2 { font-size: 17px; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #ccc; }
+  #printArea h3 { font-size: 14px; margin: 14px 0 4px; }
+  #printArea p, #printArea li { font-size: 13px; line-height: 1.7; }
+  #printArea ul { padding-left: 20px; margin: 6px 0; }
+}
 
 /* Saved jobs modal */
 .job-detail-card {
@@ -419,6 +458,8 @@ body {
 .growth-item .gi-title { flex: 1; }
 .growth-item .gi-title.done { text-decoration: line-through; color: var(--text2); }
 .growth-item .gi-cat { font-size: 10px; padding: 1px 5px; border-radius: 8px; background: var(--surface); color: var(--text2); white-space: nowrap; }
+.growth-item .gi-cat-sel { font-size: 10px; padding: 1px 3px; border-radius: 6px; background: var(--surface); color: var(--text2); border: 1px solid var(--border); cursor: pointer; }
+.growth-item .gi-cat-sel:hover { border-color: var(--accent); }
 .growth-item .gi-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; opacity: 0; transition: opacity 0.1s; }
 .growth-item:hover .gi-del { opacity: 0.6; }
 .growth-item:hover .gi-del:hover { opacity: 1; color: var(--red); }
@@ -427,6 +468,45 @@ body {
 .growth-add input:focus { border-color: var(--accent); }
 .growth-add select { padding: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 12px; outline: none; cursor: pointer; }
 .growth-add button { padding: 8px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; white-space: nowrap; }
+
+/* Check-in messages in chat */
+.checkin-msg { align-self: flex-start; display: flex; gap: 10px; max-width: 80%; animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+.checkin-msg .checkin-avatar {
+  width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 13px; background: url(monkey-avatar.png) center/cover no-repeat;
+}
+.checkin-msg .checkin-bubble {
+  padding: 12px 16px; border-radius: var(--radius); font-size: 14px; line-height: 1.65;
+  word-break: break-word; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2);
+  border-bottom-left-radius: 2px;
+}
+.checkin-msg .checkin-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.checkin-msg .checkin-act {
+  padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); transition: all 0.15s;
+}
+.checkin-msg .checkin-act:hover { border-color: var(--accent); color: var(--accent); }
+.checkin-msg .checkin-act.done:hover { border-color: var(--green); color: var(--green); }
+.checkin-msg .checkin-act.pause:hover { border-color: var(--yellow); color: var(--yellow); }
+
+/* Sidebar growth check-in badge */
+.sg-checkin {
+  font-size: 9px; background: var(--green); color: #000; padding: 1px 5px; border-radius: 8px;
+  margin-left: auto; flex-shrink: 0; animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Growth tab checkin history */
+.checkin-history { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+.checkin-history h4 { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+.checkin-item { font-size: 12px; padding: 8px 10px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 4px; line-height: 1.5; }
+.checkin-item .ci-meta { font-size: 10px; color: var(--text2); margin-top: 4px; display: flex; gap: 8px; }
+.checkin-item .ci-tone { padding: 1px 5px; border-radius: 6px; font-size: 9px; }
+.ci-tone.curious { background: rgba(108,138,255,0.15); color: var(--accent); }
+.ci-tone.supportive { background: rgba(74,222,128,0.15); color: var(--green); }
+.ci-tone.challenging { background: rgba(251,191,36,0.15); color: var(--yellow); }
+.ci-tone.humorous { background: rgba(167,139,250,0.15); color: var(--purple); }
+.ci-tone.structured { background: rgba(248,113,113,0.15); color: var(--red); }
 
 /* Browse modals — master-detail */
 .browse-item {
@@ -447,9 +527,9 @@ body {
 .section-label.clickable:hover { color: var(--accent); }
 
 /* Master-detail layout */
-.md-container { display: flex; height: 62vh; min-height: 380px; gap: 0; }
+.md-container { display: flex; height: 76vh; min-height: 520px; gap: 0; }
 .md-left {
-  width: 230px; flex-shrink: 0; overflow-y: auto; padding-right: 12px;
+  width: 280px; flex-shrink: 0; overflow-y: auto; padding-right: 12px;
   border-right: 1px solid var(--border);
 }
 .md-left::-webkit-scrollbar { width: 3px; }
@@ -462,16 +542,63 @@ body {
 
 /* Master-detail list item */
 .md-item {
+  display: flex; align-items: center; gap: 8px;
   padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer;
   transition: all 0.15s; margin-bottom: 4px; border-left: 2px solid transparent;
   font-size: 13px;
 }
 .md-item:hover { background: var(--surface2); }
 .md-item.active { border-left-color: var(--accent); background: rgba(108,138,255,0.06); }
+.md-item .md-info { flex: 1; min-width: 0; }
 .md-item .md-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-item .md-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .md-item .md-tags { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
 .md-item .md-tag { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--surface); color: var(--text2); }
+.md-item .md-actions { display: none; gap: 2px; flex-shrink: 0; }
+.md-item:hover .md-actions { display: flex; }
+.md-item .md-act {
+  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; background: transparent; border: none; color: var(--text2);
+  cursor: pointer; font-size: 13px; transition: all 0.12s;
+}
+.md-item .md-act:hover { background: var(--surface); color: var(--text); }
+.md-item .md-act.export:hover { color: var(--accent); }
+.md-item .md-act.edit:hover { color: var(--accent2); }
+
+/* Detail toolbar */
+.md-toolbar {
+  display: flex; align-items: center; gap: 8px; padding-bottom: 12px;
+  margin-bottom: 14px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface); z-index: 5;
+}
+.md-toolbar .tb-title { font-weight: 600; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-toolbar .tb-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 5px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--text2);
+  transition: all 0.12s; white-space: nowrap;
+}
+.md-toolbar .tb-btn:hover { border-color: var(--accent); color: var(--accent); }
+.md-toolbar .tb-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.md-toolbar .tb-btn.primary:hover { background: var(--accent2); }
+
+/* Export popover */
+.export-popover {
+  position: absolute; top: 100%; right: 0; margin-top: 4px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35); z-index: 100; min-width: 140px;
+  display: none; flex-direction: column; padding: 4px;
+}
+.export-popover.show { display: flex; }
+.export-popover button {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 12px; border: none; background: transparent;
+  color: var(--text); font-size: 12px; cursor: pointer; border-radius: 4px;
+  text-align: left; transition: all 0.1s;
+}
+.export-popover button:hover { background: var(--surface2); color: var(--accent); }
+.export-popover button svg { opacity: 0.6; flex-shrink: 0; }
+.export-popover button:hover svg { opacity: 1; }
 
 /* Master-detail right panel */
 .md-detail-empty {
@@ -483,6 +610,34 @@ body {
   font-size: 14px; line-height: 1.8; color: var(--text);
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* Styled resume (career-ops Chinese Minimal template) */
+.resume-styled, .resume-styled * { margin: 0; padding: 0; box-sizing: border-box; }
+.resume-styled {
+  background: #fff; color: #2f3747; border-radius: 6px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.15); overflow: hidden;
+  font-family: "Liberation Sans","Helvetica Neue",Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+  font-size: 11px; line-height: 1.5;
+}
+.resume-styled .page { max-width: 800px; margin: 0 auto; padding: 32px 40px; }
+.resume-styled .header { margin-bottom: 18px; }
+.resume-styled .header h1 { font-size: 27px; font-weight: 700; color: #172033; letter-spacing: 0.02em; margin-bottom: 8px; }
+.resume-styled .header-gradient { height: 1px; background: #172033; margin-bottom: 9px; }
+.resume-styled .contact-row { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 10.5px; color: #667085; }
+.resume-styled .contact-row a { color: #667085; text-decoration: none; }
+.resume-styled .section { margin-bottom: 17px; }
+.resume-styled .section-title { font-size: 12px; font-weight: 700; color: #172033; letter-spacing: 0.08em; border-bottom: 1px solid #d9dee8; padding-bottom: 5px; margin-bottom: 10px; }
+.resume-styled .summary-text { font-size: 11px; line-height: 1.72; color: #2f3747; }
+.resume-styled .skills-grid { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.resume-styled .skill-item { font-size: 10.5px; color: #2f3747; }
+.resume-styled .skill-item:not(:last-child)::after { content: " · "; color: #98a2b3; }
+.resume-styled .job { margin-bottom: 15px; }
+.resume-styled .job-company { font-size: 12.5px; font-weight: 700; color: #172033; margin-bottom: 3px; }
+.resume-styled .job-role { font-size: 11px; font-weight: 600; color: #174a7e; margin-bottom: 5px; }
+.resume-styled .job ul, .resume-styled .section ul { padding-left: 18px; margin-top: 6px; }
+.resume-styled .job li, .resume-styled .section li { font-size: 10.5px; line-height: 1.65; color: #2f3747; margin-bottom: 4px; }
+.resume-styled .job li strong, .resume-styled .section li strong { font-weight: 600; color: #172033; }
+.resume-styled .section p { font-size: 10.5px; line-height: 1.65; color: #2f3747; margin-bottom: 4px; }
+#resumePreview.resume-styled { background: #fff; color: #2f3747; border-radius: 6px; box-shadow: 0 1px 8px rgba(0,0,0,0.1); margin-top: 8px; }
 .md-preview h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #fff; }
 .md-preview h2 { font-size: 15px; font-weight: 600; margin: 18px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
 .md-preview h3 { font-size: 13px; font-weight: 600; margin: 12px 0 4px; color: var(--accent); }
@@ -571,23 +726,32 @@ body {
     </div>
     <div class="sidebar-body">
       <div class="section-label clickable" onclick="openResumeBrowse()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span data-i18n="sidebar.myResumes">我的简历</span>
         <span class="count" id="resumeCount">0</span>
       </div>
       <div class="section-label clickable" onclick="openProfileModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span data-i18n="profile.title">我的画像</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </div>
-      <div id="sidebarProfile" style="padding: 0 4px 8px;"></div>
-      <div class="section-label">
+      <div id="sidebarProfile" style="padding: 0 4px 8px 20px;"></div>
+      <div class="section-label clickable" onclick="openProfileModal('tabTarget')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
         <span data-i18n="sidebar.myTarget">我的目标</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </div>
-      <div id="sidebarTarget" style="padding: 0 0 8px;"></div>
-      <div class="section-label" style="margin-top:12px;">
+      <div id="sidebarTarget" style="padding: 0 0 8px 20px;"></div>
+      <div class="section-label clickable" style="margin-top:12px;" onclick="openProfileModal('tabGrowth')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
         <span data-i18n="sidebar.growth">成长计划</span>
         <span class="count" id="growthCount">0</span>
       </div>
-      <div id="sidebarGrowth" style="padding: 0 0 8px;"></div>
+      <div id="sidebarGrowth" style="padding: 0 0 8px 20px;"></div>
+      <div class="section-label clickable" style="margin-top:12px;" onclick="openInterviewSetup()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span data-i18n="sidebar.mockInterview">模拟面试</span>
+      </div>
     </div>
     <div class="sidebar-footer">
       <button id="btnClearChat" data-i18n="sidebar.clearChat">清除对话</button>
@@ -616,6 +780,9 @@ body {
 
     <div class="input-area">
       <textarea id="chatInput" rows="1" data-i18n-placeholder="chat.placeholder" placeholder="粘贴 JD 或输入消息…（Shift+Enter 换行，Enter 发送）"></textarea>
+      <button class="mic-btn" id="btnMic" title="语音输入" onclick="toggleVoiceInput()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+      </button>
       <button id="btnSend" data-i18n="chat.send">发送</button>
     </div>
   </main>
@@ -638,15 +805,27 @@ body {
     <div class="upload-status" id="uploadStatus"></div>
     <div class="resume-preview" id="resumePreview"></div>
     <div class="modal-btns">
-      <button class="btn-cancel" id="btnModalClose">取消</button>
-      <button class="btn-save" id="btnModalSave">保存</button>
+      <div class="export-bar" id="exportBar" style="display:none;gap:8px;">
+        <button class="btn-export" onclick="exportResumeMD()" title="下载为 Markdown 文件 (.md)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          下载 .md
+        </button>
+        <button class="btn-export" onclick="exportResumePDF()" title="下载为 PDF 文件">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          下载 PDF
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancel" id="btnModalClose">取消</button>
+        <button class="btn-save" id="btnModalSave">保存</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ═══ Browse Modal (resumes + jobs) ═══ -->
 <div class="modal-overlay" id="browseModal">
-  <div class="modal-box" style="max-width:880px;padding:24px 28px;">
+  <div class="modal-box" style="width:92vw;max-width:1200px;padding:24px 28px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <h3 id="browseTitle" style="margin:0;">浏览</h3>
       <button class="btn-cancel" id="btnBrowseClose" style="font-size:11px;padding:4px 12px;">关闭</button>
@@ -770,12 +949,57 @@ body {
         </select>
         <button id="btnGrowthAdd">添加</button>
       </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
+        <span style="font-size:11px;color:var(--text2);">调试：</span>
+        <button onclick="triggerDebugCheckin()" style="font-size:11px;padding:3px 10px;background:var(--yellow);color:#000;border:none;border-radius:4px;cursor:pointer;">模拟督促触发</button>
+        <span style="font-size:10px;color:var(--text2);margin-left:4px;">将 in_progress 任务回退 25h 并立即触发</span>
+      </div>
     </div>
 
     <div class="modal-btns">
       <button class="btn-cancel" id="btnProfileClose">关闭</button>
       <button class="btn-save" id="btnProfileSave">保存画像</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ Interview Setup Modal ═══ -->
+<div class="modal-overlay" id="interviewModal">
+  <div class="modal-box" style="max-width:520px;">
+    <h3 data-i18n="interview.title">模拟面试</h3>
+    <div class="field">
+      <label data-i18n="interview.position">岗位名称</label>
+      <input type="text" id="ivPosition" data-i18n-placeholder="interview.positionPlaceholder" placeholder="如: 后端开发工程师">
+    </div>
+    <div class="field">
+      <label data-i18n="interview.company">公司名称</label>
+      <input type="text" id="ivCompany" data-i18n-placeholder="interview.companyPlaceholder" placeholder="如: 字节跳动（可选）">
+    </div>
+    <div class="field">
+      <label data-i18n="interview.jdLabel">岗位 JD</label>
+      <textarea id="ivJd" rows="4" data-i18n-placeholder="interview.jdPlaceholder" placeholder="粘贴岗位描述，让面试题更有针对性（可选）" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px;font-size:13px;resize:vertical;outline:none;font-family:inherit;"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="btnInterviewCancel" data-i18n="interview.cancel">取消</button>
+      <button class="btn-save" id="btnInterviewStart" data-i18n="interview.start">开始面试</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Interview Active Bar ═══ -->
+<div id="interviewBar" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 24px;display:none;align-items:center;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+    <span id="ivBarInfo" style="font-size:13px;color:var(--text);">面试中</span>
+    <span id="ivBarProgress" style="font-size:11px;color:var(--text2);"></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <label class="tts-toggle" id="ttsToggle" title="朗读题目">
+      <input type="checkbox" id="ttsCheck" onchange="toggleTTS()">
+      <span class="tts-switch"></span>
+      <span style="font-size:11px;">朗读</span>
+    </label>
+    <button id="btnInterviewExit" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:11px;" data-i18n="interview.exit">退出面试</button>
   </div>
 </div>
 
@@ -799,7 +1023,18 @@ var I18N = {
     },
     sidebar: {
       myResumes: '我的简历', myTarget: '我的目标', growth: '成长计划',
+      mockInterview: '模拟面试',
       logout: '退出', clearChat: '清除对话'
+    },
+    interview: {
+      title: '模拟面试', setupTitle: '开始模拟面试',
+      position: '岗位名称', positionPlaceholder: '如: 后端开发工程师',
+      company: '公司名称', companyPlaceholder: '如: 字节跳动（可选）',
+      jdLabel: '岗位 JD', jdPlaceholder: '粘贴岗位描述，让面试题更有针对性（可选）',
+      start: '开始面试', cancel: '取消',
+      answering: '请回答', answerPlaceholder: '输入你的回答…',
+      completed: '面试结束', newRound: '再来一轮',
+      exit: '退出面试',
     },
     chat: {
       online: 'DeepSeek · 在线', newSession: '新会话',
@@ -857,7 +1092,18 @@ var I18N = {
     },
     sidebar: {
       myResumes: 'My Resumes', myTarget: 'My Target', growth: 'Growth Plan',
+      mockInterview: 'Mock Interview',
       logout: 'Logout', clearChat: 'Clear Chat'
+    },
+    interview: {
+      title: 'Mock Interview', setupTitle: 'Start Mock Interview',
+      position: 'Position', positionPlaceholder: 'e.g. Backend Developer',
+      company: 'Company', companyPlaceholder: 'e.g. Google (optional)',
+      jdLabel: 'Job Description', jdPlaceholder: 'Paste JD for more targeted questions (optional)',
+      start: 'Start Interview', cancel: 'Cancel',
+      answering: 'Your Answer', answerPlaceholder: 'Type your answer…',
+      completed: 'Interview Complete', newRound: 'New Round',
+      exit: 'Exit Interview',
     },
     chat: {
       online: 'DeepSeek · Online', newSession: 'New Chat',
@@ -991,8 +1237,8 @@ function updateDynamicI18n() {
   if (typeof renderProfileCard === 'function') renderProfileCard();
   // Section labels
   var sls = document.querySelectorAll('.section-label span:first-child, .section-label.clickable span:first-child');
-  var slMap = { '我的简历': 'sidebar.myResumes', '我的画像': 'profile.title', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth' };
-  var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'My Profile': 'profile.title', 'My Target': 'sidebar.myTarget', 'Growth Plan': 'sidebar.growth' };
+  var slMap = { '我的简历': 'sidebar.myResumes', '我的画像': 'profile.title', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth', '模拟面试': 'sidebar.mockInterview' };
+  var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'My Profile': 'profile.title', 'My Target': 'sidebar.myTarget', 'Growth Plan': 'sidebar.growth', 'Mock Interview': 'sidebar.mockInterview' };
   for (var k = 0; k < sls.length; k++) {
     var st = sls[k].textContent.trim();
     if (slMap[st]) sls[k].textContent = t(slMap[st]);
@@ -1095,6 +1341,7 @@ async function showApp(email) {
   fetchPoints();
   fetchProfile();
   fetchGrowthTasks();
+  startCheckinPolling();
   updateDynamicI18n();
 }
 
@@ -1220,7 +1467,7 @@ function renderSidebarTarget() {
   `).join('');
 }
 
-async function openProfileModal() {
+async function openProfileModal(targetTab) {
   // Populate form fields
   const p = profileData;
   $('#pfName').value = p.name || '';
@@ -1238,10 +1485,19 @@ async function openProfileModal() {
   renderTags('pfProjects', (p.projects || []).map(pj => typeof pj === 'string' ? pj : pj.name || ''));
   renderTags('pfCities', p.preferred_cities || []);
 
+  // Refresh growth list
+  renderGrowthList();
+
   $('#profileModal').classList.add('active');
-  // Reset to first tab
-  document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach((b, i) => b.classList.toggle('active', i === 0));
-  document.querySelectorAll('#profileModal .profile-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+
+  // Activate specified tab or first tab
+  const tabId = targetTab || 'tabStatus';
+  document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tabId);
+  });
+  document.querySelectorAll('#profileModal .profile-tab').forEach(function(t) {
+    t.classList.toggle('active', t.id === tabId);
+  });
 }
 
 function renderTags(wrapId, items) {
@@ -1311,6 +1567,20 @@ document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(bt
   };
 });
 
+// Interview modal
+$('#btnInterviewStart').onclick = startInterview;
+$('#btnInterviewCancel').onclick = () => $('#interviewModal').classList.remove('active');
+$('#interviewModal').onclick = (e) => { if (e.target === $('#interviewModal')) $('#interviewModal').classList.remove('active'); };
+$('#btnInterviewExit').onclick = () => exitInterview(false);
+
+// Enter key in interview setup fields
+['#ivPosition', '#ivCompany'].forEach(function(sel) {
+  var el = $(sel);
+  if (el) el.onkeydown = function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); startInterview(); }
+  };
+});
+
 // Tag input handlers
 ['pfSkills', 'pfProjects', 'pfCities'].forEach(wrapId => {
   const wrap = document.getElementById(wrapId);
@@ -1377,15 +1647,371 @@ function renderGrowthList() {
     return;
   }
   const catLabels = { skill: t('growthCat.skill'), project: t('growthCat.project'), action: t('growthCat.action') };
-  container.innerHTML = growthTasks.map(t => `
-    <div class="growth-item" data-tid="${t.id}">
-      <span class="gi-status ${t.status}" onclick="toggleGrowthTask('${t.id}')" title="点击切换状态"></span>
-      <span class="gi-title ${t.status === 'done' ? 'done' : ''}">${esc(t.title)}</span>
-      <span class="gi-cat">${catLabels[t.category] || t.category}</span>
-      <button class="gi-del" onclick="deleteGrowthTask('${t.id}')" title="删除">&times;</button>
-    </div>
-  `).join('');
+  const catOptions = ['skill','project','action'].map(function(v) {
+    return '<option value="' + v + '"' + '>' + (catLabels[v] || v) + '</option>';
+  }).join('');
+  container.innerHTML = growthTasks.map(function(t) {
+    return '<div class="growth-item" data-tid="' + t.id + '">'
+      + '<span class="gi-status ' + t.status + '" onclick="toggleGrowthTask(\'' + t.id + '\')" title="点击切换状态"></span>'
+      + '<span class="gi-title ' + (t.status === 'done' ? 'done' : '') + '" id="gt-' + t.id + '" ondblclick="editGrowthTitle(\'' + t.id + '\')" title="双击编辑">' + esc(t.title) + '</span>'
+      + '<select class="gi-cat-sel" onchange="changeGrowthCat(\'' + t.id + '\', this.value)">'
+      +   catOptions.replace('value="' + t.category + '"', 'value="' + t.category + '" selected')
+      + '</select>'
+      + '<button class="gi-del" onclick="deleteGrowthTask(\'' + t.id + '\')" title="删除">&times;</button>'
+      + '</div>';
+  }).join('');
 }
+
+function editGrowthTitle(tid) {
+  var span = document.getElementById('gt-' + tid);
+  var t = growthTasks.find(function(x) { return x.id === tid; });
+  if (!span || !t) return;
+  var old = t.title;
+  span.innerHTML = '<input value="' + escAttr(old) + '" style="width:100%;background:var(--bg);border:1px solid var(--accent);color:var(--text);padding:2px 4px;border-radius:4px;font-size:13px" id="gtinp-' + tid + '">';
+  var inp = document.getElementById('gtinp-' + tid);
+  if (!inp) return;
+  inp.focus();
+  inp.select();
+  var save = function() {
+    var val = inp.value.trim();
+    if (!val || val === old) { renderGrowthList(); return; }
+    t.title = val;
+    api('/api/me/growth-tasks/' + tid, {
+      method: 'PUT', body: JSON.stringify({ title: val, category: t.category, status: t.status, sort_order: t.sort_order }),
+    }).then(function() { fetchGrowthTasks(); });
+  };
+  inp.onblur = save;
+  inp.onkeydown = function(e) { if (e.key === 'Enter') { inp.blur(); } if (e.key === 'Escape') { renderGrowthList(); } };
+}
+
+function changeGrowthCat(tid, cat) {
+  var t = growthTasks.find(function(x) { return x.id === tid; });
+  if (!t) return;
+  t.category = cat;
+  api('/api/me/growth-tasks/' + tid, {
+    method: 'PUT', body: JSON.stringify({ title: t.title, category: cat, status: t.status, sort_order: t.sort_order }),
+  }).then(function() { fetchGrowthTasks(); });
+}
+
+async function triggerDebugCheckin() {
+  var btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '触发中...';
+  try {
+    var res = await api('/api/debug/trigger-checkin', { method: 'POST', body: JSON.stringify({ hours_ago: 25 }) });
+    var data = await res.json();
+    if (res.ok && data.checkins && data.checkins.length > 0) {
+      // 关闭画像弹窗，切到聊天 tab
+      $('#profileModal').classList.remove('active');
+      switchTab('tabChat');
+      // 把督促消息逐条显示（复用 checkin 消息格式，避免和轮询重复）
+      data.checkins.reverse().forEach(function(c) {
+        if (!seenCheckins.has(c.id)) {
+          seenCheckins.add(c.id);
+          addCheckinMessage(c);
+        }
+      });
+      toast('猴哥已发来 ' + data.checkins.length + ' 条督促消息');
+    } else {
+      toast('没有符合条件的任务（需要 in_progress 且有 last_checkin_at）');
+    }
+  } catch(e) {
+    toast('触发失败: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = '模拟督促触发';
+}
+
+/* ═══ Resume HTML Renderer (career-ops Chinese Minimal) ═══ */
+function renderResumeHTML(md, title) {
+  var rawHtml = typeof marked !== 'undefined' ? marked.parse(md || '') : (md || '').replace(/\n/g, '<br>');
+  title = title || '';
+
+  // Post-process: wrap h2 sections, add classes
+  var el = document.createElement('div');
+  el.innerHTML = rawHtml;
+
+  // Detect name from first h1
+  var h1 = el.querySelector('h1');
+  var name = title || (h1 ? h1.textContent.trim() : '');
+
+  // Remove the original h1 — we'll rebuild the header
+  if (h1) h1.remove();
+
+  // Build sections
+  var sections = [];
+  var currentSection = null;
+  Array.from(el.childNodes).forEach(function(node) {
+    if (node.nodeName === 'H2') {
+      if (currentSection) sections.push(currentSection);
+      currentSection = { title: node.textContent.trim(), items: [] };
+      return;
+    }
+    if (!currentSection) {
+      // Content before first h2 → summary
+      currentSection = { title: '', items: [] };
+    }
+    // Flatten h3 groups into item blocks
+    if (node.nodeName === 'H3') {
+      currentSection.items.push({ type: 'heading', html: node.outerHTML });
+      return;
+    }
+    if (node.nodeName === 'UL' || node.nodeName === 'OL') {
+      currentSection.items.push({ type: 'list', html: node.outerHTML });
+      return;
+    }
+    if (node.nodeName === 'P') {
+      var txt = (node.textContent || '').trim();
+      if (txt) currentSection.items.push({ type: 'text', html: node.outerHTML });
+      return;
+    }
+    // Text nodes and other elements
+    var txt = (node.textContent || '').trim();
+    if (txt) currentSection.items.push({ type: 'text', html: node.outerHTML || txt });
+  });
+  if (currentSection) sections.push(currentSection);
+
+  // Render career-ops styled HTML
+  var contactHtml = '';
+  var summaryHtml = '';
+  var bodyHtml = '';
+
+  sections.forEach(function(sec) {
+    var t = sec.title.toLowerCase();
+    var isSummary = !t || t.indexOf('总结') !== -1 || t.indexOf('概述') !== -1 || t.indexOf('summary') !== -1 || t.indexOf('profile') !== -1;
+    var isSkills = t.indexOf('技能') !== -1 || t.indexOf('skills') !== -1 || t.indexOf('技术栈') !== -1;
+    var isContact = t.indexOf('联系') !== -1 || t.indexOf('contact') !== -1 || t.indexOf('个人信息') !== -1;
+
+    if (isContact) {
+      contactHtml = sec.items.map(function(i) { return i.html; }).join('');
+      return;
+    }
+    if (isSummary) {
+      summaryHtml = '<div class="section"><div class="section-title">专业概述</div><div class="summary-text">' + sec.items.map(function(i) { return i.html; }).join('') + '</div></div>';
+      return;
+    }
+    if (isSkills) {
+      var skillItems = [];
+      sec.items.forEach(function(item) {
+        if (item.type === 'list') {
+          var ul = document.createElement('div'); ul.innerHTML = item.html;
+          ul.querySelectorAll('li').forEach(function(li) { skillItems.push(li.textContent.trim()); });
+        }
+      });
+      var skillsHtml = skillItems.length > 0
+        ? '<div class="skills-grid">' + skillItems.map(function(s) { return '<span class="skill-item">' + esc(s) + '</span>'; }).join('') + '</div>'
+        : sec.items.map(function(i) { return i.html; }).join('');
+      bodyHtml += '<div class="section"><div class="section-title">' + esc(sec.title) + '</div>' + skillsHtml + '</div>';
+      return;
+    }
+
+    // Work experience, education, projects, etc.
+    var secContent = '';
+    var jobOpen = false;
+    sec.items.forEach(function(item) {
+      if (item.type === 'heading') {
+        if (jobOpen) { secContent += '</div>'; jobOpen = false; }
+        secContent += '<div class="job"><div class="job-company">' + item.html.replace(/<\/?h3[^>]*>/g, '') + '</div>';
+        jobOpen = true;
+      } else if (item.type === 'list') {
+        secContent += item.html;
+        if (jobOpen) { secContent += '</div>'; jobOpen = false; }
+      } else if (item.type === 'text') {
+        secContent += '<div class="job-role">' + item.html + '</div>';
+      } else {
+        secContent += item.html;
+      }
+    });
+    if (jobOpen) { secContent += '</div>'; }
+    bodyHtml += '<div class="section"><div class="section-title">' + esc(sec.title) + '</div>' + secContent + '</div>';
+  });
+
+  var bodyContent = '<div class="page">' +
+    '<div class="header"><h1>' + esc(name) + '</h1><div class="header-gradient"></div>' +
+    (contactHtml ? '<div class="contact-row">' + contactHtml + '</div>' : '') +
+    '</div>' +
+    summaryHtml + bodyHtml +
+    '</div>';
+
+  // Return body-only for inline preview, full document for export
+  return {
+    body: bodyContent,
+    full: '<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><style>' + RESUME_CSS + '</style></head><body>' + bodyContent + '</body></html>'
+  };
+}
+
+var RESUME_CSS = [
+'*{margin:0;padding:0;box-sizing:border-box}',
+'body{font-family:"Liberation Sans","Helvetica Neue",Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:11px;line-height:1.5;color:#2f3747;background:#fff}',
+'.page{max-width:800px;margin:0 auto;padding:32px 40px}',
+'.header{margin-bottom:18px}',
+'.header h1{font-size:27px;font-weight:700;color:#172033;letter-spacing:0.02em;margin-bottom:8px}',
+'.header-gradient{height:1px;background:#172033;margin-bottom:9px}',
+'.contact-row{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:10.5px;color:#667085}',
+'.contact-row a{color:#667085;text-decoration:none}',
+'.section{margin-bottom:17px}',
+'.section-title{font-size:12px;font-weight:700;color:#172033;letter-spacing:0.08em;border-bottom:1px solid #d9dee8;padding-bottom:5px;margin-bottom:10px}',
+'.summary-text{font-size:11px;line-height:1.72;color:#2f3747}',
+'.skills-grid{display:flex;flex-wrap:wrap;gap:4px 12px}',
+'.skill-item{font-size:10.5px;color:#2f3747}',
+'.skill-item:not(:last-child)::after{content:" · ";color:#98a2b3}',
+'.job{margin-bottom:15px}',
+'.job-company{font-size:12.5px;font-weight:700;color:#172033;margin-bottom:3px}',
+'.job-role{font-size:11px;font-weight:600;color:#174a7e;margin-bottom:5px}',
+'.job ul,.section ul{padding-left:18px;margin-top:6px}',
+'.job li,.section li{font-size:10.5px;line-height:1.65;color:#2f3747;margin-bottom:4px}',
+'.job li strong,.section li strong{font-weight:600;color:#172033}',
+'.section p{font-size:10.5px;line-height:1.65;color:#2f3747;margin-bottom:4px}',
+'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}',
+].join('');
+
+/* ═══ Resume Export ═══ */
+async function exportBrowseResumeMD(rid, name) {
+  const r = await api(`/api/resume/${rid}`);
+  if (!r.ok) { toast('加载简历失败'); return; }
+  const data = await r.json();
+  const safeName = (name || data.name || 'resume').replace(/[\\/:*?"<>|]/g, '_');
+  const blob = new Blob([data.content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = safeName + '.md';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+async function exportBrowseResumePDF(rid, name) {
+  if (!window.jspdf || !window.html2canvas) { toast('PDF 库加载中，请稍后再试'); return; }
+  const { jsPDF } = window.jspdf;
+  const r = await api(`/api/resume/${rid}`);
+  if (!r.ok) { toast('加载简历失败'); return; }
+  const data = await r.json();
+  const safeName = data.name || name || '简历';
+  var rendered = renderResumeHTML(data.content || '', safeName);
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:0;width:800px;min-height:100px;z-index:99999;';
+  container.innerHTML = rendered.full;
+  document.body.appendChild(container);
+  await new Promise(function(r) { requestAnimationFrame(r); });
+
+  try {
+    const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+    document.body.removeChild(container);
+
+    const imgData = canvas.toDataURL('image/png');
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = doc.internal.pageSize.getWidth() - 20;
+    const pageH = doc.internal.pageSize.getHeight() - 20;
+    const imgW = pageW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+
+    var totalPages = Math.ceil(imgH / pageH);
+    for (var page = 0; page < totalPages; page++) {
+      if (page > 0) doc.addPage();
+      doc.addImage(imgData, 'PNG', 10, 10 - page * pageH, imgW, imgH);
+    }
+
+    doc.save(safeName + '.pdf');
+  } catch(e) {
+    document.body.removeChild(container);
+    console.error('PDF error:', e);
+    toast('PDF 生成失败，请重试');
+  }
+}
+
+
+function showExportBar() { const bar = $('#exportBar'); if (bar) bar.style.display = 'flex'; }
+function hideExportBar() { const bar = $('#exportBar'); if (bar) bar.style.display = 'none'; }
+
+let _exportPopoverEl = null;
+function toggleExportPopover(e, rid, name) {
+  const btn = e.currentTarget;
+  // Remove existing popover
+  if (_exportPopoverEl) { _exportPopoverEl.remove(); _exportPopoverEl = null; }
+  // If clicking the same button that opened it, just close
+  if (btn._popoverOpen) { btn._popoverOpen = false; return; }
+  btn._popoverOpen = true;
+
+  const pop = document.createElement('div');
+  pop.className = 'export-popover show';
+  pop.innerHTML = `
+    <button data-action="md">下载 .md</button>
+    <button data-action="pdf">下载 PDF</button>
+  `;
+  pop.querySelector('[data-action="md"]').onclick = (ev) => { ev.stopPropagation(); pop.remove(); btn._popoverOpen = false; exportBrowseResumeMD(rid, name); };
+  pop.querySelector('[data-action="pdf"]').onclick = (ev) => { ev.stopPropagation(); pop.remove(); btn._popoverOpen = false; exportBrowseResumePDF(rid, name); };
+  btn.parentElement.appendChild(pop);
+  _exportPopoverEl = pop;
+
+  // Close on outside click
+  setTimeout(() => {
+    const handler = (ev) => {
+      if (!pop.contains(ev.target) && ev.target !== btn) {
+        pop.remove(); btn._popoverOpen = false;
+        if (_exportPopoverEl === pop) _exportPopoverEl = null;
+        document.removeEventListener('click', handler);
+      }
+    };
+    document.addEventListener('click', handler);
+  }, 0);
+}
+
+function exportResumeMD() {
+  if (!currentModalContent) return;
+  const name = ($('#resumeName').value || 'resume').replace(/[\\/:*?"<>|]/g, '_');
+  const blob = new Blob([currentModalContent], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name + '.md';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function exportResumePDF() {
+  if (!currentModalContent) return;
+  if (!window.jspdf || !window.html2canvas) { toast('PDF 库加载中，请稍后再试'); return; }
+  const { jsPDF } = window.jspdf;
+  const name = ($('#resumeName').value || '简历').replace(/[\/:*?"<>|]/g, '_');
+  var rendered = renderResumeHTML(currentModalContent || '', name);
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;top:0;left:0;width:800px;min-height:100px;z-index:99999;';
+  container.innerHTML = rendered.full;
+  document.body.appendChild(container);
+
+  try {
+    requestAnimationFrame(function() {
+    html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false }).then(function(canvas) {
+      document.body.removeChild(container);
+      var imgData = canvas.toDataURL('image/png');
+      var doc = new jsPDF('p', 'mm', 'a4');
+      var pageW = doc.internal.pageSize.getWidth() - 20;
+      var pageH = doc.internal.pageSize.getHeight() - 20;
+      var imgW = pageW;
+      var imgH = (canvas.height * imgW) / canvas.width;
+
+      var totalPages = Math.ceil(imgH / pageH);
+      for (var page = 0; page < totalPages; page++) {
+        if (page > 0) doc.addPage();
+        doc.addImage(imgData, 'PNG', 10, 10 - page * pageH, imgW, imgH);
+      }
+
+      doc.save(name + '.pdf');
+    }).catch(function(e) {
+      document.body.removeChild(container);
+      console.error('PDF error:', e);
+      toast('PDF 生成失败，请重试');
+    });
+    }); // requestAnimationFrame
+  } catch(e) {
+    document.body.removeChild(container);
+    console.error('PDF error:', e);
+    toast('PDF 生成失败，请重试');
+  }
+}
+
+
+function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function cycleGrowthStatus(tid) {
   const t = growthTasks.find(x => x.id === tid);
@@ -1416,6 +2042,102 @@ $('#btnGrowthAdd').onclick = async () => {
   await fetchGrowthTasks();
 };
 $('#growthInput').onkeydown = (e) => { if (e.key === 'Enter') $('#btnGrowthAdd').click(); };
+
+/* ═══ Check-in polling ═══ */
+var seenCheckins = new Set(JSON.parse(localStorage.getItem('seenCheckins') || '[]'));
+var checkinTimer = null;
+
+function startCheckinPolling() {
+  pollCheckins();
+  checkinTimer = setInterval(pollCheckins, 30000);
+}
+
+function stopCheckinPolling() {
+  if (checkinTimer) { clearInterval(checkinTimer); checkinTimer = null; }
+}
+
+async function pollCheckins() {
+  try {
+    const res = await api('/api/me/growth-checkins');
+    if (!res.ok) return;
+    const d = await res.json();
+    const checkins = d.checkins || [];
+    for (const ci of checkins) {
+      if (seenCheckins.has(ci.id)) continue;
+      seenCheckins.add(ci.id);
+      addCheckinMessage(ci);
+    }
+    // Keep set bounded
+    if (seenCheckins.size > 200) {
+      const arr = Array.from(seenCheckins).slice(-100);
+      seenCheckins = new Set(arr);
+    }
+    localStorage.setItem('seenCheckins', JSON.stringify(Array.from(seenCheckins)));
+  } catch (e) {}
+}
+
+function addCheckinMessage(ci) {
+  var div = document.createElement('div');
+  div.className = 'checkin-msg';
+  div.id = 'ci-' + ci.id;
+
+  var avatar = document.createElement('div');
+  avatar.className = 'checkin-avatar';
+  // 头像用猴子图片背景，不需要文字
+
+  var bubble = document.createElement('div');
+  bubble.className = 'checkin-bubble';
+  bubble.innerHTML = '<div style="font-size:11px;color:var(--green);margin-bottom:4px;">成长教练 · ' + ci.task_title + '</div>'
+    + '<div>' + escHtml(ci.message) + '</div>'
+    + '<div class="checkin-actions">'
+    + '<button class="checkin-act done" onclick="respondCheckin(\'' + ci.task_id + '\',\'done\',\'' + ci.id + '\')">完成啦</button>'
+    + '<button class="checkin-act" onclick="respondCheckin(\'' + ci.task_id + '\',\'in_progress\',\'' + ci.id + '\')">还在做</button>'
+    + '<button class="checkin-act pause" onclick="respondCheckin(\'' + ci.task_id + '\',\'pending\',\'' + ci.id + '\')">暂停一下</button>'
+    + '</div>';
+
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  $('#messages').appendChild(div);
+  $('#messages').scrollTop = $('#messages').scrollHeight;
+}
+
+async function respondCheckin(taskId, status, checkinId) {
+  var div = document.getElementById('ci-' + checkinId);
+  if (div) {
+    var actions = div.querySelector('.checkin-actions');
+    if (actions) actions.innerHTML = '<span style="font-size:12px;color:var(--text2)">已收到，猴哥思考中...</span>';
+  }
+  var replyText = status === 'done' ? '完成了！' : status === 'in_progress' ? '还在做' : '暂停一下';
+
+  // 1. 记录用户回应
+  await api('/api/me/growth-tasks/' + taskId + '/respond', {
+    method: 'POST', body: JSON.stringify({ reply: replyText }),
+  });
+  // 2. 更新任务状态
+  await api('/api/me/growth-tasks/' + taskId, {
+    method: 'PUT', body: JSON.stringify({ title: '', category: 'skill', status: status, sort_order: 0 }),
+  });
+  // 3. 生成猴哥的结尾回复
+  var followupRes = await api('/api/me/growth-tasks/' + taskId + '/followup', {
+    method: 'POST', body: JSON.stringify({ reply: replyText }),
+  });
+  if (followupRes.ok) {
+    var fd = await followupRes.json();
+    // 用简化的气泡显示（无标题、无按钮）
+    var fuDiv = document.createElement('div');
+    fuDiv.className = 'checkin-msg';
+    fuDiv.innerHTML = '<div class="checkin-avatar"></div>'
+      + '<div class="checkin-bubble"><div>' + escHtml(fd.message) + '</div></div>';
+    $('#messages').appendChild(fuDiv);
+    $('#messages').scrollTop = $('#messages').scrollHeight;
+  }
+  // 更新按钮状态
+  if (div) {
+    var actions2 = div.querySelector('.checkin-actions');
+    if (actions2) actions2.innerHTML = '<span style="font-size:12px;color:var(--green)">已回应</span>';
+  }
+  await fetchGrowthTasks();
+}
 
 /* ═══ Resume management ═══ */
 async function refreshResumes() {
@@ -1454,15 +2176,19 @@ async function openResume(rid) {
   $('#resumeModal').dataset.rid = rid;
   $('#resumeModal').classList.add('active');
 
-  // content is already Markdown, render directly
-  if (currentModalContent && typeof marked !== 'undefined') {
-    $('#resumePreview').innerHTML = marked.parse(currentModalContent);
+  // Show raw markdown preview in edit modal
+  if (currentModalContent) {
+    var html = typeof marked !== 'undefined' ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
+    $('#resumePreview').innerHTML = html;
     $('#resumePreview').style.display = 'block';
+    $('#resumePreview').classList.remove('resume-styled');
   }
+  showExportBar();
 }
 
 function openNewResume() {
   $('#resumeModalTitle').textContent = t('resume.new');
+  hideExportBar();
   $('#resumeName').value = '';
   $('#resumePreview').style.display = 'none';
   $('#resumePreview').innerHTML = '';
@@ -1503,9 +2229,21 @@ function renderMdLeft() {
       return;
     }
     container.innerHTML = resumes.map((r, idx) => `
-      <div class="md-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" onclick="selectMdItem(${idx})">
-        <div class="md-name">${esc(r.name)}</div>
-        <div class="md-meta">${r.created_at ? r.created_at.slice(0,10) : ''}${r.is_default ? ' · 默认' : ''}</div>
+      <div class="md-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" data-rid="${r.id}" data-name="${esc(r.name).replace(/"/g, '&quot;')}">
+        <div class="md-info" onclick="selectMdItem(${idx})">
+          <div class="md-name">${esc(r.name)}</div>
+          <div class="md-meta">${r.created_at ? r.created_at.slice(0,10) : ''}${r.is_default ? ' · 默认' : ''}</div>
+        </div>
+        <div class="md-actions">
+          <button class="md-act edit" title="编辑" onclick="event.stopPropagation();openResume('${r.id}');$('#browseModal').classList.remove('active');">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <div style="position:relative;">
+            <button class="md-act export" title="导出" onclick="event.stopPropagation();toggleExportPopover(event, '${r.id}', '${esc(r.name).replace(/'/g, "\\'")}');">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
     `).join('');
   } else {
@@ -1515,9 +2253,11 @@ function renderMdLeft() {
     }
     container.innerHTML = savedJobs.map((j, idx) => `
       <div class="md-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" onclick="selectMdItem(${idx})">
-        <div class="md-name">${esc(j.title)}</div>
-        <div class="md-meta">${esc(j.company)} · ${esc(j.platform)}</div>
-        ${j.score_total != null ? `<span class="md-score ${verdictClass(j.score_total)}">${j.score_total}分 ${verdictLabel(j.verdict)}</span>` : ''}
+        <div class="md-info">
+          <div class="md-name">${esc(j.title)}</div>
+          <div class="md-meta">${esc(j.company)} · ${esc(j.platform)}</div>
+          ${j.score_total != null ? `<span class="md-score ${verdictClass(j.score_total)}">${j.score_total}分 ${verdictLabel(j.verdict)}</span>` : ''}
+        </div>
       </div>
     `).join('');
   }
@@ -1541,13 +2281,23 @@ function selectMdItem(idx) {
     api(`/api/resume/${r.id}`).then(res => {
       if (!res.ok) { detail.innerHTML = '<p style="color:var(--text2);">加载失败</p>'; return; }
       res.json().then(data => {
-        const mdHtml = typeof marked !== 'undefined' ? marked.parse(data.content || '') : renderMd(data.content || '');
+        var styled = renderResumeHTML(data.content || '', r.name);
         detail.innerHTML = `
-          <div class="md-preview">${mdHtml}</div>
-          <div style="margin-top:16px;display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);">
-            <button class="btn-save" style="font-size:11px;padding:6px 14px;" onclick="event.stopPropagation();openResume('${r.id}');$('#browseModal').classList.remove('active');">编辑</button>
-            ${!r.is_default ? `<button style="font-size:11px;padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);cursor:pointer;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">设为默认</button>` : ''}
-          </div>`;
+          <div class="md-toolbar">
+            <span class="tb-title">${esc(r.name)}</span>
+            <button class="tb-btn primary" onclick="event.stopPropagation();openResume('${r.id}');$('#browseModal').classList.remove('active');">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              编辑
+            </button>
+            <div style="position:relative;">
+              <button class="tb-btn" onclick="event.stopPropagation();toggleExportPopover(event, '${r.id}', '${esc(r.name).replace(/'/g, "'")}');">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出
+              </button>
+            </div>
+            ${!r.is_default ? `<button class="tb-btn" style="margin-left:auto;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">设为默认</button>` : '<span style="margin-left:auto;font-size:10px;color:var(--accent);padding:2px 8px;background:rgba(108,138,255,0.1);border-radius:8px;">默认</span>'}
+          </div>
+          <div class="resume-styled">${styled.body}</div>`;
       });
     });
   } else {
@@ -1648,9 +2398,11 @@ async function handleFileUpload(file) {
       currentModalContent = data.content;  // Markdown string
       uploadStatus.textContent = '解析成功！请确认预览后保存';
       uploadStatus.style.color = 'var(--green)';
-      if (typeof marked !== 'undefined' && currentModalContent) {
-        $('#resumePreview').innerHTML = marked.parse(currentModalContent);
+      if (currentModalContent) {
+        var html = typeof marked !== 'undefined' ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
+        $('#resumePreview').innerHTML = html;
         $('#resumePreview').style.display = 'block';
+        $('#resumePreview').classList.remove('resume-styled');
       }
       toast('简历解析完成，请确认后保存');
     } else {
@@ -1745,6 +2497,9 @@ $('#btnLogout').onclick = () => {
   localStorage.removeItem('job_agent_token');
   localStorage.removeItem('job_agent_email');
   localStorage.removeItem(MESSAGES_KEY);
+  localStorage.removeItem('seenCheckins');
+  seenCheckins = new Set();
+  stopCheckinPolling();
   token = '';
   $('#appMain').classList.remove('active');
   $('#authPage').style.display = 'flex';
@@ -1754,6 +2509,7 @@ $('#btnLogout').onclick = () => {
 
 $('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
   await api('/api/reset', { method: 'POST' });
+  if (interviewActive) exitInterview(false);
   localStorage.removeItem(MESSAGES_KEY);
   $('#messages').innerHTML = `<div class="welcome"><h2>${t('chat.newSession')}</h2><p>${t('chat.reset')}</p></div>`;
 };
@@ -1766,6 +2522,16 @@ async function sendMessage() {
 
   input.value = ''; input.style.height = 'auto';
   $('#btnSend').disabled = true;
+
+  // ── Interview mode ──
+  if (interviewActive) {
+    addMessage('user', msg, false);
+    await submitInterviewAnswer(msg);
+    $('#btnSend').disabled = false;
+    input.focus();
+    return;
+  }
+
   addMessage('user', msg);
   showTyping(true);
 
@@ -1806,8 +2572,8 @@ function addMessage(role, text, persist = true) {
 
   const avatar = document.createElement('div');
   avatar.className = 'msg-avatar';
-  avatar.textContent = role === 'user' ? 'U' : 'AI';
-  avatar.style.fontSize = '12px';
+  if (role === 'user') { avatar.textContent = 'U'; }
+  // assistant 头像用猴子图片背景，不需要文字
   avatar.style.fontWeight = '600';
 
   const bubble = document.createElement('div');
@@ -1866,7 +2632,7 @@ function showTyping(show) {
   if (show && !existing) {
     const div = document.createElement('div');
     div.className = 'typing';
-    div.innerHTML = '<div class="msg-avatar" style="background:linear-gradient(135deg,#6c8aff,' + getComputedStyle(document.documentElement).getPropertyValue('--purple').trim() + ');font-size:12px;font-weight:600">AI</div><div class="dots"><span></span><span></span><span></span></div>';
+    div.innerHTML = '<div class="msg-avatar" style="background:url(monkey-avatar.png) center/cover no-repeat"></div><div class="dots"><span></span><span></span><span></span></div>';
     $('#messages').appendChild(div);
   } else if (!show && existing) {
     existing.remove();
@@ -1903,6 +2669,274 @@ function jsonToMarkdown(c) {
   if ((c.certifications || []).length) L.push('');
   return L.join('\n').trim();
 }
+
+/* ═══ Interview ═══ */
+var interviewActive = false;
+
+function openInterviewSetup() {
+  if (interviewActive) { toast('面试进行中，请先退出当前面试'); return; }
+  if (!activeResumeId) { toast('请先上传简历'); return; }
+  $('#ivPosition').value = '';
+  $('#ivCompany').value = '';
+  $('#ivJd').value = '';
+  $('#interviewModal').classList.add('active');
+  $('#ivPosition').focus();
+}
+
+async function startInterview() {
+  var position = $('#ivPosition').value.trim();
+  if (!position) { toast('请填写岗位名称'); return; }
+  var company = $('#ivCompany').value.trim();
+  var jdText = $('#ivJd').value.trim();
+
+  $('#interviewModal').classList.remove('active');
+  $('#btnInterviewStart').disabled = true;
+  $('#interviewBar').style.display = 'flex';
+  $('#ivBarInfo').textContent = t('interview.title') + ': ' + position + (company ? ' @ ' + company : '');
+  $('#ivBarProgress').textContent = '准备中...';
+  $('#messages').innerHTML = '';
+  showTyping(true);
+
+  var body = { position, company, jd_text: jdText, resume_id: activeResumeId };
+
+  var res = await api('/api/interview/start', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+  showTyping(false);
+  $('#btnInterviewStart').disabled = false;
+
+  if (!res.ok) {
+    toast('启动面试失败');
+    exitInterview();
+    return;
+  }
+
+  var data = await res.json();
+  if (data.error) { toast(data.message); exitInterview(); return; }
+
+  // Success
+  interviewActive = true;
+  $('#ivBarProgress').textContent = 'Q1/' + data.total;
+  addMessage('assistant', data.message, false);
+  $('#chatInput').placeholder = t('interview.answerPlaceholder') || '输入你的回答…';
+  $('#chatInput').focus();
+  if (data.balance !== undefined) fetchPoints();
+}
+
+async function submitInterviewAnswer(answer) {
+  showTyping(true);
+  const res = await api('/api/interview/answer', {
+    method: 'POST',
+    body: JSON.stringify({ answer }),
+  });
+  showTyping(false);
+
+  if (res.ok) {
+    const data = await res.json();
+    if (data.error) { toast(data.message); if (data.error === 'no_points') return; }
+
+    if (data.status === 'waiting') {
+      $('#ivBarProgress').textContent = 'Q' + data.current + '/' + data.total;
+    } else if (data.status === 'done') {
+      $('#ivBarProgress').textContent = t('interview.completed');
+    }
+
+    addMessage('assistant', data.message, false);
+    if (data.balance !== undefined) fetchPoints();
+
+    if (data.status === 'done') {
+      exitInterview(true);
+    }
+  } else {
+    const err = await res.json().catch(() => ({}));
+    addMessage('assistant', err.detail || '处理出错，请重试');
+  }
+}
+
+function exitInterview(keepChat) {
+  interviewActive = false;
+  ttsEnabled = false;
+  $('#ttsCheck').checked = false;
+  $('#interviewBar').style.display = 'none';
+  $('#chatInput').placeholder = t('chat.placeholder') || '粘贴 JD 或输入消息…';
+  if (!keepChat) {
+    $('#messages').innerHTML = '';
+    // Restore welcome
+    const wm = document.createElement('div');
+    wm.className = 'welcome';
+    wm.id = 'welcomeMsg';
+    wm.innerHTML = '<h2>' + (t('chat.welcomeTitle') || 'Offer大圣') + '</h2><p>' + (t('chat.welcomeHtml') || '') + '</p>';
+    $('#messages').appendChild(wm);
+  }
+  fetch('/api/interview/reset', { method: 'POST', headers: apiHeaders() }).catch(() => {});
+}
+
+/* ═══ Voice: STT + TTS ═══ */
+var ttsEnabled = false;
+var useServerSTT = false;
+
+// Check if backend STT is available
+fetch('/api/stt/config', { headers: apiHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
+  useServerSTT = d.available;
+}).catch(function() { useServerSTT = false; });
+
+// ── MediaRecorder (backend STT) ──
+var mediaRecorder = null;
+var audioChunks = [];
+var isRecording = false;
+
+function toggleVoiceInput() {
+  if (isRecording) {
+    stopRecording();
+  } else if (useServerSTT) {
+    startRecording();
+  } else {
+    startWebSpeech();
+  }
+}
+
+async function startRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('您的浏览器不支持录音，请使用 Chrome 或 Edge');
+    return;
+  }
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    var mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+    mediaRecorder.ondataavailable = function(e) {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+    mediaRecorder.onstop = async function() {
+      stream.getTracks().forEach(function(t) { t.stop(); });
+      if (audioChunks.length === 0) return;
+      var blob = new Blob(audioChunks, { type: mimeType });
+      var form = new FormData();
+      form.append('audio', blob, 'recording.' + (mimeType.includes('webm') ? 'webm' : 'wav'));
+      try {
+        var res = await fetch('/api/stt', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: form });
+        var data = await res.json();
+        handleSTTResult(data);
+      } catch (e) {
+        toast('语音识别请求失败: ' + (e.message || '网络错误'));
+      }
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    $('#btnMic').classList.add('recording');
+  } catch (e) {
+    if (e.name === 'NotAllowedError') toast('请允许麦克风权限，点击地址栏左侧锁图标可修改');
+    else if (e.name === 'NotFoundError') toast('未找到麦克风设备');
+    else toast('无法开始录音: ' + (e.message || ''));
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  isRecording = false;
+  $('#btnMic').classList.remove('recording');
+}
+
+// ── Web Speech API (fallback) ──
+var webSpeech = null;
+var isListening = false;
+
+function startWebSpeech() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    toast('语音识别不可用。配置 STT API 后可使用服务端识别，或使用 Chrome + VPN');
+    return;
+  }
+  if (!webSpeech) {
+    webSpeech = new SR();
+    webSpeech.continuous = false;
+    webSpeech.interimResults = true;
+    webSpeech.lang = _lang === 'zh' ? 'zh-CN' : 'en-US';
+    webSpeech.onresult = function(event) {
+      var t = '';
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        t += event.results[i][0].transcript;
+      }
+      var inp = $('#chatInput');
+      inp.value = t;
+      inp.style.height = 'auto';
+      inp.style.height = Math.min(inp.scrollHeight, 200) + 'px';
+    };
+    webSpeech.onend = function() {
+      isListening = false;
+      $('#btnMic').classList.remove('recording');
+      var msg = $('#chatInput').value.trim();
+      if (msg) {
+        if (interviewActive) {
+          setTimeout(function() { if (!isListening) sendMessage(); }, 400);
+        } else {
+          $('#chatInput').focus();
+        }
+      }
+    };
+    webSpeech.onerror = function(event) {
+      isListening = false;
+      $('#btnMic').classList.remove('recording');
+      var errMap = {
+        'not-allowed': '请允许麦克风权限，点击浏览器地址栏左侧的锁图标可以修改',
+        'no-speech': '未检测到语音，请重试',
+        'audio-capture': '未找到麦克风设备',
+        'network': '语音识别需要网络连接（国内需 VPN），可配置服务端 STT 解决',
+      };
+      var msg = errMap[event.error] || ('语音识别出错: ' + event.error);
+      if (event.error !== 'aborted') toast(msg);
+    };
+  }
+  webSpeech.lang = _lang === 'zh' ? 'zh-CN' : 'en-US';
+  isListening = true;
+  $('#btnMic').classList.add('recording');
+  webSpeech.start();
+}
+
+// ── Shared result handler ──
+function handleSTTResult(data) {
+  if (data.text) {
+    var inp = $('#chatInput');
+    inp.value = data.text;
+    inp.style.height = 'auto';
+    inp.style.height = Math.min(inp.scrollHeight, 200) + 'px';
+    if (interviewActive) {
+      setTimeout(function() { if (!isRecording) sendMessage(); }, 300);
+    } else {
+      inp.focus();
+    }
+  } else if (data.error && data.error !== 'web') {
+    toast(data.message || '语音识别失败');
+  }
+}
+
+function toggleTTS() {
+  ttsEnabled = $('#ttsCheck').checked;
+}
+
+function speakText(text) {
+  if (!ttsEnabled || !window.speechSynthesis) return;
+  // Strip markdown for cleaner speech
+  var clean = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/\[.*?\]\(.*?\)/g, '')
+    .replace(/[#>`]/g, '').replace(/\|/g, ' ').replace(/-{2,}/g, '');
+  var u = new SpeechSynthesisUtterance(clean);
+  u.lang = _lang === 'zh' ? 'zh-CN' : 'en-US';
+  u.rate = 1.0;
+  window.speechSynthesis.speak(u);
+}
+
+// Hook into addMessage to auto-speak assistant messages
+var _origAddMessage = addMessage;
+addMessage = function(role, text, persist) {
+  _origAddMessage(role, text, persist);
+  if (role === 'assistant' && ttsEnabled) speakText(text);
+};
 
 /* ═══ Input ═══ */
 $('#btnSend').onclick = sendMessage;
@@ -1945,5 +2979,7 @@ if (token) {
 applyLanguage();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 </body>
 </html>

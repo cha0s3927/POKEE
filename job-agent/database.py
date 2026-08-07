@@ -86,6 +86,35 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """))
+        # 补加成长任务扩展列（兼容已有表）
+        for col, defn in [
+            ("sort_order", "INTEGER DEFAULT 0"),
+            ("description", "TEXT DEFAULT ''"),
+            ("target_date", "TEXT DEFAULT ''"),
+            ("completed_at", "TEXT"),
+            ("last_checkin_at", "TEXT"),
+            ("checkin_count", "INTEGER DEFAULT 0"),
+            ("user_responded_at", "TEXT"),
+            ("silence_days", "INTEGER DEFAULT 0"),
+            ("last_tone", "TEXT DEFAULT ''"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE growth_tasks ADD COLUMN {col} {defn}"))
+                conn.commit()
+            except Exception:
+                pass
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS growth_checkins (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                message TEXT NOT NULL,
+                tone TEXT DEFAULT '',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (task_id) REFERENCES growth_tasks(id)
+            )
+        """))
         conn.commit()
 
 

@@ -41,6 +41,10 @@ class Settings:
 
     http_proxy: str = _cfg.get("search", {}).get("http_proxy", "")
     serper_api_key: str = _cfg.get("search", {}).get("serper_api_key", "")
+    stt_provider: str = _cfg.get("stt", {}).get("provider", "web")  # "web" | "whisper_api"
+    stt_api_key: str = _cfg.get("stt", {}).get("api_key", "")
+    stt_base_url: str = _cfg.get("stt", {}).get("base_url", "https://api.openai.com/v1")
+    stt_model: str = _cfg.get("stt", {}).get("model", "whisper-1")
 
 
 settings = Settings()

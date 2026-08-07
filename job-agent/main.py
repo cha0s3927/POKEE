@@ -31,6 +31,16 @@ def startup():
     init_db()
     print("[STARTUP] Database initialized")
 
+    from growth_engine import start_growth_engine
+    start_growth_engine()
+    print("[STARTUP] Growth engine started")
+
+
+@app.on_event("shutdown")
+def shutdown():
+    from growth_engine import stop_growth_engine
+    stop_growth_engine()
+
 
 # ── 路由 ──
 from routes.auth import router as auth_router
@@ -38,12 +48,16 @@ from routes.resume import router as resume_router
 from routes.score import router as score_router
 from routes.chat import router as chat_router
 from routes.platforms import router as platforms_router
+from routes.interview import router as interview_router
+from routes.stt import router as stt_router
 
 app.include_router(auth_router)
 app.include_router(resume_router)
 app.include_router(score_router)
 app.include_router(chat_router)
 app.include_router(platforms_router)
+app.include_router(interview_router)
+app.include_router(stt_router)
 
 
 # ── 健康检查 ──

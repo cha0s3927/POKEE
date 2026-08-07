@@ -348,32 +348,203 @@ def api_create_growth_task(req: GrowthTaskPayload, user: dict = Depends(auth_use
     now = now_iso()
     with engine.connect() as conn:
         conn.execute(
-            text("INSERT INTO growth_tasks (id, user_id, title, category, status, sort_order, created_at) "
-                 "VALUES (:id, :uid, :title, :cat, :status, :sort, :now)"),
-            {"id": tid, "uid": user["id"], "title": req.title, "cat": req.category,
+            text("INSERT INTO growth_tasks (id, plan_id, user_id, title, category, status, sort_order, created_at) "
+                 "VALUES (:id, :pid, :uid, :title, :cat, :status, :sort, :now)"),
+            {"id": tid, "pid": tid, "uid": user["id"], "title": req.title, "cat": req.category,
              "status": req.status, "sort": req.sort_order, "now": now},
         )
+        # 如果直接创建为 in_progress，初始化督促时间（首次督促在 20-28h 后）
+        if req.status == "in_progress":
+            conn.execute(
+                text("UPDATE growth_tasks SET last_checkin_at = :now WHERE id = :tid"),
+                {"now": now, "tid": tid},
+            )
         conn.commit()
     return {"id": tid, "status": "ok"}
 
 
 @router.put("/api/me/growth-tasks/{task_id}", summary="更新成长任务")
 def api_update_growth_task(task_id: str, req: GrowthTaskPayload, user: dict = Depends(auth_user)):
+    return _do_update_growth_task(task_id, req, user["id"])
+
+
+def _do_update_growth_task(task_id: str, req: GrowthTaskPayload, user_id: str, trigger_engine: bool = False) -> dict:
     with engine.connect() as conn:
         row = conn.execute(
-            text("SELECT id FROM growth_tasks WHERE id = :tid AND user_id = :uid"),
-            {"tid": task_id, "uid": user["id"]},
+            text("SELECT * FROM growth_tasks WHERE id = :tid AND user_id = :uid"),
+            {"tid": task_id, "uid": user_id},
         ).fetchone()
         if not row:
             raise HTTPException(404, "任务不存在")
+
+        old_status = row.status
+        # Only update fields that are explicitly provided
+        set_clauses = []
+        params = {"tid": task_id}
+        if req.title:
+            set_clauses.append("title = :title")
+            params["title"] = req.title
+        if req.category:
+            set_clauses.append("category = :cat")
+            params["cat"] = req.category
+        set_clauses.append("status = :status")
+        params["status"] = req.status
+        set_clauses.append("sort_order = :sort")
+        params["sort"] = req.sort_order
+
         conn.execute(
-            text("UPDATE growth_tasks SET title = :title, category = :cat, status = :status, "
-                 "sort_order = :sort WHERE id = :tid"),
-            {"title": req.title, "cat": req.category, "status": req.status,
-             "sort": req.sort_order, "tid": task_id},
+            text(f"UPDATE growth_tasks SET {', '.join(set_clauses)} WHERE id = :tid"),
+            params,
+        )
+
+        # 开始任务 → 重置督促状态（last_checkin_at=now，首次督促在 20-28h 后）
+        if req.status == "in_progress" and old_status != "in_progress":
+            now = now_iso()
+            conn.execute(
+                text("UPDATE growth_tasks SET last_checkin_at = :now, checkin_count = 0, "
+                     "user_responded_at = NULL, silence_days = 0, last_tone = '' "
+                     "WHERE id = :tid"),
+                {"tid": task_id, "now": now},
+            )
+
+        # 完成任务 → 记录完成时间
+        if req.status == "done":
+            conn.execute(
+                text("UPDATE growth_tasks SET completed_at = :now WHERE id = :tid"),
+                {"now": now_iso(), "tid": task_id},
+            )
+
+        conn.commit()
+
+    # 触发成长引擎（在 commit 之后，确保引擎读到最新状态）
+    if trigger_engine and req.status == "in_progress":
+        try:
+            from growth_engine import process_due_tasks
+            process_due_tasks()
+        except Exception:
+            pass
+
+    return {"status": "ok"}
+
+
+# ── 成长督促 ──
+
+@router.get("/api/me/growth-checkins", summary="获取未读督促消息")
+def api_list_checkins(user: dict = Depends(auth_user)):
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT gc.*, gt.title as task_title, gt.category as task_category "
+                 "FROM growth_checkins gc JOIN growth_tasks gt ON gc.task_id = gt.id "
+                 "WHERE gc.user_id = :uid AND gc.direction = 'out' "
+                 "ORDER BY gc.created_at DESC LIMIT 20"),
+            {"uid": user["id"]},
+        ).fetchall()
+    return {
+        "checkins": [
+            {"id": r.id, "task_id": r.task_id, "task_title": r.task_title,
+             "task_category": r.task_category, "message": r.message,
+             "tone": r.tone, "created_at": r.created_at}
+            for r in rows
+        ]
+    }
+
+
+class RespondPayload(BaseModel):
+    reply: str = Field(default="", description="用户回复内容")
+
+
+@router.post("/api/me/growth-tasks/{task_id}/respond", summary="回应督促消息")
+def api_respond_checkin(task_id: str, req: RespondPayload, user: dict = Depends(auth_user)):
+    """用户回应督促。req: {reply: str} """
+    reply = req.reply or ""
+    cid = str(uuid.uuid4())
+    now = now_iso()
+    with engine.connect() as conn:
+        conn.execute(
+            text("INSERT INTO growth_checkins (id, task_id, user_id, direction, message, tone, created_at) "
+                 "VALUES (:id, :tid, :uid, 'in', :msg, '', :now)"),
+            {"id": cid, "tid": task_id, "uid": user["id"], "msg": reply, "now": now},
+        )
+        conn.execute(
+            text("UPDATE growth_tasks SET user_responded_at = :now, silence_days = 0 "
+                 "WHERE id = :tid"),
+            {"now": now, "tid": task_id},
         )
         conn.commit()
-    return {"status": "ok"}
+    return {"status": "ok", "checkin_id": cid}
+
+
+@router.post("/api/me/growth-tasks/{task_id}/followup", summary="生成督促后续回复")
+def api_growth_followup(task_id: str, req: RespondPayload, user: dict = Depends(auth_user)):
+    """用户回应后，LLM 生成一句结尾回复。req: {reply: str} """
+    reply = req.reply or ""
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT title, last_tone FROM growth_tasks WHERE id = :tid AND user_id = :uid"),
+            {"tid": task_id, "uid": user["id"]},
+        ).fetchone()
+
+    if not row:
+        raise HTTPException(404, "任务不存在")
+
+    task_title = row.title
+    last_tone = row.last_tone or ""
+    tone_labels = {
+        "curious": "好奇型", "supportive": "支持型", "challenging": "挑战型",
+        "humorous": "幽默型", "structured": "结构化型",
+    }
+    tone_desc = tone_labels.get(last_tone, "支持型")
+
+    prompt = f"""你是孙悟空，花果山求职道场的掌门。你刚问师弟/师妹「{task_title}」的进度，师弟/师妹回复了。
+
+师弟/师妹的回复：{reply}
+上次督促的语气：{tone_desc}
+
+请以猴哥的口吻回一句 30-60 字的结尾。规则：
+1. 自称"俺老孙"或"猴哥"，称用户"师弟/师妹"
+2. 如果师弟说完成了 → 狠狠夸，别敷衍，像猴哥看到师弟练成七十二变那样高兴
+3. 如果师弟说还在做 → 鼓励一句，给点小建议，别啰嗦
+4. 如果师弟说暂停 → 表示理解，说随时可以再开始
+5. 保持和上次督促一致的语感
+6. 只输出消息文本，不要加引号、前缀或解释"""
+
+    try:
+        from openai import OpenAI
+        import httpx
+        client = OpenAI(
+            api_key=__import__("config").settings.llm_api_key,
+            base_url=__import__("config").settings.llm_base_url,
+            http_client=httpx.Client(transport=httpx.HTTPTransport(retries=0), timeout=httpx.Timeout(20.0, connect=5.0)),
+        )
+        resp = client.chat.completions.create(
+            model=__import__("config").settings.llm_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.85,
+            max_tokens=200,
+        )
+        message = resp.choices[0].message.content.strip()
+    except Exception as e:
+        logger = __import__("logging").getLogger(__name__)
+        logger.warning(f"Followup LLM failed: {e}")
+        if "完成" in reply:
+            message = "师弟好样的！俺老孙就知道你能行，这一关过了，离拿下 offer 又近了一步！"
+        elif "暂停" in reply:
+            message = "没事师弟，歇一歇也好。啥时候想继续了，猴哥随时在这儿。"
+        else:
+            message = "好的师弟，稳步前进就是好事。有啥难题随时来找猴哥！"
+
+    cid = str(uuid.uuid4())
+    now = now_iso()
+    with engine.connect() as conn:
+        conn.execute(
+            text("INSERT INTO growth_checkins (id, task_id, user_id, direction, message, tone, created_at) "
+                 "VALUES (:id, :tid, :uid, 'out', :msg, :tone, :now)"),
+            {"id": cid, "tid": task_id, "uid": user["id"], "msg": message, "tone": last_tone, "now": now},
+        )
+        conn.commit()
+
+    return {"status": "ok", "checkin_id": cid, "message": message}
 
 
 @router.delete("/api/me/growth-tasks/{task_id}", summary="删除成长任务")
@@ -385,6 +556,60 @@ def api_delete_growth_task(task_id: str, user: dict = Depends(auth_user)):
         )
         conn.commit()
     return {"status": "ok"}
+
+
+# ── 调试：手动触发督促（模拟时间流逝）──
+
+from pydantic import BaseModel as DebugBaseModel
+
+
+class TriggerCheckinRequest(DebugBaseModel):
+    task_id: str = Field(default="", description="指定任务 ID，不传则处理所有 in_progress 任务")
+    hours_ago: int = Field(default=25, ge=1, le=168, description="模拟多少小时前最后一次督促，默认 25h")
+
+
+@router.post("/api/debug/trigger-checkin", summary="[调试] 手动触发督促")
+def api_trigger_checkin(req: TriggerCheckinRequest, user: dict = Depends(auth_user)):
+    """回退 last_checkin_at 时间，然后立即触发督促引擎。用于测试。"""
+    from datetime import datetime, timedelta, timezone
+
+    fake_past = (datetime.now(timezone.utc) - timedelta(hours=req.hours_ago)).isoformat()
+
+    with engine.connect() as conn:
+        if req.task_id:
+            conn.execute(
+                text("UPDATE growth_tasks SET last_checkin_at = :t WHERE id = :tid AND user_id = :uid"),
+                {"t": fake_past, "tid": req.task_id, "uid": user["id"]},
+            )
+        else:
+            conn.execute(
+                text("UPDATE growth_tasks SET last_checkin_at = :t WHERE status = 'in_progress' AND user_id = :uid"),
+                {"t": fake_past, "uid": user["id"]},
+            )
+        conn.commit()
+
+    from growth_engine import process_due_tasks
+    process_due_tasks()
+
+    # 读取生成的 checkin
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT gc.*, gt.title as task_title FROM growth_checkins gc "
+                 "JOIN growth_tasks gt ON gc.task_id = gt.id "
+                 "WHERE gc.user_id = :uid AND gc.direction = 'out' "
+                 "ORDER BY gc.created_at DESC LIMIT 10"),
+            {"uid": user["id"]},
+        ).fetchall()
+
+    return {
+        "triggered": True,
+        "hours_ago": req.hours_ago,
+        "checkins": [
+            {"id": r.id, "task_id": r.task_id, "task_title": r.task_title,
+             "message": r.message, "tone": r.tone, "created_at": r.created_at}
+            for r in rows
+        ],
+    }
 
 
 # ── 语言偏好 ──
