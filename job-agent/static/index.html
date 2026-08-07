@@ -2806,24 +2806,23 @@ var isRecording = false;
 var _selectedMicId = null;  // null = 系统默认
 
 async function initMicDevices() {
-  try {
-    // 先请求一次权限让 enumerateDevices 返回完整标签
-    var tmpStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    tmpStream.getTracks().forEach(function(t) { t.stop(); });
-  } catch(e) { /* 权限未授予，等录音时再处理 */ }
-  var devices = await navigator.mediaDevices.enumerateDevices();
+  // 不在这里调 getUserMedia —— 没有用户手势浏览器会拒绝
+  // enumerateDevices() 即使没权限也能返回 deviceId（label 可能为空）
+  var devices;
+  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch(e) { return; }
   var mics = devices.filter(function(d) { return d.kind === 'audioinput'; });
   if (mics.length <= 1) return;  // 只有一个设备，不需要选择
   var sel = document.getElementById('micDevice');
   if (!sel) return;
   sel.innerHTML = '<option value="">默认麦克风</option>';
   mics.forEach(function(m) {
-    sel.innerHTML += '<option value="' + m.deviceId + '">' + (m.label || '麦克风 ' + (sel.options.length)) + '</option>';
+    sel.innerHTML += '<option value="' + m.deviceId + '">' + (m.label || '麦克风 ' + sel.options.length) + '</option>';
   });
   sel.style.display = 'inline-block';
   sel.onchange = function() { _selectedMicId = sel.value || null; };
 }
 initMicDevices();
+// 首次点击 mic 按钮获取权限后，devicechange 事件会刷新设备标签
 navigator.mediaDevices.addEventListener('devicechange', initMicDevices);
 
 function toggleVoiceInput() {
@@ -2867,6 +2866,7 @@ async function startRecording() {
     if (_selectedMicId) audioConstraints.deviceId = { exact: _selectedMicId };
     console.log('[VOICE] calling getUserMedia, deviceId=' + (_selectedMicId || 'default'));
     var stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+	    initMicDevices();  // 获得权限后刷新设备列表，让 label 显示出来
     console.log('[VOICE] getUserMedia success, tracks:', stream.getAudioTracks().map(function(t) { return t.label; }));
     audioChunks = [];
     var mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -3106,7 +3106,13 @@ if (token) {
     } else if (res.status === 401) {
       localStorage.removeItem('job_agent_token');
       token = '';
+    } else {
+      // 非 401 错误（如 503 限流），有 token 就先进应用
+      showApp(localStorage.getItem('job_agent_email') || '');
     }
+  }).catch(() => {
+    // 网络错误兜底，避免卡在登录页
+    showApp(localStorage.getItem('job_agent_email') || '');
   });
 }
 
