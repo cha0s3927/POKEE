@@ -497,9 +497,13 @@ class Agent:
             if not markdown or len(markdown) < 20:
                 return {"error": "请传入完整的 Markdown 简历内容"}
 
-            result = save_resume(user_id, name_val, markdown, resume_id)
-            action = "已更新" if resume_id else "已保存"
-            return {"status": "ok", "resume_id": result["resume_id"], "message": f"简历「{name_val}」{action}"}
+            try:
+                result = save_resume(user_id, name_val, markdown, resume_id)
+                action = "已更新" if resume_id else "已保存"
+                return {"status": "ok", "resume_id": result["resume_id"], "message": f"简历「{name_val}」{action}"}
+            except Exception as e:
+                logger.exception("save_my_resume error")
+                return {"error": str(e)}
 
         elif name == "score_job":
             resume_id = args.get("resume_id")
@@ -517,16 +521,20 @@ class Agent:
             jd_text = args.get("jd_text", "")
             if len(jd_text) < 20:
                 return {"error": "jd_too_short", "message": "JD 内容太短，请粘贴完整的岗位描述"}
-            result = score_job(markdown, jd_text)
-            return {
-                "total": result.total,
-                "dimensions": result.dimensions,
-                "strengths": result.strengths,
-                "weaknesses": result.weaknesses,
-                "verdict": result.verdict,
-                "verdict_reason": result.verdict_reason,
-                "resume_id": resume_id,
-            }
+            try:
+                result = score_job(markdown, jd_text)
+                return {
+                    "total": result.total,
+                    "dimensions": result.dimensions,
+                    "strengths": result.strengths,
+                    "weaknesses": result.weaknesses,
+                    "verdict": result.verdict,
+                    "verdict_reason": result.verdict_reason,
+                    "resume_id": resume_id,
+                }
+            except Exception as e:
+                logger.exception("score_job error")
+                return {"error": str(e), "message": "评分失败，请稍后重试"}
 
         elif name == "tailor_resume":
             resume_id = args.get("resume_id")
@@ -538,9 +546,13 @@ class Agent:
             jd_text = args.get("jd_text", "")
             if len(jd_text) < 20:
                 return {"error": "jd_too_short", "message": "JD 内容太短"}
-            markdown = tailor_resume(resume_id, jd_text)
-            self._last_tailored[user_id] = markdown  # 缓存，供 save_last_resume 使用
-            return {"markdown": markdown}
+            try:
+                markdown = tailor_resume(resume_id, jd_text)
+                self._last_tailored[user_id] = markdown
+                return {"markdown": markdown}
+            except Exception as e:
+                logger.exception("tailor_resume error")
+                return {"error": str(e), "message": "简历定制失败，请稍后重试"}
 
         elif name == "save_last_resume":
             markdown = self._last_tailored.get(user_id, "")
@@ -548,9 +560,13 @@ class Agent:
                 return {"error": "no_tailored", "message": "没有待保存的简历。请先生成定制简历（tailor_resume）。"}
             name_val = args.get("name", "未命名简历")
             resume_id = args.get("resume_id")
-            result = save_resume(user_id, name_val, markdown, resume_id)
-            action = "已更新" if resume_id else "已保存"
-            return {"status": "ok", "resume_id": result["resume_id"], "message": f"简历「{name_val}」{action}"}
+            try:
+                result = save_resume(user_id, name_val, markdown, resume_id)
+                action = "已更新" if resume_id else "已保存"
+                return {"status": "ok", "resume_id": result["resume_id"], "message": f"简历「{name_val}」{action}"}
+            except Exception as e:
+                logger.exception("save_last_resume error")
+                return {"error": str(e)}
 
         elif name == "generate_pitch":
             jd_text = args.get("jd_text", "")
@@ -560,8 +576,12 @@ class Agent:
                 resume_id = r["id"] if r else None
             if not resume_id:
                 return {"error": "no_resume", "message": "请先上传简历"}
-            text = generate_pitch(user_id, jd_text, resume_id)
-            return {"text": text}
+            try:
+                text = generate_pitch(user_id, jd_text, resume_id)
+                return {"text": text}
+            except Exception as e:
+                logger.exception("generate_pitch error")
+                return {"error": str(e), "message": "生成招呼语失败，请稍后重试"}
 
         elif name == "generate_cover":
             jd_text = args.get("jd_text", "")
@@ -571,8 +591,12 @@ class Agent:
                 resume_id = r["id"] if r else None
             if not resume_id:
                 return {"error": "no_resume", "message": "请先上传简历"}
-            text = generate_cover(user_id, jd_text, resume_id)
-            return {"text": text}
+            try:
+                text = generate_cover(user_id, jd_text, resume_id)
+                return {"text": text}
+            except Exception as e:
+                logger.exception("generate_cover error")
+                return {"error": str(e), "message": "生成求职信失败，请稍后重试"}
 
         elif name == "search_jobs":
             try:
@@ -613,8 +637,12 @@ class Agent:
                 return {"error": "no_resume", "message": "请先上传简历"}
 
             from interview import generate_star_stories
-            stories = generate_star_stories(user_id, markdown, resume_id)
-            return {"stories": stories, "message": f"已生成 {len(stories)} 个 STAR 故事"}
+            try:
+                stories = generate_star_stories(user_id, markdown, resume_id)
+                return {"stories": stories, "message": f"已生成 {len(stories)} 个 STAR 故事"}
+            except Exception as e:
+                logger.exception("generate_star_stories error")
+                return {"error": str(e), "message": "生成 STAR 故事失败，请稍后重试"}
 
         elif name == "get_my_profile":
             from routes.platforms import api_get_profile
@@ -651,12 +679,23 @@ class Agent:
 
         elif name == "add_my_task":
             from routes.platforms import api_create_growth_task, GrowthTaskPayload
-            task = api_create_growth_task(GrowthTaskPayload(
-                title=args["title"],
-                category=args.get("category", "skill"),
-                status=args.get("status", "pending"),
-            ), user={"id": user_id})
-            return task
+            title = args.get("title", "")
+            if not isinstance(title, str) or not title.strip():
+                return {"error": "missing_title", "message": "请指定任务标题"}
+            category = args.get("category", "skill")
+            if category not in ("skill", "project", "action"):
+                category = "skill"
+            status = args.get("status", "pending")
+            if status not in ("pending", "in_progress", "done"):
+                status = "pending"
+            try:
+                task = api_create_growth_task(GrowthTaskPayload(
+                    title=title.strip(), category=category, status=status,
+                ), user={"id": user_id})
+                return task
+            except Exception as e:
+                logger.exception("add_my_task error")
+                return {"error": str(e)}
 
         return {"error": "unknown_tool"}
 
