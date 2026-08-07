@@ -252,15 +252,19 @@ def api_points_ledger(user: dict = Depends(auth_user)):
 # ── 用户画像 ──
 
 class ProfilePayload(BaseModel):
+    name: Optional[str] = Field(default=None, description="用户姓名")
     education: Optional[dict] = Field(default=None, description="{school, major, degree}")
     skills: Optional[list] = Field(default=None, description="技能/能力列表")
     experience_summary: Optional[str] = Field(default=None, description="工作经历摘要")
+    summary: Optional[str] = Field(default=None, description="个人总结")
     projects: Optional[list] = Field(default=None, description="项目/作品集 [{name, description, url}]")
     target_role: Optional[str] = Field(default=None, description="目标岗位")
     target_industry: Optional[str] = Field(default=None, description="目标行业")
+    target_locations: Optional[list] = Field(default=None, description="意向城市列表")
     salary_min: Optional[int] = Field(default=None, description="最低薪资(K)")
     salary_max: Optional[int] = Field(default=None, description="最高薪资(K)")
-    preferred_cities: Optional[list] = Field(default=None, description="意向城市列表")
+    salary_range: Optional[str] = Field(default=None, description="薪资范围显示")
+    preferred_cities: Optional[list] = Field(default=None, description="意向城市列表(兼容)")
 
 
 @router.get("/api/me/profile", summary="获取用户画像")
@@ -272,14 +276,18 @@ def api_get_profile(user: dict = Depends(auth_user)):
     profile = json.loads(row.profile) if row and row.profile else {}
     # Merge defaults with saved values
     defaults = {
+        "name": "",
         "education": {"school": "", "major": "", "degree": ""},
         "skills": [],
         "experience_summary": "",
+        "summary": "",
         "projects": [],
         "target_role": "",
         "target_industry": "",
+        "target_locations": [],
         "salary_min": None,
         "salary_max": None,
+        "salary_range": "",
         "preferred_cities": [],
     }
     for k, v in defaults.items():
@@ -377,3 +385,26 @@ def api_delete_growth_task(task_id: str, user: dict = Depends(auth_user)):
         )
         conn.commit()
     return {"status": "ok"}
+
+
+# ── 语言偏好 ──
+
+@router.get("/api/settings/lang", summary="获取当前语言偏好")
+def api_get_lang(user: dict = Depends(auth_user)):
+    from database import get_user_lang
+    lang = get_user_lang(user["id"])
+    return {"lang": lang}
+
+
+@router.put("/api/settings/lang", summary="切换语言偏好")
+def api_set_lang(req: dict, user: dict = Depends(auth_user)):
+    l = req.get("lang", "zh")
+    if l not in ("zh", "en"):
+        l = "zh"
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE users SET lang = :l WHERE id = :uid"),
+            {"l": l, "uid": user["id"]},
+        )
+        conn.commit()
+    return {"status": "ok", "lang": l}

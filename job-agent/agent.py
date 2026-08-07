@@ -343,19 +343,38 @@ class Agent:
     def __init__(self):
         self.sessions: dict[str, list[dict]] = {}
         self._last_tailored: dict[str, str] = {}  # user_id → markdown（工作流约束：缓存最新生成的简历）
+        self._langs: dict[str, str] = {}  # user_id → lang
+
+    def _build_prompt(self, has_resume: bool, lang: str) -> str:
+        prompt = SYSTEM_PROMPT if has_resume else ONBOARDING_PROMPT
+        if lang == "en":
+            prompt += "\n\n[IMPORTANT] You MUST respond in English only. Do NOT reply in Chinese. All tool call arguments (like title, name, content) must also be in English."
+        else:
+            prompt += "\n\n请始终用中文回复。"
+        return prompt
 
     def chat(self, user_id: str, user_message: str) -> tuple[str, list[str]]:
+        from database import engine, get_user_lang
+        from sqlalchemy import text
+
+        lang = get_user_lang(user_id)
+
         if user_id not in self.sessions:
-            from database import engine
-            from sqlalchemy import text
             with engine.connect() as conn:
                 row = conn.execute(
                     text("SELECT id FROM resumes WHERE user_id = :uid LIMIT 1"),
                     {"uid": user_id},
                 ).fetchone()
             has_resume = row is not None
-            prompt = SYSTEM_PROMPT if has_resume else ONBOARDING_PROMPT
+            prompt = self._build_prompt(has_resume, lang)
             self.sessions[user_id] = [{"role": "system", "content": prompt}]
+            self._langs[user_id] = lang
+        elif self._langs.get(user_id) != lang:
+            # Language changed → rebuild system prompt
+            has_resume = len(self.sessions[user_id]) > 0
+            prompt = self._build_prompt(has_resume, lang)
+            self.sessions[user_id][0] = {"role": "system", "content": prompt}
+            self._langs[user_id] = lang
 
         messages = self.sessions[user_id]
 
@@ -676,3 +695,4 @@ class Agent:
     def clear_session(self, user_id: str):
         self.sessions.pop(user_id, None)
         self._last_tailored.pop(user_id, None)
+        self._langs.pop(user_id, None)

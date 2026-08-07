@@ -117,3 +117,11 @@ def spend_points(user_id: str, amount: int, reason: str, ref_id: str = None) -> 
 
         new_balance = current - amount
     return new_balance
+
+
+def get_user_lang(user_id: str) -> str:
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT lang FROM users WHERE id = :uid"), {"uid": user_id}
+        ).fetchone()
+    return row.lang if row and row.lang else "zh"
