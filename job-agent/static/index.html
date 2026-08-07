@@ -249,15 +249,24 @@ body {
 .input-area button:active { transform: scale(0.97); }
 .input-area button:hover { background: var(--accent2); }
 .input-area button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.mic-btn {
+.input-area .mic-btn {
   width: 44px; height: 44px; padding: 0; background: var(--surface2); color: var(--text2);
   border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   transition: all 0.15s; font-size: 18px;
 }
-.mic-btn:hover { border-color: var(--accent); color: var(--accent); }
-.mic-btn.recording { background: var(--red); border-color: var(--red); color: #fff; animation: micPulse 1.2s ease-in-out infinite; }
+.input-area .mic-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+.input-area .mic-btn.recording { background: var(--surface2); border-color: var(--red); color: var(--red); animation: micPulse 1.2s ease-in-out infinite; }
 @keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); } 50% { box-shadow: 0 0 0 8px rgba(248,113,113,0); } }
+.mic-select {
+  background: var(--surface2); color: var(--text2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 11px; padding: 4px 8px; max-width: 130px;
+  height: 30px; cursor: pointer; flex-shrink: 0; outline: none;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a8b0c0'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center; padding-right: 22px;
+}
+.mic-select:focus { border-color: var(--accent); }
 .tts-toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11px; color: var(--text2); user-select: none; }
 .tts-toggle input { display: none; }
 .tts-toggle .tts-switch { width: 32px; height: 18px; background: var(--border); border-radius: 9px; position: relative; transition: background 0.2s; }
@@ -783,6 +792,8 @@ body {
       <button class="mic-btn" id="btnMic" title="语音输入" onclick="toggleVoiceInput()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
       </button>
+      <select id="micDevice" class="mic-select" style="display:none" title="选择麦克风"></select>
+      <span id="recTimer" style="display:none; color:var(--red); font-size:12px; font-weight:600; min-width:36px;"></span>
       <button id="btnSend" data-i18n="chat.send">发送</button>
     </div>
   </main>
@@ -2786,8 +2797,31 @@ fetch('/api/stt/config', { headers: apiHeaders() }).then(function(r) { return r.
 var mediaRecorder = null;
 var audioChunks = [];
 var isRecording = false;
+var _selectedMicId = null;  // null = 系统默认
+
+async function initMicDevices() {
+  try {
+    // 先请求一次权限让 enumerateDevices 返回完整标签
+    var tmpStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    tmpStream.getTracks().forEach(function(t) { t.stop(); });
+  } catch(e) { /* 权限未授予，等录音时再处理 */ }
+  var devices = await navigator.mediaDevices.enumerateDevices();
+  var mics = devices.filter(function(d) { return d.kind === 'audioinput'; });
+  if (mics.length <= 1) return;  // 只有一个设备，不需要选择
+  var sel = document.getElementById('micDevice');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">默认麦克风</option>';
+  mics.forEach(function(m) {
+    sel.innerHTML += '<option value="' + m.deviceId + '">' + (m.label || '麦克风 ' + (sel.options.length)) + '</option>';
+  });
+  sel.style.display = 'inline-block';
+  sel.onchange = function() { _selectedMicId = sel.value || null; };
+}
+initMicDevices();
+navigator.mediaDevices.addEventListener('devicechange', initMicDevices);
 
 function toggleVoiceInput() {
+  console.log('[VOICE] toggle, isRecording=' + isRecording + ', useServerSTT=' + useServerSTT);
   if (isRecording) {
     stopRecording();
   } else if (useServerSTT) {
@@ -2797,41 +2831,134 @@ function toggleVoiceInput() {
   }
 }
 
+var _recStartTime = 0;
+
+function updateRecTimer() {
+  var el = document.getElementById('recTimer');
+  if (!isRecording) {
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+    return;
+  }
+  if (el) {
+    el.style.display = 'inline';
+    el.textContent = ((Date.now() - _recStartTime) / 1000).toFixed(1) + 's';
+  }
+  requestAnimationFrame(updateRecTimer);
+}
+
 async function startRecording() {
+  console.log('[VOICE] startRecording called');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     toast('您的浏览器不支持录音，请使用 Chrome 或 Edge');
     return;
   }
   try {
-    var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    var audioConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    };
+    if (_selectedMicId) audioConstraints.deviceId = { exact: _selectedMicId };
+    console.log('[VOICE] calling getUserMedia, deviceId=' + (_selectedMicId || 'default'));
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+    console.log('[VOICE] getUserMedia success, tracks:', stream.getAudioTracks().map(function(t) { return t.label; }));
     audioChunks = [];
     var mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus' : 'audio/webm';
     mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
     mediaRecorder.ondataavailable = function(e) {
-      if (e.data.size > 0) audioChunks.push(e.data);
+      if (e.data.size > 0) {
+        audioChunks.push(e.data);
+        console.log('[VOICE] chunk ' + audioChunks.length + ', size=' + e.data.size);
+      }
     };
     mediaRecorder.onstop = async function() {
+      var durSec = ((Date.now() - _recStartTime) / 1000).toFixed(1);
+      var totalSize = audioChunks.reduce(function(s, c) { return s + c.size; }, 0);
+      console.log('[VOICE] stopped, duration=' + durSec + 's, chunks=' + audioChunks.length + ', totalSize=' + totalSize);
       stream.getTracks().forEach(function(t) { t.stop(); });
       if (audioChunks.length === 0) return;
-      var blob = new Blob(audioChunks, { type: mimeType });
-      var form = new FormData();
-      form.append('audio', blob, 'recording.' + (mimeType.includes('webm') ? 'webm' : 'wav'));
       try {
+        var rawBlob = new Blob(audioChunks, { type: mimeType });
+        var form = new FormData();
+        try {
+          var wavBlob = await convertToWav(rawBlob);
+          console.log('[VOICE] WAV converted, size=' + wavBlob.size);
+          form.append('audio', wavBlob, 'recording.wav');
+        } catch (e) {
+          console.warn('[VOICE] browser WAV conversion failed (' + e.message + '), sending raw webm');
+          form.append('audio', rawBlob, 'recording.webm');
+        }
         var res = await fetch('/api/stt', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: form });
         var data = await res.json();
+        console.log('[VOICE] STT response:', data);
         handleSTTResult(data);
       } catch (e) {
+        console.error('[VOICE] error:', e);
         toast('语音识别请求失败: ' + (e.message || '网络错误'));
       }
     };
-    mediaRecorder.start();
+    mediaRecorder.start(250); // 每 250ms 产生一个 chunk，确认持续在录音
+    _recStartTime = Date.now();
     isRecording = true;
     $('#btnMic').classList.add('recording');
+    updateRecTimer();
   } catch (e) {
+    console.error('[VOICE] getUserMedia error:', e.name, e.message);
     if (e.name === 'NotAllowedError') toast('请允许麦克风权限，点击地址栏左侧锁图标可修改');
     else if (e.name === 'NotFoundError') toast('未找到麦克风设备');
     else toast('无法开始录音: ' + (e.message || ''));
+  }
+}
+
+// ── 浏览器内解码 + 重采样 → 16kHz mono PCM WAV ──
+function encodeWav(samples, sampleRate) {
+  var buf = new ArrayBuffer(44 + samples.length * 2);
+  var v = new DataView(buf);
+  var writeStr = function(v, off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+  writeStr(v, 0, 'RIFF');
+  v.setUint32(4, 36 + samples.length * 2, true);
+  writeStr(v, 8, 'WAVE');
+  writeStr(v, 12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);       // PCM
+  v.setUint16(22, 1, true);       // mono
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true);       // block align
+  v.setUint16(34, 16, true);      // bits per sample
+  writeStr(v, 36, 'data');
+  v.setUint32(40, samples.length * 2, true);
+  for (var i = 0; i < samples.length; i++) {
+    var s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+async function convertToWav(blob) {
+  var audioCtx = null;
+  try {
+    var arrayBuf = await blob.arrayBuffer();
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // decodeAudioData 可能在短音频上 hang 住，加超时竞速
+    var decoded = await Promise.race([
+      audioCtx.decodeAudioData(arrayBuf),
+      new Promise(function(_, reject) { setTimeout(function() { reject(new Error('decode timeout')); }, 5000); })
+    ]);
+    var srcRate = decoded.sampleRate;
+    var dstRate = 16000;
+    var srcLen = decoded.getChannelData(0).length;
+    var dstLen = Math.round(srcLen * dstRate / srcRate);
+    var offlineCtx = new OfflineAudioContext(1, dstLen, dstRate);
+    var source = offlineCtx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offlineCtx.destination);
+    source.start();
+    var rendered = await offlineCtx.startRendering();
+    return encodeWav(rendered.getChannelData(0), dstRate);
+  } finally {
+    if (audioCtx) audioCtx.close();
   }
 }
 
@@ -2841,6 +2968,8 @@ function stopRecording() {
   }
   isRecording = false;
   $('#btnMic').classList.remove('recording');
+  var el = document.getElementById('recTimer');
+  if (el) el.textContent = '';
 }
 
 // ── Web Speech API (fallback) ──

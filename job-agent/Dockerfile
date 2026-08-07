@@ -9,6 +9,11 @@ ENV HTTP_PROXY=${HTTP_PROXY} HTTPS_PROXY=${HTTPS_PROXY} NO_PROXY=${NO_PROXY}
 
 WORKDIR /app
 
+# 阿里云 Debian 镜像加速
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources
+# ffmpeg for audio conversion (Aliyun STT)
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -i ${PIP_INDEX_URL} -r requirements.txt
 
@@ -24,6 +29,8 @@ COPY cover_letter.py .
 COPY interview.py .
 COPY search.py .
 COPY workflow.py .
+COPY growth_engine.py .
+COPY interview_engine.py .
 COPY routes/ routes/
 COPY static/ static/
 

@@ -12,12 +12,15 @@ search:
   http_proxy: ${HTTP_PROXY:-}
   serper_api_key: ${SERPER_API_KEY:-}
 
-# 语音识别 (STT): 设为 whisper_api 启用服务端识别，不配则用浏览器自带
+# 语音识别 (STT): "web"=浏览器自带 | "whisper_api"=OpenAI兼容 | "aliyun"=阿里云NLS
 stt:
   provider: ${STT_PROVIDER:-web}
   api_key: ${STT_API_KEY:-}
   base_url: ${STT_BASE_URL:-https://api.openai.com/v1}
   model: ${STT_MODEL:-whisper-1}
+  aliyun_ak_id: ${ALIYUN_AK_ID:-}
+  aliyun_ak_secret: ${ALIYUN_AK_SECRET:-}
+  aliyun_appkey: ${ALIYUN_APPKEY:-}
 
 auth:
   jwt_secret: ${JWT_SECRET:-job-agent-secret-change-me-in-production}

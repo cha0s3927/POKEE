@@ -10,3 +10,4 @@ pyjwt>=2.8.0
 python-docx>=1.0.0
 pdfplumber>=0.10.0
 python-multipart>=0.0.9
+aliyun-python-sdk-nls-cloud-meta>=1.0.0
