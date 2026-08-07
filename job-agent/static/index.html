@@ -88,7 +88,7 @@ body {
 .sidebar-body { flex: 1; overflow-y: auto; padding: 12px; }
 .sidebar-body::-webkit-scrollbar { width: 4px; }
 .sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.sidebar-body .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); padding: 8px 4px 4px; display: flex; justify-content: space-between; align-items: center; }
+.sidebar-body .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: var(--text); padding: 8px 4px 4px; display: flex; justify-content: space-between; align-items: center; }
 .sidebar-body .section-label .count { font-size: 10px; background: var(--surface2); padding: 1px 6px; border-radius: 10px; }
 
 /* Resume list */
@@ -359,20 +359,12 @@ body {
 }
 
 /* Profile card */
-.profile-card {
-  padding: 12px 20px; border-bottom: 1px solid var(--border); cursor: pointer;
-  transition: background 0.15s;
-}
-.profile-card:hover { background: rgba(108,138,255,0.04); }
-.profile-card .pc-title { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.profile-card .pc-empty { font-size: 12px; color: var(--text2); font-style: italic; }
-.profile-card .pc-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
-.profile-card .pc-row:last-child { margin-bottom: 0; }
-.profile-card .pc-icon { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; color: var(--text2); }
-.profile-card .pc-label { color: var(--text2); font-size: 10px; flex-shrink: 0; min-width: 28px; }
-.profile-card .pc-val { color: var(--text); }
-.profile-card .pc-tags { display: flex; flex-wrap: wrap; gap: 3px; }
-.profile-card .pc-tag {
+.pc-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
+.pc-row:last-child { margin-bottom: 0; }
+.pc-label { color: var(--text2); font-size: 10px; flex-shrink: 0; min-width: 28px; }
+.pc-val { color: var(--text); }
+.pc-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.pc-tag {
   font-size: 10px; padding: 1px 6px; border-radius: 8px;
   background: rgba(108,138,255,0.12); color: var(--accent);
   white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis;
@@ -577,20 +569,16 @@ body {
         <button class="daily-btn" id="btnDaily" onclick="dailyBonus()" data-i18n="points.checkin">签到</button>
       </div>
     </div>
-    <div class="profile-card" id="profileCard" onclick="openProfileModal()">
-      <div class="pc-title"><span data-i18n="profile.title">我的画像</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div>
-      <div class="pc-empty" id="pcEmpty" data-i18n="profile.empty">点击完善求职画像</div>
-      <div id="pcContent" style="display:none">
-        <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span class="pc-label" data-i18n="profile.education">教育</span><span class="pc-val" id="pcEdu">-</span></div>
-        <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><span class="pc-label" data-i18n="profile.projects">项目</span><span class="pc-val" id="pcProjects">-</span></div>
-        <div class="pc-row"><svg class="pc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg><span class="pc-label" data-i18n="profile.skills">技能</span><span class="pc-tags" id="pcSkills"></span></div>
-      </div>
-    </div>
     <div class="sidebar-body">
       <div class="section-label clickable" onclick="openResumeBrowse()">
         <span data-i18n="sidebar.myResumes">我的简历</span>
         <span class="count" id="resumeCount">0</span>
       </div>
+      <div class="section-label clickable" onclick="openProfileModal()">
+        <span data-i18n="profile.title">我的画像</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+      </div>
+      <div id="sidebarProfile" style="padding: 0 4px 8px;"></div>
       <div class="section-label">
         <span data-i18n="sidebar.myTarget">我的目标</span>
       </div>
@@ -690,7 +678,7 @@ body {
 <!-- ═══ Profile Modal ═══ -->
 <div class="modal-overlay" id="profileModal">
   <div class="modal-box" style="max-width:620px;">
-    <h3>求职画像</h3>
+    <h3 data-i18n="profileModal.title">我的画像</h3>
     <div class="profile-modal-tabs">
       <button class="active" data-tab="tabStatus">我的现状</button>
       <button data-tab="tabTarget">我的目标</button>
@@ -807,7 +795,7 @@ var I18N = {
     profile: {
       title: '我的画像', empty: '点击完善我的画像',
       education: '教育', projects: '项目', skills: '技能',
-      pending: '待完善'
+      pending: '待完善', salaryLabel: '薪资', citiesLabel: '城市'
     },
     sidebar: {
       myResumes: '我的简历', myTarget: '我的目标', growth: '成长计划',
@@ -831,7 +819,7 @@ var I18N = {
       selectHint: '选择左侧项目查看详情'
     },
     profileModal: {
-      title: '求职画像', myTarget: '我的目标', growthPlan: '成长计划',
+      title: '我的画像', myTarget: '我的目标', growthPlan: '成长计划',
       name: '姓名', namePlaceholder: '你的名字',
       school: '学校', schoolPlaceholder: '如: 北京大学',
       major: '专业', majorPlaceholder: '如: 计算机科学与技术',
@@ -865,7 +853,7 @@ var I18N = {
     profile: {
       title: 'My Profile', empty: 'Click to complete profile',
       education: 'Education', projects: 'Projects', skills: 'Skills',
-      pending: 'Not set'
+      pending: 'Not set', salaryLabel: 'Salary', citiesLabel: 'Cities'
     },
     sidebar: {
       myResumes: 'My Resumes', myTarget: 'My Target', growth: 'Growth Plan',
@@ -889,7 +877,7 @@ var I18N = {
       selectHint: 'Select an item to view details'
     },
     profileModal: {
-      title: 'Career Profile', myTarget: 'My Target', growthPlan: 'Growth Plan',
+      title: 'My Profile', myTarget: 'My Target', growthPlan: 'Growth Plan',
       name: 'Name', namePlaceholder: 'Your name',
       school: 'School', schoolPlaceholder: 'e.g. Stanford University',
       major: 'Major', majorPlaceholder: 'e.g. Computer Science',
@@ -1003,19 +991,12 @@ function updateDynamicI18n() {
   if (typeof renderProfileCard === 'function') renderProfileCard();
   // Section labels
   var sls = document.querySelectorAll('.section-label span:first-child, .section-label.clickable span:first-child');
-  var slMap = { '我的简历': 'sidebar.myResumes', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth' };
-  var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'My Target': 'sidebar.myTarget', 'Growth Plan': 'sidebar.growth' };
+  var slMap = { '我的简历': 'sidebar.myResumes', '我的画像': 'profile.title', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth' };
+  var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'My Profile': 'profile.title', 'My Target': 'sidebar.myTarget', 'Growth Plan': 'sidebar.growth' };
   for (var k = 0; k < sls.length; k++) {
     var st = sls[k].textContent.trim();
     if (slMap[st]) sls[k].textContent = t(slMap[st]);
     else if (slMapEn[st]) sls[k].textContent = t(slMapEn[st]);
-  }
-  // Empty profile card
-  var pcEmpty = document.getElementById('pcEmpty');
-  if (pcEmpty) {
-    if (pcEmpty.textContent.includes('点击完善') || pcEmpty.textContent.includes('Click to')) {
-      pcEmpty.textContent = t('profile.empty');
-    }
   }
 }
 
@@ -1162,9 +1143,11 @@ function renderProfileCard() {
   const projects = p.projects || [];
   const hasData = p.target_role || (p.skills || []).length > 0 || p.education || projects.length > 0;
 
-  $('#pcEmpty').style.display = hasData ? 'none' : '';
-  $('#pcContent').style.display = hasData ? '' : 'none';
-  if (!hasData) return;
+  const container = $('#sidebarProfile');
+  if (!container) { renderSidebarTarget(); return; }
+
+  const pending = t('profile.pending');
+  const rows = [];
 
   // 教育
   let eduText = '';
@@ -1175,22 +1158,30 @@ function renderProfileCard() {
       eduText = [p.education.school, p.education.major, p.education.degree].filter(Boolean).join(' ');
     }
   }
-  const pending = t('profile.pending');
-  $('#pcEdu').textContent = eduText || pending;
+  if (eduText) {
+    rows.push(`<div class="pc-row"><span class="pc-label">${t('profile.education')}</span><span class="pc-val">${escHtml(eduText)}</span></div>`);
+  }
 
   // 项目
   if (projects.length) {
     const names = projects.map(pj => typeof pj === 'string' ? pj : pj.name || '').filter(Boolean);
-    $('#pcProjects').textContent = names.length > 2 ? names.slice(0, 2).join('、') + ` +${names.length - 2}` : names.join('、');
-  } else {
-    $('#pcProjects').textContent = '-';
+    if (names.length) {
+      const txt = names.length > 2 ? names.slice(0, 2).join('、') + ` +${names.length - 2}` : names.join('、');
+      rows.push(`<div class="pc-row"><span class="pc-label">${t('profile.projects')}</span><span class="pc-val">${escHtml(txt)}</span></div>`);
+    }
   }
 
   // 技能
   const skills = p.skills || [];
-  $('#pcSkills').innerHTML = skills.length
-    ? skills.slice(0, 6).map(s => `<span class="pc-tag">${escHtml(s)}</span>`).join('')
-    : `<span style="color:var(--text2);font-size:11px">${pending}</span>`;
+  if (skills.length) {
+    rows.push(`<div class="pc-row"><span class="pc-label">${t('profile.skills')}</span><span class="pc-tags">${skills.slice(0, 6).map(s => `<span class="pc-tag">${escHtml(s)}</span>`).join('')}</span></div>`);
+  }
+
+  if (rows.length) {
+    container.innerHTML = rows.join('');
+  } else {
+    container.innerHTML = `<div style="color:var(--text2);font-size:11px;padding:4px 0">${t('profile.pending')}</div>`;
+  }
 
   renderSidebarTarget();
 }
@@ -1211,10 +1202,10 @@ function renderSidebarTarget() {
     else if (p.salary_min) salaryText = `${p.salary_min}K起`;
     else salaryText = `最高${p.salary_max}K`;
   }
-  if (salaryText) parts.push({ label: '💰', val: salaryText });
+  if (salaryText) parts.push({ label: t('profile.salaryLabel') || '薪资', val: salaryText });
 
   const locs = p.target_locations || p.preferred_cities || [];
-  if (locs.length) parts.push({ label: '📍', val: locs.join(' / ') });
+  if (locs.length) parts.push({ label: t('profile.citiesLabel') || '城市', val: locs.join(' / ') });
 
   if (!parts.length) {
     container.innerHTML = `<div style="padding:4px 0;color:var(--text2);font-size:11px">${t('profile.pending')}</div>`;
@@ -1222,9 +1213,9 @@ function renderSidebarTarget() {
   }
 
   container.innerHTML = parts.map(pt => `
-    <div class="sg-item" style="cursor:default">
-      <span style="font-size:10px;color:var(--text2);width:32px;flex-shrink:0">${escHtml(pt.label)}</span>
-      <span style="font-size:11px;color:var(--text1)">${escHtml(pt.val)}</span>
+    <div class="pc-row" style="margin-bottom:5px">
+      <span class="pc-label">${escHtml(pt.label)}</span>
+      <span class="pc-val">${escHtml(pt.val)}</span>
     </div>
   `).join('');
 }
