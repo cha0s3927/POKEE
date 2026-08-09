@@ -14,21 +14,24 @@ engine = create_engine(settings.database_url, connect_args={"check_same_thread":
 
 
 def init_db():
-    """只创建求职助手专属表，users 表由 POKEE 管理"""
+    """创建求职助手所有表"""
     with engine.connect() as conn:
-        # 兼容 POKEE users 表可能缺少的列
-        for col, defn in [
-            ("persona", "TEXT NOT NULL DEFAULT 'default'"),
-            ("points", "INTEGER NOT NULL DEFAULT 0"),
-            ("lang", "TEXT NOT NULL DEFAULT 'zh'"),
-            ("profile", "TEXT NOT NULL DEFAULT '{}'"),
-            ("last_login_at", "TEXT"),
-        ]:
-            try:
-                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {defn}"))
-                conn.commit()
-            except Exception:
-                pass
+        # users 表（独立部署，不再依赖 POKEE）
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                token TEXT,
+                created_at TEXT NOT NULL,
+                persona TEXT NOT NULL DEFAULT 'default',
+                points INTEGER NOT NULL DEFAULT 0,
+                lang TEXT NOT NULL DEFAULT 'zh',
+                profile TEXT NOT NULL DEFAULT '{}',
+                last_login_at TEXT
+            )
+        """))
+        conn.commit()
 
         # ── 求职助手专属表 ──
         conn.execute(text("""
