@@ -2823,7 +2823,7 @@ async function initMicDevices() {
 }
 initMicDevices();
 // 首次点击 mic 按钮获取权限后，devicechange 事件会刷新设备标签
-navigator.mediaDevices.addEventListener('devicechange', initMicDevices);
+if (navigator.mediaDevices) navigator.mediaDevices.addEventListener('devicechange', initMicDevices);
 
 function toggleVoiceInput() {
   console.log('[VOICE] toggle, isRecording=' + isRecording + ', useServerSTT=' + useServerSTT);

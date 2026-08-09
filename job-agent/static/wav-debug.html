@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAV 编码诊断</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f1117; color: #e4e6ed; padding: 24px; max-width: 600px; margin: 0 auto; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: #a8b0c0; margin-bottom: 20px; }
+  button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; margin: 4px; }
+  .btn-rec { background: #f87171; color: #fff; }
+  .btn-rec.recording { background: #ef4444; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,0.4); } 50% { box-shadow: 0 0 0 10px rgba(248,113,113,0); } }
+  .btn-dl { background: #6c8aff; color: #fff; }
+  .btn-play { background: #4ade80; color: #000; }
+  .log { background: #1a1d27; border: 1px solid #2a2d38; border-radius: 8px; padding: 14px; margin: 16px 0; font-size: 12px; line-height: 1.6; max-height: 300px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; }
+  .info { font-size: 12px; color: #a8b0c0; margin: 8px 0; }
+  audio { width: 100%; margin: 12px 0; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<h1>WAV 编码诊断</h1>
+<p class="sub">录制 → 转 WAV → 下载 → 回放 → test_stt.py 验证</p>
+
+<button class="btn-rec" id="btnRec" onclick="toggleRec()">🎤 开始录音</button>
+<button class="btn-dl hidden" id="btnDl" onclick="downloadWav()">⬇ 下载 WAV</button>
+<button class="btn-play hidden" id="btnPlay" onclick="playWav()">▶ 回放</button>
+
+<p class="info" id="info"></p>
+<audio id="player" class="hidden" controls></audio>
+<div class="log" id="log"></div>
+
+<script>
+var isRec = false;
+var mediaRecorder = null;
+var audioChunks = [];
+var lastWavBlob = null;
+var logEl = document.getElementById('log');
+var infoEl = document.getElementById('info');
+
+function log(msg) {
+  logEl.textContent += msg + '\n';
+  logEl.scrollTop = logEl.scrollHeight;
+  console.log('[WAV-DEBUG]', msg);
+}
+
+// ── Same encodeWav as index.html ──
+function encodeWav(samples, sampleRate) {
+  var buf = new ArrayBuffer(44 + samples.length * 2);
+  var v = new DataView(buf);
+  var writeStr = function(v, off, s) { for (var i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+  writeStr(v, 0, 'RIFF');
+  v.setUint32(4, 36 + samples.length * 2, true);
+  writeStr(v, 8, 'WAVE');
+  writeStr(v, 12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  writeStr(v, 36, 'data');
+  v.setUint32(40, samples.length * 2, true);
+  for (var i = 0; i < samples.length; i++) {
+    var s = Math.max(-1, Math.min(1, samples[i]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+
+// ── Same convertToWav as index.html ──
+async function convertToWav(blob) {
+  var audioCtx = null;
+  try {
+    var arrayBuf = await blob.arrayBuffer();
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var decoded = await Promise.race([
+      audioCtx.decodeAudioData(arrayBuf),
+      new Promise(function(_, reject) { setTimeout(function() { reject(new Error('decode timeout'); }, 5000); })
+    ]);
+    log('decoded: sampleRate=' + decoded.sampleRate + ' channels=' + decoded.numberOfChannels + ' duration=' + decoded.duration.toFixed(2) + 's length=' + decoded.length);
+
+    var srcRate = decoded.sampleRate;
+    var dstRate = 16000;
+    var srcLen = decoded.getChannelData(0).length;
+
+    // Check if audio has actual signal
+    var ch0 = decoded.getChannelData(0);
+    var maxAmp = 0, sumSq = 0;
+    for (var i = 0; i < ch0.length; i++) {
+      var abs = Math.abs(ch0[i]);
+      if (abs > maxAmp) maxAmp = abs;
+      sumSq += ch0[i] * ch0[i];
+    }
+    var rms = Math.sqrt(sumSq / ch0.length);
+    log('audio levels: peak=' + (maxAmp * 100).toFixed(1) + '% RMS=' + (rms * 100).toFixed(1) + '%');
+
+    var dstLen = Math.round(srcLen * dstRate / srcRate);
+    var offlineCtx = new OfflineAudioContext(1, dstLen, dstRate);
+    var source = offlineCtx.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offlineCtx.destination);
+    source.start();
+    var rendered = await offlineCtx.startRendering();
+    log('rendered: sampleRate=' + rendered.sampleRate + ' length=' + rendered.length);
+
+    return encodeWav(rendered.getChannelData(0), dstRate);
+  } finally {
+    if (audioCtx) audioCtx.close();
+  }
+}
+
+async function toggleRec() {
+  if (isRec) {
+    mediaRecorder.stop();
+    return;
+  }
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    log('getUserMedia: OK, tracks=' + stream.getAudioTracks().map(t => t.label).join(', '));
+    audioChunks = [];
+    var mt = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream, { mimeType: mt });
+    log('MediaRecorder: mimeType=' + mt);
+
+    mediaRecorder.ondataavailable = function(e) {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = async function() {
+      stream.getTracks().forEach(t => t.stop());
+      var totalSize = audioChunks.reduce(function(s, c) { return s + c.size; }, 0);
+      log('recording stopped: chunks=' + audioChunks.length + ' totalSize=' + totalSize + ' bytes');
+      if (audioChunks.length === 0) return;
+
+      var rawBlob = new Blob(audioChunks, { type: mt });
+      log('converting to WAV...');
+      try {
+        lastWavBlob = await convertToWav(rawBlob);
+        log('WAV: size=' + lastWavBlob.size + ' bytes ✓');
+        infoEl.textContent = 'WAV ready: ' + lastWavBlob.size + ' bytes. Download and test with: python test_stt.py <file>';
+
+        document.getElementById('btnDl').classList.remove('hidden');
+        document.getElementById('btnPlay').classList.remove('hidden');
+        document.getElementById('player').classList.remove('hidden');
+      } catch(e) {
+        log('ERROR in convertToWav: ' + e.message);
+      }
+      isRec = false;
+      document.getElementById('btnRec').classList.remove('recording');
+      document.getElementById('btnRec').textContent = '🎤 开始录音';
+    };
+
+    mediaRecorder.start(250);
+    isRec = true;
+    document.getElementById('btnRec').classList.add('recording');
+    document.getElementById('btnRec').textContent = '⏹ 停止录音';
+    log('recording started...');
+  } catch(e) {
+    log('ERROR: ' + e.name + ' - ' + e.message);
+  }
+}
+
+function downloadWav() {
+  if (!lastWavBlob) return;
+  var url = URL.createObjectURL(lastWavBlob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'test_recording.wav';
+  a.click();
+  URL.revokeObjectURL(url);
+  log('WAV downloaded ✓');
+}
+
+function playWav() {
+  if (!lastWavBlob) return;
+  var url = URL.createObjectURL(lastWavBlob);
+  document.getElementById('player').src = url;
+  document.getElementById('player').play();
+}
+</script>
+</body>
+</html>

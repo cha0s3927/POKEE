@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语音识别测试</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#22252f;--border:#2a2d38;--text:#e4e6ed;--text2:#a8b0c0;--accent:#6c8aff;--green:#4ade80;--red:#f87171;--radius:10px;--radius-sm:6px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;width:480px;max-width:90vw}
+  h1{font-size:20px;margin-bottom:4px}
+  h1 span{color:var(--accent)}
+  .sub{font-size:12px;color:var(--text2);margin-bottom:24px}
+  .row{display:flex;gap:10px;margin-bottom:16px}
+  input,textarea{flex:1;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;font-family:inherit}
+  input:focus,textarea:focus{border-color:var(--accent)}
+  textarea{resize:vertical;min-height:60px}
+  button{padding:10px 20px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:0.9}
+  .btn-mic{width:44px;height:44px;padding:0;background:var(--surface2);border:1px solid var(--border);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;transition:all 0.15s}
+  .btn-mic:hover{border-color:var(--accent)}
+  .btn-mic.recording{background:var(--red);border-color:var(--red);color:#fff;animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0.4)}50%{box-shadow:0 0 0 10px rgba(248,113,113,0)}}
+  .status{font-size:12px;color:var(--text2);margin-bottom:12px;min-height:18px}
+  .label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+  .result{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;min-height:60px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .result.empty{color:var(--text2);font-style:italic}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+  .badge.ok{background:rgba(74,222,128,0.15);color:var(--green)}
+  .badge.fail{background:rgba(248,113,113,0.15);color:var(--red)}
+  .login-box{display:none}
+  .login-box.active{display:block}
+  .test-box{display:none}
+  .test-box.active{display:block}
+</style>
+</head>
+<body>
+<div class="box">
+  <!-- Login -->
+  <div class="login-box active" id="loginBox">
+    <h1>语音识别 <span>测试</span></h1>
+    <p class="sub">先登录再测试</p>
+    <input id="loginEmail" type="email" placeholder="邮箱" style="margin-bottom:10px;width:100%">
+    <input id="loginPwd" type="password" placeholder="密码" style="margin-bottom:10px;width:100%">
+    <button class="btn-primary" onclick="doLogin()" style="width:100%">登录</button>
+    <p id="loginMsg" style="font-size:12px;color:var(--red);margin-top:8px;min-height:18px"></p>
+  </div>
+
+  <!-- Test -->
+  <div class="test-box" id="testBox">
+    <h1>语音识别 <span>测试</span></h1>
+    <p class="sub">对着麦克风说话，看识别结果</p>
+    <div class="status" id="sttStatus">STT 方式: 检测中...</div>
+    <div class="row">
+      <input type="text" id="resultText" placeholder="识别结果会出现在这里..." readonly>
+      <button class="btn-mic" id="btnMic" onclick="toggleMic()" title="录音">🎤</button>
+    </div>
+    <div class="label" style="margin-top:16px">面试模拟（1题）</div>
+    <div class="row">
+      <input type="text" id="ivPos" placeholder="岗位名称" value="Python后端">
+      <button class="btn-primary" id="btnStart" onclick="startTest()">开始</button>
+    </div>
+    <div class="result" id="ivMsg" style="margin-bottom:12px">
+      <span class="empty">点击"开始"生成一道面试题，然后用语音回答</span>
+    </div>
+    <div id="ivMeta" style="font-size:11px;color:var(--text2);margin-bottom:12px"></div>
+    <div class="row">
+      <input type="text" id="chatText" placeholder="或直接打字回答...">
+      <button class="btn-primary" id="btnSend" onclick="sendText()">发送</button>
+    </div>
+    <div class="result" id="responseBox" style="margin-top:12px;max-height:200px;overflow-y:auto">
+      <span class="empty">等待回答...</span>
+    </div>
+    <button class="btn-primary" onclick="resetTest()" style="margin-top:12px;width:100%;background:var(--surface2);color:var(--text2)">重置</button>
+  </div>
+</div>
+
+<script>
+var token = '';
+var useServerSTT = false;
+var isRecording = false;
+var mediaRecorder = null;
+var audioChunks = [];
+var isListening = false;
+var webSpeech = null;
+var ivActive = false;
+
+// ── Login ──
+async function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var pwd = document.getElementById('loginPwd').value.trim();
+  if (!email || !pwd) return;
+  try {
+    var res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email: email, password: pwd})
+    });
+    var d = await res.json();
+    if (d.token) {
+      token = d.token;
+      document.getElementById('loginBox').classList.remove('active');
+      document.getElementById('testBox').classList.add('active');
+      checkSTT();
+    } else {
+      document.getElementById('loginMsg').textContent = d.detail || '登录失败';
+    }
+  } catch(e) {
+    document.getElementById('loginMsg').textContent = '网络错误';
+  }
+}
+
+// ── STT ──
+async function checkSTT() {
+  try {
+    var res = await fetch('/api/stt/config', {headers:{'Authorization':'Bearer '+token}});
+    var d = await res.json();
+    useServerSTT = d.available;
+    document.getElementById('sttStatus').innerHTML = 'STT 方式: ' +
+      (useServerSTT ? '<span class="badge ok">服务端 Whisper</span>' : '<span class="badge fail">浏览器 Web Speech（需 VPN）</span>');
+  } catch(e) { useServerSTT = false; }
+}
+
+function toggleMic() {
+  if (isRecording || isListening) {
+    stopAll();
+  } else if (useServerSTT) {
+    startRecording();
+  } else {
+    startWebSpeech();
+  }
+}
+
+function stopAll() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  if (webSpeech && isListening) webSpeech.stop();
+  isRecording = false;
+  isListening = false;
+  document.getElementById('btnMic').classList.remove('recording');
+}
+
+async function startRecording() {
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks = [];
+    var mt = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream, {mimeType:mt});
+    mediaRecorder.ondataavailable = function(e) { if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async function() {
+      stream.getTracks().forEach(function(t){t.stop();});
+      if (audioChunks.length===0) return;
+      var blob = new Blob(audioChunks, {type:mt});
+      var form = new FormData();
+      form.append('audio', blob, 'test.'+(mt.includes('webm')?'webm':'wav'));
+      document.getElementById('resultText').value = '识别中...';
+      try {
+        var res = await fetch('/api/stt', {method:'POST', headers:{'Authorization':'Bearer '+token}, body:form});
+        var d = await res.json();
+        document.getElementById('resultText').value = d.text || d.message || '无结果';
+      } catch(e) {
+        document.getElementById('resultText').value = '请求失败: '+e.message;
+      }
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('btnMic').classList.add('recording');
+  } catch(e) {
+    var msgs = {'NotAllowedError':'请允许麦克风权限','NotFoundError':'未找到麦克风设备'};
+    document.getElementById('resultText').value = msgs[e.name] || ('录音失败: '+e.message);
+  }
+}
+
+function startWebSpeech() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { document.getElementById('resultText').value = '浏览器不支持语音识别'; return; }
+  if (!webSpeech) {
+    webSpeech = new SR();
+    webSpeech.continuous = false;
+    webSpeech.interimResults = true;
+    webSpeech.lang = 'zh-CN';
+    webSpeech.onresult = function(e) {
+      var t=''; for(var i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript;
+      document.getElementById('resultText').value = t;
+    };
+    webSpeech.onend = function() {
+      isListening = false;
+      document.getElementById('btnMic').classList.remove('recording');
+      var txt = document.getElementById('resultText').value.trim();
+      if (txt && ivActive) setTimeout(function(){ if(!isListening) sendAnswer(txt); }, 400);
+    };
+    webSpeech.onerror = function(e) {
+      isListening = false;
+      document.getElementById('btnMic').classList.remove('recording');
+      var m = {'not-allowed':'请允许麦克风权限','no-speech':'未检测到语音','network':'需 VPN，或配置服务端 STT'};
+      document.getElementById('resultText').value = m[e.error] || ('错误: '+e.error);
+    };
+  }
+  isListening = true;
+  document.getElementById('btnMic').classList.add('recording');
+  webSpeech.start();
+}
+
+// ── Interview (1 question) ──
+var ivTotal = 0;
+
+async function startTest() {
+  var pos = document.getElementById('ivPos').value.trim() || 'Python后端';
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('ivMsg').innerHTML = '<span class="empty">生成中...</span>';
+  try {
+    var res = await fetch('/api/interview/start', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({position:pos, question_count:1, force:true})
+    });
+    var d = await res.json();
+    if (d.status==='started') {
+      ivActive = true;
+      ivTotal = d.total;
+      document.getElementById('ivMsg').textContent = d.message;
+      document.getElementById('ivMeta').innerHTML = '匹配 '+(d.match_score||'?')+' · 共 '+d.total+' 题';
+      document.getElementById('responseBox').innerHTML = '<span class="empty">请用语音或文字回答...</span>';
+      document.getElementById('btnStart').disabled = false;
+    } else if (d.status==='low_match') {
+      document.getElementById('ivMsg').innerHTML = '<span class="empty">匹配度过低 ('+d.match_score+'): '+d.match_note+'</span>';
+      document.getElementById('btnStart').disabled = false;
+    } else if (d.error) {
+      document.getElementById('ivMsg').innerHTML = '<span class="empty">错误: '+d.message+'</span>';
+      document.getElementById('btnStart').disabled = false;
+    }
+  } catch(e) {
+    document.getElementById('ivMsg').innerHTML = '<span class="empty">请求失败</span>';
+    document.getElementById('btnStart').disabled = false;
+  }
+}
+
+async function sendAnswer(text) {
+  if (!text) return;
+  document.getElementById('responseBox').innerHTML = '处理中...';
+  try {
+    var res = await fetch('/api/interview/answer', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({answer:text})
+    });
+    var d = await res.json();
+    document.getElementById('responseBox').textContent = d.message || JSON.stringify(d);
+    document.getElementById('ivMeta').textContent = 'Q'+d.current+'/'+d.total+' · '+d.status;
+    if (d.status==='done') {
+      ivActive = false;
+      document.getElementById('btnStart').disabled = true;
+    }
+  } catch(e) {
+    document.getElementById('responseBox').innerHTML = '<span class="empty">请求失败</span>';
+  }
+}
+
+function sendText() {
+  var txt = document.getElementById('chatText').value.trim();
+  if (!txt || !ivActive) return;
+  document.getElementById('chatText').value = '';
+  sendAnswer(txt);
+}
+
+function resetTest() {
+  ivActive = false;
+  document.getElementById('ivMsg').innerHTML = '<span class="empty">点击"开始"生成一道面试题，然后用语音回答</span>';
+  document.getElementById('responseBox').innerHTML = '<span class="empty">等待回答...</span>';
+  document.getElementById('ivMeta').textContent = '';
+  document.getElementById('resultText').value = '';
+  document.getElementById('btnStart').disabled = false;
+}
+
+document.getElementById('chatText').onkeydown = function(e) {
+  if (e.key==='Enter') { e.preventDefault(); sendText(); }
+};
+</script>
+</body>
+</html>
