@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Offer大圣 — AI Agent</title>
+<title>OfferDash — AI Agent</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -249,6 +249,7 @@ body {
 .input-area button:active { transform: scale(0.97); }
 .input-area button:hover { background: var(--accent2); }
 .input-area button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.input-hint { font-size: 11px; color: var(--text2); align-self: center; white-space: nowrap; }
 .input-area .mic-btn {
   width: 44px; height: 44px; padding: 0; background: var(--surface2); color: var(--text2);
   border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
@@ -398,13 +399,20 @@ body {
 }
 .toast.show { display: block; animation: fadeIn 0.25s ease; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar { display: none; }
-  .msg { max-width: 90%; }
-  .messages { padding: 16px; }
-  .input-area { padding: 12px 16px; }
+/* Hamburger menu button (mobile only) */
+.hamburger-btn {
+  display: none; width: 44px; height: 44px; padding: 0; background: transparent;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2);
+  cursor: pointer; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.15s; margin-right: 8px;
 }
+.hamburger-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Sidebar backdrop */
+.sidebar-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 140;
+}
+.sidebar-backdrop.active { display: block; }
 
 /* Profile card */
 .pc-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
@@ -682,6 +690,94 @@ body {
 .lang-switch:hover { border-color: var(--accent); color: var(--accent); }
 .auth-lang { position: absolute; top: 16px; right: 20px; }
 .header-lang { font-size: 10px; padding: 1px 6px; }
+
+/* Responsive */
+@media (max-width: 860px) {
+  /* ── Hamburger ── */
+  .hamburger-btn { display: flex; }
+
+  /* ── Sidebar as drawer ── */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 150;
+    width: 280px; max-width: 85vw;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  /* ── Header ── */
+  .chat-header { padding: 10px 14px; gap: 8px; }
+  .chat-header .status { display: none; }
+  .active-resume { display: none; }
+  .chat-header button { font-size: 11px; padding: 4px 10px; }
+  .input-hint { display: none; }
+
+  /* ── Messages ── */
+  .messages { padding: 12px; gap: 10px; }
+  .msg { max-width: 92%; }
+  .msg-bubble { padding: 10px 14px; font-size: 14px; }
+  .msg-avatar { width: 28px; height: 28px; font-size: 12px; }
+  .welcome { padding: 40px 16px; }
+  .welcome h2 { font-size: 18px; }
+  .welcome p { font-size: 13px; }
+  .typing { padding-left: 36px; }
+
+  /* ── Input (fixed bottom, safe-area) ── */
+  .input-area {
+    padding: 10px 12px; gap: 8px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    position: sticky; bottom: 0; background: var(--bg);
+  }
+  .input-area textarea { font-size: 16px; min-height: 40px; padding: 10px 14px; }
+  .input-area button { padding: 8px 16px; font-size: 13px; min-height: 40px; }
+  .input-area .mic-btn { width: 40px; height: 40px; }
+  .mic-select { max-width: 100px; font-size: 10px; }
+
+  /* ── Modals: fullscreen ── */
+  .modal-overlay { align-items: flex-end; }
+  .modal-box {
+    width: 100vw; max-width: 100vw; height: 92dvh; max-height: 92dvh;
+    border-radius: 14px 14px 0 0; padding: 20px 16px;
+  }
+  .modal-box h3 { font-size: 15px; }
+  .modal-box .field label { font-size: 11px; }
+  .modal-box .field input { padding: 10px 12px; font-size: 16px; }
+  .modal-box textarea { font-size: 14px; min-height: 120px; }
+  .modal-btns { gap: 8px; }
+  .modal-btns button { padding: 10px 16px; font-size: 14px; }
+
+  /* ── Profile modal tabs ── */
+  .profile-modal-tabs button { font-size: 12px; padding: 8px 6px; }
+
+  /* ── Interview difficulty on mobile ── */
+  .diff-option { padding: 6px 4px; font-size: 12px; }
+
+  /* ── Toast: bottom center ── */
+  .toast { top: auto; bottom: 80px; left: 16px; right: 16px; text-align: center; }
+
+  /* ── Interview bar ── */
+  #interviewBar { padding: 8px 12px; }
+  #ivBarInfo { font-size: 11px; }
+  #ivBarProgress { font-size: 10px; }
+
+  /* ── Browse/Jobs modal ── */
+  .browse-item { padding: 8px; gap: 6px; }
+  .browse-item .bi-info { font-size: 12px; }
+  .md-item { padding: 8px; gap: 6px; }
+  .md-item .md-info { font-size: 12px; }
+  .md-item .md-actions { display: flex; }
+  .md-right { display: none; }
+  .md-left { width: 100%; border-right: none; padding-right: 0; }
+  .md-container { height: auto; min-height: 360px; }
+
+  /* ── Auth box ── */
+  .auth-box { padding: 32px 24px; }
+  .auth-box h1 { font-size: 22px; }
+  .auth-box .sub { font-size: 13px; }
+  .auth-tabs button { padding: 10px 14px; font-size: 14px; }
+  .auth-field input { font-size: 16px; padding: 12px; }
+}
 </style>
 </head>
 <body>
@@ -690,8 +786,8 @@ body {
 <div class="auth-container" id="authPage">
   <div class="auth-box" style="position:relative">
     <span class="lang-switch auth-lang" onclick="toggleLanguage()" data-i18n="lang.switch">EN</span>
-    <h1>Offer大圣</h1>
-    <p class="sub">AI 求职 Agent — 聊天式交互</p>
+    <h1 data-i18n="app.title">Offer大圣</h1>
+    <p class="sub" data-i18n="app.subtitle">AI 求职 Agent · 聊天式交互</p>
     <div class="auth-tabs">
       <button id="tabLogin" class="active" data-i18n="auth.login">登录</button>
       <button id="tabRegister" data-i18n="auth.register">注册</button>
@@ -714,7 +810,7 @@ body {
   <aside class="sidebar">
     <div class="sidebar-header">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <h1 style="margin:0">Offer大圣</h1>
+        <h1 style="margin:0" data-i18n="app.title">Offer大圣</h1>
         <span class="lang-switch header-lang" onclick="toggleLanguage()" data-i18n="lang.switch">EN</span>
       </div>
       <div class="user-card">
@@ -734,42 +830,52 @@ body {
       </div>
     </div>
     <div class="sidebar-body">
-      <div class="section-label clickable" onclick="openResumeBrowse()">
+      <div class="section-label clickable" onclick="openResumeBrowse();closeSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span data-i18n="sidebar.myResumes">我的简历</span>
         <span class="count" id="resumeCount">0</span>
       </div>
-      <div class="section-label clickable" onclick="openProfileModal()">
+      <div class="section-label clickable" onclick="openProfileModal();closeSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span data-i18n="profile.title">我的画像</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </div>
       <div id="sidebarProfile" style="padding: 0 4px 8px 20px;"></div>
-      <div class="section-label clickable" onclick="openProfileModal('tabTarget')">
+      <div class="section-label clickable" onclick="openProfileModal('tabTarget');closeSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
         <span data-i18n="sidebar.myTarget">我的目标</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </div>
       <div id="sidebarTarget" style="padding: 0 0 8px 20px;"></div>
-      <div class="section-label clickable" style="margin-top:12px;" onclick="openProfileModal('tabGrowth')">
+      <div class="section-label clickable" style="margin-top:12px;" onclick="openProfileModal('tabGrowth');closeSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
         <span data-i18n="sidebar.growth">成长计划</span>
         <span class="count" id="growthCount">0</span>
       </div>
       <div id="sidebarGrowth" style="padding: 0 0 8px 20px;"></div>
-      <div class="section-label clickable" style="margin-top:12px;" onclick="openInterviewSetup()">
+      <div class="section-label clickable" style="margin-top:12px;" onclick="openInterviewSetup();closeSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         <span data-i18n="sidebar.mockInterview">模拟面试</span>
       </div>
     </div>
     <div class="sidebar-footer">
-      <button id="btnClearChat" data-i18n="sidebar.clearChat">清除对话</button>
-      <button id="btnLogout" class="logout-btn" data-i18n="sidebar.logout">退出</button>
+      <button id="btnClearChat">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span data-i18n="sidebar.clearChat">清除对话</span>
+      </button>
+      <button id="btnLogout" class="logout-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span data-i18n="sidebar.logout">退出</span>
+      </button>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 
   <main class="main">
     <div class="chat-header">
+      <button class="hamburger-btn" id="btnHamburger" onclick="toggleSidebar()" title="菜单">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="status"><span class="dot"></span> <span data-i18n="chat.online">DeepSeek · 在线</span></div>
       <div style="display:flex;align-items:center;">
         <div class="active-resume">
@@ -788,12 +894,13 @@ body {
     </div>
 
     <div class="input-area">
-      <textarea id="chatInput" rows="1" data-i18n-placeholder="chat.placeholder" placeholder="粘贴 JD 或输入消息…（Shift+Enter 换行，Enter 发送）"></textarea>
+      <textarea id="chatInput" rows="1" data-i18n-placeholder="chat.placeholder" placeholder="粘贴 JD 或输入消息…"></textarea>
       <button class="mic-btn" id="btnMic" title="语音输入" onclick="toggleVoiceInput()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
       </button>
       <select id="micDevice" class="mic-select" style="display:none" title="选择麦克风"></select>
       <span id="recTimer" style="display:none; color:var(--red); font-size:12px; font-weight:600; min-width:36px;"></span>
+      <span class="input-hint" data-i18n="chat.shiftHint">Shift+Enter 换行</span>
       <button id="btnSend" data-i18n="chat.send">发送</button>
     </div>
   </main>
@@ -870,9 +977,9 @@ body {
   <div class="modal-box" style="max-width:620px;">
     <h3 data-i18n="profileModal.title">我的画像</h3>
     <div class="profile-modal-tabs">
-      <button class="active" data-tab="tabStatus">我的现状</button>
-      <button data-tab="tabTarget">我的目标</button>
-      <button data-tab="tabGrowth">成长计划</button>
+      <button class="active" data-tab="tabStatus" data-i18n="profile.title">我的现状</button>
+      <button data-tab="tabTarget" data-i18n="profileModal.myTarget">我的目标</button>
+      <button data-tab="tabGrowth" data-i18n="profileModal.growthPlan">成长计划</button>
     </div>
 
     <!-- Tab 1: 现状 -->
@@ -990,6 +1097,23 @@ body {
       <label data-i18n="interview.jdLabel">岗位 JD</label>
       <textarea id="ivJd" rows="4" data-i18n-placeholder="interview.jdPlaceholder" placeholder="粘贴岗位描述，让面试题更有针对性（可选）" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px;font-size:13px;resize:vertical;outline:none;font-family:inherit;"></textarea>
     </div>
+    <div class="field">
+      <label data-i18n="interview.difficulty">面试难度</label>
+      <div style="display:flex;gap:8px;">
+        <label class="diff-option" style="flex:1;text-align:center;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all 0.15s;" data-diff="junior">
+          <input type="radio" name="ivDifficulty" value="junior" style="display:none;">
+          <span data-i18n="interview.diffJunior">初级</span>
+        </label>
+        <label class="diff-option selected" style="flex:1;text-align:center;padding:8px;background:var(--accent);border:1px solid var(--accent);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all 0.15s;color:#fff;" data-diff="mid">
+          <input type="radio" name="ivDifficulty" value="mid" checked style="display:none;">
+          <span data-i18n="interview.diffMid">中级</span>
+        </label>
+        <label class="diff-option" style="flex:1;text-align:center;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:all 0.15s;" data-diff="senior">
+          <input type="radio" name="ivDifficulty" value="senior" style="display:none;">
+          <span data-i18n="interview.diffSenior">高级</span>
+        </label>
+      </div>
+    </div>
     <div class="modal-btns">
       <button class="btn-cancel" id="btnInterviewCancel" data-i18n="interview.cancel">取消</button>
       <button class="btn-save" id="btnInterviewStart" data-i18n="interview.start">开始面试</button>
@@ -1020,7 +1144,7 @@ body {
 /* ═══ I18N ═══ */
 var I18N = {
   zh: {
-    lang: { switch: 'EN' },
+    lang: { switch: 'EN' }, app: { title: 'Offer大圣', subtitle: 'AI 求职 Agent · 聊天式交互' },
     auth: {
       login: '登录', register: '注册', email: '邮箱',
       password: '密码（至少6位）', fillFields: '请填写邮箱和密码',
@@ -1028,7 +1152,7 @@ var I18N = {
     },
     points: { label: '积分', checkin: '签到', checkedIn: '已签到', bonus: '签到成功! +5.0 积分' },
     profile: {
-      title: '我的画像', empty: '点击完善我的画像',
+      title: '我的现状', empty: '点击完善我的现状',
       education: '教育', projects: '项目', skills: '技能',
       pending: '待完善', salaryLabel: '薪资', citiesLabel: '城市'
     },
@@ -1042,6 +1166,7 @@ var I18N = {
       position: '岗位名称', positionPlaceholder: '如: 后端开发工程师',
       company: '公司名称', companyPlaceholder: '如: 字节跳动（可选）',
       jdLabel: '岗位 JD', jdPlaceholder: '粘贴岗位描述，让面试题更有针对性（可选）',
+      difficulty: '面试难度', diffJunior: '初级', diffMid: '中级', diffSenior: '高级',
       start: '开始面试', cancel: '取消',
       answering: '请回答', answerPlaceholder: '输入你的回答…',
       completed: '面试结束', newRound: '再来一轮',
@@ -1050,7 +1175,8 @@ var I18N = {
     chat: {
       online: 'DeepSeek · 在线', newSession: '新会话',
       currentResume: '当前简历:',
-      placeholder: '粘贴 JD 或输入消息…（Shift+Enter 换行，Enter 发送）',
+      placeholder: '粘贴 JD 或输入消息…',
+      shiftHint: 'Shift+Enter 换行',
       send: '发送', welcomeTitle: 'Offer大圣',
       welcomeHtml: '有简历？直接粘贴给我，帮你分析 JD、定制投递版。<br><br><span style="color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</span><br><br><span style="color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容<br>也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></span>',
       error: '抱歉，连接失败，请重试。',
@@ -1065,7 +1191,7 @@ var I18N = {
       selectHint: '选择左侧项目查看详情'
     },
     profileModal: {
-      title: '我的画像', myTarget: '我的目标', growthPlan: '成长计划',
+      title: '我的现状', myTarget: '我的目标', growthPlan: '成长计划',
       name: '姓名', namePlaceholder: '你的名字',
       school: '学校', schoolPlaceholder: '如: 北京大学',
       major: '专业', majorPlaceholder: '如: 计算机科学与技术',
@@ -1087,7 +1213,7 @@ var I18N = {
     growthCat: { skill: '学习', project: '项目', action: '行动' }
   },
   en: {
-    lang: { switch: '中文' },
+    lang: { switch: 'cn' }, app: { title: 'OfferDash', subtitle: 'AI Career Agent · Conversational' },
     auth: {
       login: 'Login', register: 'Register', email: 'Email',
       password: 'Password (min 6 chars)',
@@ -1111,6 +1237,7 @@ var I18N = {
       position: 'Position', positionPlaceholder: 'e.g. Backend Developer',
       company: 'Company', companyPlaceholder: 'e.g. Google (optional)',
       jdLabel: 'Job Description', jdPlaceholder: 'Paste JD for more targeted questions (optional)',
+      difficulty: 'Difficulty', diffJunior: 'Junior', diffMid: 'Mid', diffSenior: 'Senior',
       start: 'Start Interview', cancel: 'Cancel',
       answering: 'Your Answer', answerPlaceholder: 'Type your answer…',
       completed: 'Interview Complete', newRound: 'New Round',
@@ -1119,7 +1246,8 @@ var I18N = {
     chat: {
       online: 'DeepSeek · Online', newSession: 'New Chat',
       currentResume: 'Resume:',
-      placeholder: 'Paste JD or type message… (Shift+Enter for newline, Enter to send)',
+      placeholder: 'Paste JD or type message…',
+      shiftHint: 'Shift+Enter for newline',
       send: 'Send', welcomeTitle: 'OfferDash',
       welcomeHtml: 'Got a resume? Paste it and I\'ll analyze JDs and tailor applications.<br><br><span style="color:var(--text2)">No resume? Tell me your direction and skills — I\'ll build your profile and first resume.</span><br><br><span style="color:var(--text2)">Try saying: <em>"Analyze this job for me"</em> then paste the JD<br>Or: <em>"I\'m looking for backend dev internships, I know Python and Go"</em></span>',
       error: 'Sorry, connection failed. Please retry.',
@@ -1211,6 +1339,7 @@ function applyLanguage() {
     dailyBtn.textContent = t('points.checkin');
   }
   document.documentElement.lang = _lang === 'zh' ? 'zh-CN' : 'en';
+  document.title = t('app.title') + ' — AI Agent';
   if (document.getElementById('appMain').classList.contains('active')) {
     updateDynamicI18n();
   }
@@ -1223,6 +1352,16 @@ function toggleLanguage() {
   if (token) {
     fetch('/api/settings/lang', { method: 'PUT', headers: apiHeaders(), body: JSON.stringify({ lang: _lang }) }).catch(function(){});
   }
+}
+
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('active');
+}
+
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('active');
 }
 
 function apiHeaders() {
@@ -1248,7 +1387,7 @@ function updateDynamicI18n() {
   if (typeof renderProfileCard === 'function') renderProfileCard();
   // Section labels
   var sls = document.querySelectorAll('.section-label span:first-child, .section-label.clickable span:first-child');
-  var slMap = { '我的简历': 'sidebar.myResumes', '我的画像': 'profile.title', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth', '模拟面试': 'sidebar.mockInterview' };
+  var slMap = { '我的简历': 'sidebar.myResumes', '我的现状': 'profile.title', '我的目标': 'sidebar.myTarget', '成长计划': 'sidebar.growth', '模拟面试': 'sidebar.mockInterview' };
   var slMapEn = { 'My Resumes': 'sidebar.myResumes', 'My Profile': 'profile.title', 'My Target': 'sidebar.myTarget', 'Growth Plan': 'sidebar.growth', 'Mock Interview': 'sidebar.mockInterview' };
   for (var k = 0; k < sls.length; k++) {
     var st = sls[k].textContent.trim();
@@ -1588,6 +1727,23 @@ document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(bt
 $('#btnInterviewStart').onclick = startInterview;
 $('#btnInterviewCancel').onclick = () => $('#interviewModal').classList.remove('active');
 $('#interviewModal').onclick = (e) => { if (e.target === $('#interviewModal')) $('#interviewModal').classList.remove('active'); };
+
+// Difficulty selector
+document.querySelectorAll('.diff-option').forEach(function(el) {
+  el.onclick = function() {
+    document.querySelectorAll('.diff-option').forEach(function(o) {
+      o.classList.remove('selected');
+      o.style.background = 'var(--surface2)';
+      o.style.borderColor = 'var(--border)';
+      o.style.color = 'var(--text)';
+    });
+    el.classList.add('selected');
+    el.style.background = 'var(--accent)';
+    el.style.borderColor = 'var(--accent)';
+    el.style.color = '#fff';
+    el.querySelector('input').checked = true;
+  };
+});
 $('#btnInterviewExit').onclick = () => exitInterview(false);
 
 // Enter key in interview setup fields
@@ -2281,6 +2437,12 @@ function renderMdLeft() {
 }
 
 function selectMdItem(idx) {
+  // Mobile: tap to edit directly, skip preview
+  if (window.innerWidth <= 860 && browseMode === 'resume') {
+    var r = resumes[idx];
+    if (r) { $('#browseModal').classList.remove('active'); openResume(r.id); }
+    return;
+  }
   // Highlight
   document.querySelectorAll('#mdLeft .md-item').forEach((el, i) => el.classList.toggle('active', i === idx));
   // Render detail
@@ -2692,10 +2854,24 @@ var interviewActive = false;
 
 function openInterviewSetup() {
   if (interviewActive) { toast('面试进行中，请先退出当前面试'); return; }
-  if (!activeResumeId) { toast('请先上传简历'); return; }
-  $('#ivPosition').value = '';
+  $('#ivPosition').value = profileData.target_role || '';
   $('#ivCompany').value = '';
   $('#ivJd').value = '';
+  // 重置难度为中级
+  document.querySelectorAll('.diff-option').forEach(function(el) {
+    el.classList.remove('selected');
+    el.style.background = 'var(--surface2)';
+    el.style.borderColor = 'var(--border)';
+    el.style.color = 'var(--text)';
+  });
+  var midEl = document.querySelector('.diff-option[data-diff="mid"]');
+  if (midEl) {
+    midEl.classList.add('selected');
+    midEl.style.background = 'var(--accent)';
+    midEl.style.borderColor = 'var(--accent)';
+    midEl.style.color = '#fff';
+    midEl.querySelector('input').checked = true;
+  }
   $('#interviewModal').classList.add('active');
   $('#ivPosition').focus();
 }
@@ -2714,7 +2890,9 @@ async function startInterview() {
   $('#messages').innerHTML = '';
   showTyping(true);
 
-  var body = { position, company, jd_text: jdText, resume_id: activeResumeId };
+  var difficultyEl = document.querySelector('input[name="ivDifficulty"]:checked');
+  var difficulty = difficultyEl ? difficultyEl.value : 'mid';
+  var body = { position, company, jd_text: jdText, resume_id: activeResumeId, difficulty: difficulty };
 
   var res = await api('/api/interview/start', {
     method: 'POST',
@@ -2738,6 +2916,7 @@ async function startInterview() {
   $('#ivBarProgress').textContent = 'Q1/' + data.total;
   addMessage('assistant', data.message, false);
   $('#chatInput').placeholder = t('interview.answerPlaceholder') || '输入你的回答…';
+  var hint = document.querySelector('.input-hint'); if (hint) hint.style.display = 'none';
   $('#chatInput').focus();
   if (data.balance !== undefined) fetchPoints();
 }
@@ -2778,6 +2957,7 @@ function exitInterview(keepChat) {
   $('#ttsCheck').checked = false;
   $('#interviewBar').style.display = 'none';
   $('#chatInput').placeholder = t('chat.placeholder') || '粘贴 JD 或输入消息…';
+  var hint = document.querySelector('.input-hint'); if (hint) hint.style.display = '';
   if (!keepChat) {
     $('#messages').innerHTML = '';
     // Restore welcome

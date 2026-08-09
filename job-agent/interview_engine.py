@@ -42,7 +42,14 @@ level: high(70-100) / medium(40-69) / low(0-39)
 note: 2-3句话说明匹配点和风险点
 suggestion: 给面试官的出题建议"""
 
-PLAN_SYSTEM = """你是资深面试官。根据岗位要求设计面试题，简历仅作参考。
+PLAN_SYSTEM = """你是资深面试官。根据岗位要求和难度等级设计面试题，简历仅作参考。
+
+## 难度标准
+- **初级 (junior)**: 基础概念、常用语法、简单场景。关注候选人是否掌握岗位所需的基本功。
+- **中级 (mid)**: 原理理解、性能优化、常见坑。关注候选人能否独立分析和解决复杂问题。
+- **高级 (senior)**: 架构设计、技术选型、深度原理。关注候选人的系统性思考和技术视野。
+
+请严格按指定难度出题，不要超出或低于难度要求。
 
 ## 出题优先级
 1. **JD 中有明确技术栈要求** → 围绕这些技术出题（如 JD 要求 Java/Spring，就出 Java 相关题）
@@ -188,10 +195,11 @@ def check_match(resume_md: str, position: str, jd_text: str = "") -> dict:
 
 
 def plan_questions(resume_md: str, position: str = "", jd_text: str = "",
-                   match_note: str = "", question_count: int = 5) -> list[dict]:
+                   match_note: str = "", question_count: int = 5,
+                   difficulty: str = "mid") -> list[dict]:
     """出题官：以岗位要求为主、简历为辅，生成面试题."""
-    cat_count = max(1, question_count // 5 + (1 if question_count % 5 > 0 else 0))
-    user = f"## 目标岗位\n{position or '通用岗位'}\n\n## 要求\n生成 {question_count} 道面试题。"
+    diff_label = {"junior": "初级", "mid": "中级", "senior": "高级"}.get(difficulty, "中级")
+    user = f"## 目标岗位\n{position or '通用岗位'}\n\n## 难度\n{diff_label}\n\n## 要求\n生成 {question_count} 道面试题。"
     if jd_text and len(jd_text) > 20:
         user += f"\n\n## 岗位 JD\n\n{jd_text[:3000]}"
     else:
@@ -255,8 +263,8 @@ class InterviewSession:
     status: str = "idle"  # idle → ready → asking → waiting → done
 
     def start(self, resume_md: str, jd_text: str = "",
-              position: str = "", company: str = "", force: bool = False,
-              question_count: int = 5):
+              position: str = "", company: str = "", difficulty: str = "mid",
+              force: bool = False, question_count: int = 5):
         self.position = position or "通用岗位"
         self.company = company
 
@@ -266,7 +274,7 @@ class InterviewSession:
 
         try:
             self.questions = plan_questions(
-                resume_md, self.position, jd_text, "", question_count,
+                resume_md, self.position, jd_text, "", question_count, difficulty,
             )
         except Exception as e:
             logger.exception("plan_questions failed")

@@ -16,12 +16,73 @@ class StartRequest(BaseModel):
     company: str = Field(default="", description="公司名")
     jd_text: str = Field(default="", description="岗位 JD（可选）")
     resume_id: str = Field(default="", description="简历 ID，不传则用默认")
+    difficulty: str = Field(default="mid", description="难度: junior/mid/senior")
     force: bool = Field(default=False, description="跳过匹配度检查，强制开始")
     question_count: int = Field(default=5, ge=1, le=10, description="题目数量，默认5，范围1-10")
 
 
 class AnswerRequest(BaseModel):
     answer: str = Field(..., min_length=1, description="回答内容")
+
+
+def _build_profile_bio(user_id: str, position: str, company: str) -> str:
+    """从用户画像构建面试背景文本，无简历时替代 resume_md."""
+    import json
+    from database import engine
+    from sqlalchemy import text
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT email, profile FROM users WHERE id = :uid"),
+            {"uid": user_id},
+        ).fetchone()
+
+    profile = json.loads(row.profile) if row and row.profile else {}
+    email = row.email if row else ""
+
+    lines = []
+
+    name = profile.get("name", "").strip()
+    if name:
+        lines.append(f"# {name}")
+
+    # 求职意向
+    actual_role = position or profile.get("target_role", "").strip() or "通用岗位"
+    lines.append("## 求职意向")
+    lines.append(f"- 目标岗位: {actual_role}")
+    if company:
+        lines.append(f"- 目标公司: {company}")
+    target_industry = profile.get("target_industry", "").strip()
+    if target_industry:
+        lines.append(f"- 目标行业: {target_industry}")
+
+    # 工作经历
+    experience = profile.get("experience_summary", "").strip()
+    if experience:
+        lines.append(f"## 工作经历\n{experience}")
+
+    # 个人总结
+    summary_text = profile.get("summary", "").strip()
+    if summary_text:
+        lines.append(f"## 个人总结\n{summary_text}")
+
+    # 项目
+    projects = profile.get("projects", [])
+    if projects:
+        lines.append("## 项目经验")
+        for p in projects:
+            pname = p.get("name", "") if isinstance(p, dict) else ""
+            pdesc = p.get("description", "") if isinstance(p, dict) else ""
+            if pname:
+                lines.append(f"- **{pname}**")
+                if pdesc:
+                    lines.append(f"  {pdesc}")
+
+    # 如果画像几乎为空，至少给点上下文
+    if not experience and not summary_text and not projects:
+        lines.append(f"## 备注\n候选人正在寻找 {actual_role} 相关岗位，邮箱 {email}。")
+
+    return "\n".join(lines)
 
 
 @router.post("/api/interview/start", summary="开始模拟面试")
@@ -36,7 +97,19 @@ def start_interview(req: StartRequest, user: dict = Depends(auth_user)):
             markdown = r["content"]
             resume_id = r["id"]
     if not markdown:
-        return {"error": "no_resume", "message": "请先上传简历再开始模拟面试"}
+        markdown = _build_profile_bio(user["id"], req.position, req.company)
+
+    # position 为空时回退到画像中的目标岗位
+    if not req.position.strip():
+        import json
+        from database import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            row = conn.execute(
+                text("SELECT profile FROM users WHERE id = :uid"), {"uid": user["id"]}
+            ).fetchone()
+        profile = json.loads(row.profile) if row and row.profile else {}
+        req.position = profile.get("target_role", "").strip()
 
     session = get_session(user["id"])
     try:
@@ -45,6 +118,7 @@ def start_interview(req: StartRequest, user: dict = Depends(auth_user)):
             jd_text=req.jd_text,
             position=req.position,
             company=req.company,
+            difficulty=req.difficulty,
             force=req.force,
             question_count=req.question_count,
         )

@@ -79,6 +79,7 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 - 师弟说「用简历完善画像」→ 先调 get_my_resume 读简历，分析后必须调 update_my_profile 把提取到的字段写入，再调 add_my_task 把行动清单逐条加入成长计划。别只说话不动手。
 - 师弟说想学什么/做什么 → 调 add_my_task 加入成长计划
 - 师弟说「开始做」「完成了」「暂停」→ 调 update_my_task 更新状态
+- 师弟要修改/删除成长任务 → 调 update_my_task（改标题/分类/状态）或 delete_my_task（删除）
 
 ## 人设
 - 自称"俺老孙"或"猴哥"，称用户"师弟"或"师妹"
@@ -346,14 +347,31 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "update_my_task",
-            "description": "更新成长计划任务的状态。用户说「开始学」「完成了」「暂停一下」时调用。",
+            "description": "更新成长计划任务。可改状态、标题、分类。用户说「开始学」「完成了」「暂停一下」「改个标题」时调用。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "task_id": {"type": "string", "description": "任务 ID（来自 list_my_tasks）"},
-                    "status": {"type": "string", "description": "新状态: pending/in_progress/done/paused"},
+                    "status": {"type": "string", "description": "新状态: pending/in_progress/done/paused（不传则不改）"},
+                    "title": {"type": "string", "description": "新标题（不传则不改）"},
+                    "category": {"type": "string", "description": "新分类: skill/project/action（不传则不改）"},
                 },
-                "required": ["task_id", "status"],
+                "required": ["task_id"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_my_task",
+            "description": "删除成长计划中的某个任务。用户说「删掉」「移除」「不要了」时调用。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string", "description": "要删除的任务 ID（来自 list_my_tasks）"},
+                },
+                "required": ["task_id"],
                 "additionalProperties": False,
             },
         },
@@ -724,24 +742,48 @@ class Agent:
 
         elif name == "update_my_task":
             from routes.platforms import _do_update_growth_task, GrowthTaskPayload
+            from database import engine
+            from sqlalchemy import text
             task_id = args.get("task_id", "")
-            status = args.get("status", "")
             if not task_id:
                 return {"error": "missing_task_id", "message": "请指定任务 ID"}
+            # 先从 DB 取当前值，LLM 没传的字段保持不动
+            with engine.connect() as conn:
+                cur = conn.execute(
+                    text("SELECT title, category, status FROM growth_tasks WHERE id = :tid AND user_id = :uid"),
+                    {"tid": task_id, "uid": user_id},
+                ).fetchone()
+            if not cur:
+                return {"error": "not_found", "message": "任务不存在"}
+            title = (args.get("title") or "").strip() or cur.title
+            category = args.get("category", "") or cur.category
+            status = args.get("status", "") or cur.status
             if status not in ("pending", "in_progress", "done", "paused"):
-                return {"error": "invalid_status", "message": f"无效状态: {status}"}
-            # paused → 映射到 pending（暂不支持独立 paused 状态）
-            db_status = "pending" if status == "paused" else status
+                status = cur.status
+            if status == "paused":
+                status = "pending"
             try:
                 result = _do_update_growth_task(
                     task_id,
-                    GrowthTaskPayload(title="", category="skill", status=db_status),
+                    GrowthTaskPayload(title=title, category=category, status=status),
                     user_id,
                     trigger_engine=True,
                 )
                 return result
             except Exception as e:
                 logger.exception("update_my_task error")
+                return {"error": str(e)}
+
+        elif name == "delete_my_task":
+            from routes.platforms import api_delete_growth_task
+            task_id = args.get("task_id", "")
+            if not task_id:
+                return {"error": "missing_task_id", "message": "请指定任务 ID"}
+            try:
+                api_delete_growth_task(task_id, user={"id": user_id})
+                return {"status": "ok", "message": "任务已删除"}
+            except Exception as e:
+                logger.exception("delete_my_task error")
                 return {"error": str(e)}
 
         return {"error": "unknown_tool"}
