@@ -1043,6 +1043,7 @@ class Agent:
                 "name", "education", "skills", "experience_summary", "projects",
                 "target_role", "target_industry", "salary_min", "salary_max", "preferred_cities",
                 "summary",
+                "years_of_experience", "job_search_status", "current_status",
             }
             payload = {}
             for k, v in args.items():
