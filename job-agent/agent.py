@@ -35,6 +35,16 @@ ONBOARDING_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍
 - 用户粘贴了大段简历文本（≥100字，含个人经历/技能）→ 调 parse_resume_text 帮他整理
 - 用户说想学什么/要做什么 → 调 add_my_task
 - 引导期不要调用 score_job / tailor_resume / generate_pitch / generate_cover / search_jobs ——还没简历呢
+- 用户要求优化/改进已有简历 → 调 optimize_resume，不要在回复里自己写优化后的内容
+- 用户要求诊断简历 → 调 diagnose_resume，不要在回复里自己分析
+
+## 付费服务规则（重要！）
+以下产出物必须通过工具调用完成，禁止直接在聊天里输出：
+- 简历优化/修改 → 必须调 **optimize_resume**
+- 简历诊断 → 必须调 **diagnose_resume**
+- 写招呼语 → 必须调 **generate_pitch**
+- 写求职信 → 必须调 **generate_cover**
+- 生成简历 → 必须调 **save_my_resume**（新建会触发付费确认）
 
 ## 人设
 - 自称"俺老孙"或"猴哥"，称用户"师弟"或"师妹"
@@ -92,6 +102,18 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 
 ### 闲聊
 - 用户只是打招呼/闲聊/咨询建议/问"你觉得我适合什么方向" → 不调工具，自然回复即可
+
+## 付费服务规则（极其重要！）
+
+以下服务**必须通过工具调用完成**，绝对禁止在回复中直接输出服务结果：
+
+- 简历优化/修改/改进（加项目、改描述、提升表达等）→ 必须调 **optimize_resume**，不要自己编优化后的简历文本
+- 简历诊断/找问题 → 必须调 **diagnose_resume**，不要自己逐条分析
+- 写招呼语 → 必须调 **generate_pitch**，不要直接在聊天里写
+- 写求职信 → 必须调 **generate_cover**，不要直接在聊天里写
+- 生成简历 → 必须调 **save_my_resume**（新建）或先调 optimize_resume（优化已有）
+
+**一句话：如果用户要的是"产出物"（一份优化后的简历、一封求职信、一条招呼语），就必须走工具。你可以在调工具前后跟用户聊天确认，但不能用聊天代替工具产出。**
 
 ## 通用规则
 - 不确定用哪份简历时，先 list_my_resumes 让用户选
@@ -222,6 +244,41 @@ TOOLS = [
                     "resume_id": {"type": "string", "description": "简历 ID，不传则使用默认简历"},
                 },
                 "required": ["jd_text"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "optimize_resume",
+            "description": "根据用户的要求优化简历内容（加项目、改描述、提升表达、补充技能等）。不需要JD，直接根据用户的优化指令修改简历。"
+            " 触发：「帮我优化简历」「加一个XX项目」「改善简历描述」「把我的技能改得更突出」「简历润色」。"
+            " 重要：必须调此工具，不要自己在回复中直接输出优化后的简历文本！优化后展示结果，问用户要不要保存。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "resume_id": {"type": "string", "description": "要优化的简历 ID，不传则使用默认简历"},
+                    "instructions": {"type": "string", "description": "用户的优化要求，如「加一个Redis并发处理项目」「让技能描述更有量化感」"},
+                },
+                "required": ["instructions"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "diagnose_resume",
+            "description": "诊断简历存在的问题，给出具体改进建议。从结构、内容、表达、量化指标、关键词匹配等维度分析。"
+            " 触发：「简历诊断」「帮我看看简历有什么问题」「简历哪里不好」「帮我看下简历」。"
+            " 重要：必须调此工具，不要自己在回复中直接逐条分析简历问题！",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "resume_id": {"type": "string", "description": "要诊断的简历 ID，不传则使用默认简历"},
+                },
+                "required": [],
                 "additionalProperties": False,
             },
         },
@@ -432,7 +489,9 @@ MAX_MESSAGES = 101
 
 # Premium tools that require user confirmation before execution
 PREMIUM_TOOLS = {
-    "tailor_resume":     {"cost": 10, "label_zh": "AI 简历优化", "label_en": "Resume Tailor"},
+    "tailor_resume":     {"cost": 10, "label_zh": "AI 简历定制", "label_en": "Resume Tailor"},
+    "optimize_resume":   {"cost": 8,  "label_zh": "AI 简历优化", "label_en": "Resume Optimize"},
+    "diagnose_resume":   {"cost": 5,  "label_zh": "AI 简历诊断", "label_en": "Resume Diagnosis"},
     "parse_resume_text": {"cost": 6,  "label_zh": "AI 简历制作", "label_en": "Resume Parsing"},
     "score_job":         {"cost": 3,  "label_zh": "JD 匹配分析",  "label_en": "JD Analysis"},
     "generate_pitch":    {"cost": 8,  "label_zh": "AI 招呼语",   "label_en": "Self Pitch"},
@@ -536,12 +595,17 @@ class Agent:
             if is_confirm:
                 pending = self._pending_tool[user_id]
                 # 清理上一次对话中 __confirm__ 污染的 assistant tool_call
+                # （正常情况已被回滚清理，此处兜底）
                 for i in range(len(messages) - 1, -1, -1):
                     if messages[i].get("role") == "assistant" and messages[i].get("tool_calls"):
-                        tc = messages[i].get("tool_calls", [])
-                        if tc and tc[0].get("function", {}).get("name") == pending["name"]:
-                            del messages[i]
-                            break
+                        tcs = messages[i].get("tool_calls", [])
+                        for tc_entry in tcs:
+                            if tc_entry.get("function", {}).get("name") == pending["name"]:
+                                del messages[i]
+                                break
+                        else:
+                            continue
+                        break
 
                 # _execute 内部会检查 _pending_tool 并自动 pop
                 result = self._execute(pending["name"], pending["args"], user_id)
@@ -592,6 +656,9 @@ class Agent:
                         "function": {"name": tc.function.name, "arguments": tc.function.arguments},
                     })
 
+                # 记录此时的 messages 长度，如果后续因 __confirm__ 中断，回滚到此处
+                rollback_to = len(messages)
+
                 messages.append({
                     "role": "assistant",
                     "content": msg.content,
@@ -610,9 +677,9 @@ class Agent:
                     result = self._execute(name, args, user_id)
 
                     if result.get("__confirm__"):
-                        # 付费工具需要确认 → 撤销刚追加的 assistant tool_call，跳出循环
+                        # 付费工具需要确认 → 回滚本轮的 assistant + tool result
                         confirm_needed = result
-                        del messages[-1]  # 撤销 assistant tool_call（tool result 还没追加）
+                        del messages[rollback_to:]  # 回滚到 tool_call 之前
                         break
 
                     messages.append({
@@ -735,6 +802,10 @@ class Agent:
                 if is_new:
                     from database import spend_points
                     spend_points(user_id, 50, "create_resume")
+                    # 第一份简历创建成功 → 从引导期升级到完整模式
+                    if user_id in self.sessions:
+                        lang = self._langs.get(user_id, "zh")
+                        self.sessions[user_id][0] = {"role": "system", "content": self._build_prompt(has_resume=True, lang=lang)}
                 result = save_resume(user_id, name_val, markdown, resume_id)
                 action = "已更新" if resume_id else "已保存"
                 logger.info(f"save_my_resume OK: resume_id={result['resume_id']}")
@@ -795,6 +866,66 @@ class Agent:
             except Exception as e:
                 logger.exception("tailor_resume error")
                 return {"error": str(e), "message": "简历定制失败，请稍后重试"}
+
+        elif name == "optimize_resume":
+            resume_id = args.get("resume_id")
+            instructions = args.get("instructions", "")
+            if not instructions:
+                return {"error": "missing_instructions", "message": "请说明你想怎么优化简历"}
+            if not resume_id:
+                r = get_default_resume(user_id)
+                resume_id = r["id"] if r else None
+            if not resume_id:
+                return {"error": "no_resume", "message": "请先上传简历"}
+            markdown = get_resume_content(resume_id)
+            if not markdown:
+                return {"error": "no_resume", "message": "简历不存在"}
+            try:
+                from database import spend_points
+                spend_points(user_id, 70, "optimize_resume")
+                resp = client.chat.completions.create(
+                    model=settings.llm_model,
+                    messages=[
+                        {"role": "system", "content": "你是简历优化专家。用户要求：{instructions}\n\n请优化下面的Markdown简历，直接返回优化后的完整Markdown，不要解释你改了什么。保留原结构，只改进内容和表达。"},
+                        {"role": "user", "content": f"优化要求：{instructions}\n\n简历原文：\n{markdown}\n\n请返回优化后的完整简历："},
+                    ],
+                    temperature=0.3,
+                    max_tokens=4096,
+                )
+                optimized = resp.choices[0].message.content
+                self._last_tailored[user_id] = optimized
+                return {"markdown": optimized}
+            except Exception as e:
+                logger.exception("optimize_resume error")
+                return {"error": str(e), "message": "简历优化失败，请稍后重试"}
+
+        elif name == "diagnose_resume":
+            resume_id = args.get("resume_id")
+            if not resume_id:
+                r = get_default_resume(user_id)
+                resume_id = r["id"] if r else None
+            if not resume_id:
+                return {"error": "no_resume", "message": "请先上传简历"}
+            markdown = get_resume_content(resume_id)
+            if not markdown:
+                return {"error": "no_resume", "message": "简历不存在"}
+            try:
+                from database import spend_points
+                spend_points(user_id, 40, "diagnose_resume")
+                resp = client.chat.completions.create(
+                    model=settings.llm_model,
+                    messages=[
+                        {"role": "system", "content": "你是资深HR和简历专家。诊断下面简历的问题，从结构、内容、表达、量化指标、关键词匹配等维度给出具体改进建议。用孙悟空的口吻（自称猴哥/俺老孙，称用户师弟/师妹），嘴毒心软，直接点出问题，但给实用的改法。不要用列表格式，说人话。"},
+                        {"role": "user", "content": f"帮我诊断这份简历：\n{markdown}"},
+                    ],
+                    temperature=0.3,
+                    max_tokens=2048,
+                )
+                diagnosis = resp.choices[0].message.content
+                return {"diagnosis": diagnosis}
+            except Exception as e:
+                logger.exception("diagnose_resume error")
+                return {"error": str(e), "message": "诊断失败，请稍后重试"}
 
         elif name == "save_last_resume":
             markdown = self._last_tailored.get(user_id, "")

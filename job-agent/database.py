@@ -108,6 +108,16 @@ def init_db():
             except Exception:
                 pass
         conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS points_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                reason TEXT NOT NULL,
+                ref_id TEXT,
+                created_at TEXT NOT NULL
+            )
+        """))
+        conn.execute(text("""
             CREATE TABLE IF NOT EXISTS growth_checkins (
                 id TEXT PRIMARY KEY,
                 task_id TEXT NOT NULL,
