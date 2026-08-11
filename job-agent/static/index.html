@@ -2786,7 +2786,7 @@ function selectMdItem(idx) {
                 导出
               </button>
             </div>
-            ${!r.is_default ? `<button class="tb-btn" style="margin-left:auto;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">' + t('resume.setDefault') + `</button>` : '<span style="margin-left:auto;font-size:10px;color:var(--accent);padding:2px 8px;background:rgba(108,138,255,0.1);border-radius:8px;">' + t('resume.default') + '</span>'}
+            ${!r.is_default ? `<button class="tb-btn" style="margin-left:auto;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">${t('resume.setDefault')}</button>` : '<span style="margin-left:auto;font-size:10px;color:var(--accent);padding:2px 8px;background:rgba(108,138,255,0.1);border-radius:8px;">' + t('resume.default') + '</span>'}
           </div>
           <div class="resume-styled">${styled.body}</div>`;
       });
