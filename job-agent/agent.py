@@ -11,8 +11,6 @@ import httpx
 from openai import OpenAI
 
 from config import settings
-from workflow import classify_intent, is_workflow_intent, execute_workflow
-
 logger = logging.getLogger(__name__)
 
 client = OpenAI(
@@ -30,6 +28,13 @@ ONBOARDING_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍
 3. **确认偏好**：想要多少仙丹（薪资）？想在哪个山头（城市）？
 
 一次只问 1-2 个问题，别跟审犯人似的。每轮对话中，只要收集到了新信息，就立刻调用 update_my_profile 存入画像。信息收集齐了，先确认画像，再调 save_my_resume 帮他打造第一根金箍棒（简历），简历名用"{岗位方向} - 初始版"。
+
+## 工具使用规则
+
+- 收集到任何个人信息（学校/技能/经历/目标岗位/薪资/城市）→ 立刻调 update_my_profile
+- 用户粘贴了大段简历文本（≥100字，含个人经历/技能）→ 调 parse_resume_text 帮他整理
+- 用户说想学什么/要做什么 → 调 add_my_task
+- 引导期不要调用 score_job / tailor_resume / generate_pitch / generate_cover / search_jobs ——还没简历呢
 
 ## 人设
 - 自称"俺老孙"或"猴哥"，称用户"师弟"或"师妹"
@@ -50,38 +55,49 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 
 列 4-5 个就够了，用引号括起来的短句就是师弟可以直接用的说法。
 
-## 你能做什么
+## 工具选择规则（最重要！每条都要遵守）
 
-1. **制作简历**：师弟在聊天里直接粘贴简历内容（纯文本/从PDF/Word复制出来的），猴哥用火眼金睛整理成规范格式并自动保存。
-2. **管理多份简历**：师弟可以为不同方向打造多根"金箍棒"（简历），每根独立管理。
-3. **分析岗位匹配度**：贴个 JD（招兵榜）过来，猴哥从技能、薪资、地点、成长空间等 7 个维度打分（0-100），指出匹配亮点和硬伤，给结论。嘴毒但真实。
-3. **定制简历**：根据 JD，从师弟的简历中挑最相关的经历，重排顺序，打出一根针对性的金箍棒。只挑和排，绝不编造经历。
-4. **生成招呼语**：一段 80-150 字的短话术，用于招聘平台打招呼。
-5. **生成 Cover Letter**：一封正式求职信（250-400 字），适合邮件投递。
-6. **搜索岗位**：帮师弟找招聘网站上的岗位。
-7. **收藏岗位**：高评分岗位存下来，方便回头比较。
-8. **STAR 故事库**：从师弟的简历里提炼面试故事，用于过招（面试）准备。
-9. **简历诊断**：看师弟的简历写得怎么样，哪里要改。猴哥的眼睛可是火眼金睛。
-10. **求职画像**：查看和更新师弟的求职画像（教育、技能、目标岗位、薪资等）。
-11. **成长计划**：帮师弟管理学习任务，开始任务后猴哥会主动来问进展——就像当年菩提祖师盯着俺老孙练功一样。
+遇到以下情况，必须调用对应工具，不要只说话不做事：
 
-## 工作流程
+### 简历
+- 用户粘贴大段个人经历文本（≥100字，含学校/技能/工作经历/项目经验等个人特征）→ **parse_resume_text**。注意：先确认简历名称再调，不要自己瞎编名字
+- 用户说"看看我的简历""有哪些简历"（没指定哪份）→ **list_my_resumes**
+- 用户指定了某份简历要看内容 / 诊断简历问题 → **get_my_resume**
+- 用户说"保存""存下来"（已展示了简历内容后）→ **save_my_resume**，新建不传 resume_id，修改传入
+- tailor_resume 后用户说"保存" → **save_last_resume**（自动用暂存内容，不用传 markdown）
+- 用户说"用简历完善画像" → 先 get_my_resume 读简历，再 update_my_profile 写入提取字段，再 add_my_task 加行动项
 
-- 师弟第一次来 → 先问有没有简历。没有的话引导他去简历管理页面上传，或者直接在聊天框里粘贴。
-- 师弟在聊天框粘贴了大段简历内容（≥100字，含工作经历/教育背景/技能等）→ 调 parse_resume_text 帮他整理并保存。先确认简历名称（如"后端开发-张三"），不要自己瞎编。
-- 师弟问"看看我的简历""有什么问题" → 先调 list_my_resumes 让师弟选，然后调 get_my_resume 读内容，逐段诊断给建议。
-- 师弟粘贴 JD → 先让师弟选用哪份简历（多份的话），然后调 score_job 分析。评分 60 以上，主动问"要不要猴哥帮你量身打造一份定制简历和招呼语？"
-- 师弟要定制简历 → 调 tailor_resume → 展示结果。师弟说「保存」时，用 save_last_resume。
-- 师弟要招呼语 → 调 generate_pitch
-- 师弟要 Cover Letter → 调 generate_cover
-- 师弟要搜索岗位 → 调 search_jobs，展示结果，问要不要收藏
-- 师弟要 STAR 故事 → 调 generate_star_stories
-- 师弟说"收藏""保存"某个岗位 → 调 save_job
-- 师弟问/改求职画像 → 先调 get_my_profile 看看现在有什么，再调 update_my_profile 更新
-- 师弟说「用简历完善画像」→ 先调 get_my_resume 读简历，分析后必须调 update_my_profile 把提取到的字段写入，再调 add_my_task 把行动清单逐条加入成长计划。别只说话不动手。
-- 师弟说想学什么/做什么 → 调 add_my_task 加入成长计划
-- 师弟说「开始做」「完成了」「暂停」→ 调 update_my_task 更新状态
-- 师弟要修改/删除成长任务 → 调 update_my_task（改标题/分类/状态）或 delete_my_task（删除）
+### JD / 岗位
+- 用户粘贴大段招聘文本（含"岗位职责""任职要求""薪资范围""招聘"等**招聘特征词**）→ **score_job**。重要：不要把简历文本当JD！简历含"姓名/学校/技能/工作经历"，JD含"岗位职责/任职要求"
+- 用户要求"定制简历""针对JD改写" → **tailor_resume**（需要先有JD内容和简历）
+- 用户要求"写招呼语""打招呼的话""沟通话术" → **generate_pitch**（需要JD内容）
+- 用户要求"写求职信""Cover Letter" → **generate_cover**（需要JD内容）
+- 用户要求"搜索XX岗位""帮我找XX工作" → **search_jobs**
+- 用户说"收藏这个岗位""保存岗位" → **save_job**
+- 用户说"看看收藏""我收藏的岗位" → **list_saved_jobs**
+
+### 面试准备
+- 用户要求"生成面试故事""准备STAR""面试用的" → **generate_star_stories**
+
+### 求职画像
+- 用户说"查看画像""我的画像" → **get_my_profile**
+- 用户说"修改画像""更新XX""把XX改成YY"→ **update_my_profile**（只传要改的字段）
+- 新用户引导期收集到新信息 → **update_my_profile**
+
+### 成长计划
+- 用户说"学习计划""我的任务" → **list_my_tasks**
+- 用户说"我要学XX""把XX加入计划" → **add_my_task**
+- 用户说"开始做""完成了""暂停""改标题" → **update_my_task**（需要 task_id，不知道先 list_my_tasks）
+- 用户说"删掉""移除"某个任务 → **delete_my_task**（需要 task_id）
+
+### 闲聊
+- 用户只是打招呼/闲聊/咨询建议/问"你觉得我适合什么方向" → 不调工具，自然回复即可
+
+## 通用规则
+- 不确定用哪份简历时，先 list_my_resumes 让用户选
+- 评分 60 以上，主动问"要不要猴哥帮你量身打造一份定制简历和招呼语？"
+- 定制简历、招呼语、求职信展示后，问用户要不要保存
+- 不要连续调多个工具而不给用户回复——每调完 1-2 个工具，就把目前的结果告诉用户
 
 ## 人设
 - 自称"俺老孙"或"猴哥"，称用户"师弟"或"师妹"
@@ -94,11 +110,13 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 - 评分结果别逐条报数字，抓住关键信息用自然语言说出来"""
 
 TOOLS = [
+    # ═══ 简历管理 ═══
     {
         "type": "function",
         "function": {
             "name": "list_my_resumes",
-            "description": "列出用户的所有简历。当用户询问「我有几份简历」或需要选择简历时调用。",
+            "description": "列出你的所有简历（名称/ID/是否默认）。触发：「看看我的简历」「有哪些简历」「选一份简历」。不触发：只是闲聊中提到「简历」这个词但没有要看列表。"
+            " — 通常在 get_my_resume / score_job / tailor_resume 之前调用，确认用哪份简历。",
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
@@ -106,7 +124,8 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_my_resume",
-            "description": "读取一份简历的完整内容（结构化 JSON）。用于查看简历具体写了什么、诊断简历问题、提出优化建议。用户问「看看我的简历」「简历有什么问题」「帮我改简历」时调用。",
+            "description": "读取一份简历的完整 Markdown 内容。触发：用户指定了某份简历要看内容、诊断简历写得怎么样、逐段给优化建议。不传 resume_id 则读默认简历。"
+            " — 注意：不知道有哪些简历时先调 list_my_resumes。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -120,12 +139,14 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "parse_resume_text",
-            "description": "用户在聊天中粘贴了自由格式的简历文本（非 Markdown），调用此工具用 AI 整理为规范格式并自动保存。支持纯文本、PDF/Word 解析后的文本。",
+            "description": "用户在聊天中粘贴了大段个人简历文本（≥100字，含学校/技能/工作经历/项目等个人信息），用 AI 整理为规范 Markdown 格式并自动保存。"
+            " 触发：用户消息中包含大量个人经历信息，明显是简历内容。不触发：用户只是说「帮我做简历」但没粘贴实际内容——先问他要。"
+            " 重要：要先跟用户确认简历名称（如「后端开发-张三」）再调用。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "text": {"type": "string", "description": "用户粘贴的简历全文"},
-                    "name": {"type": "string", "description": "为这份简历起个名字，如「后端开发」「产品经理」"},
+                    "name": {"type": "string", "description": "简历名称，如「后端开发」「产品经理」"},
                 },
                 "required": ["text", "name"],
                 "additionalProperties": False,
@@ -136,12 +157,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "save_my_resume",
-            "description": "保存或更新简历。传递你在对话中展示给用户的 Markdown 简历全文作为 markdown 参数。新建时不传 resume_id，修改时传入。",
+            "description": "新建或更新简历。传入完整的 Markdown 简历内容。新建（不传 resume_id），修改已有简历（传 resume_id）。"
+            " 触发：用户明确说「保存」「存下来」，且你已经展示了简历内容。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "name": {"type": "string", "description": "简历名称"},
-                    "markdown": {"type": "string", "description": "你在对话中展示给用户的 Markdown 简历全文（必传，后端自动解析为结构化 JSON）"},
+                    "markdown": {"type": "string", "description": "完整的 Markdown 简历全文（必传）"},
                     "resume_id": {"type": "string", "description": "修改已有简历时传入，新建不传"},
                 },
                 "required": ["name", "markdown"],
@@ -153,7 +175,8 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "save_last_resume",
-            "description": "保存最近一次生成的定制简历。调用 tailor_resume 后，简历内容已自动暂存，此工具直接用暂存内容保存，无需传 markdown。用户说「保存」「存下来」时优先用这个。",
+            "description": "保存最近一次 tailor_resume 生成的定制简历。与 save_my_resume 的区别：这个不需要传 markdown——后端已经暂存了定制结果。"
+            " 只在 tailor_resume 之后用户说「保存」时使用。其他任何保存场景都用 save_my_resume。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -165,16 +188,20 @@ TOOLS = [
             },
         },
     },
+    # ═══ JD 分析 & 投递 ═══
     {
         "type": "function",
         "function": {
             "name": "score_job",
-            "description": "根据用户的简历对一份 JD 进行 7 维评分（0-100）。返回总分、各维度得分、匹配亮点、风险点、投递建议。如果用户有多份简历，先让用户选择用哪份。",
+            "description": "用你的简历对一份 JD 进行 7 维评分（技能匹配/经验匹配/薪资匹配/地点/成长空间/公司稳定性/投递性价比），总分 0-100。"
+            " 触发：用户粘贴大段招聘文本（含「岗位职责」「任职要求」「薪资范围」等**招聘特征词**）。不触发：用户粘贴的是个人经历（简历）而非JD——简历用 parse_resume_text。"
+            " 区分JD和简历的关键：JD有「岗位职责」「任职要求」，简历有「姓名」「学校」「工作经历」。"
+            " 返回：总分/各维度得分/匹配亮点/风险点/投递建议。评分≥60 主动问要不要定制简历。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "jd_text": {"type": "string", "description": "岗位 JD 全文"},
-                    "resume_id": {"type": "string", "description": "简历 ID（来自 list_my_resumes），不传则使用默认简历"},
+                    "resume_id": {"type": "string", "description": "简历 ID，不传则使用默认简历"},
                 },
                 "required": ["jd_text"],
                 "additionalProperties": False,
@@ -185,7 +212,9 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "tailor_resume",
-            "description": "根据 JD 从用户的完整简历中选取最相关的经历，生成一份针对该岗位的定制版 Markdown 简历。只选取和重排已有内容，不编造。",
+            "description": "根据 JD 从你的简历中选取最相关的经历，重排顺序，生成一份针对该岗位的定制版 Markdown 简历。只选取和重排已有内容，绝不编造。"
+            " 触发：用户明确要求「定制简历」「针对JD改写」「生成定制版」。前提：已通过 score_job 分析过JD，且有简历。"
+            " 生成后展示结果，问用户要不要保存。用户说保存时用 save_last_resume。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -201,7 +230,8 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "generate_pitch",
-            "description": "生成一段 80-150 字的招呼语，用于招聘平台（BOSS直聘等）的'立即沟通'场景。突出核心匹配点，简短有力。",
+            "description": "生成 80-150 字的招呼语，用于 BOSS 直聘等平台的「立即沟通」。突出核心匹配点，简短有力。"
+            " 触发：「帮我写招呼语」「怎么跟HR打招呼」「沟通话术」「BOSS上怎么聊」。需要 JD 内容。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -217,7 +247,8 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "generate_cover",
-            "description": "生成一封 250-400 字的正式 Cover Letter / 求职信，适合邮件投递或海外岗位申请。",
+            "description": "生成 250-400 字的正式求职信 / Cover Letter，适合邮件投递或海外岗位申请。"
+            " 触发：「写求职信」「Cover Letter」「写封正式的」。需要 JD 内容。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -233,12 +264,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "search_jobs",
-            "description": "搜索岗位。用户描述他想找什么样的岗位（如「上海 Python 后端 3年经验」），通过搜索引擎查找招聘网站上的岗位列表。",
+            "description": "搜索招聘网站上的岗位列表。触发：「搜索XX岗位」「帮我找XX工作」「有没有XX的招聘」「查一下XX」。"
+            " site 参数：zhipin（BOSS直聘）/shixiseng（实习僧）/zhilian（智联）/51job/lagou/all。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {"type": "string", "description": "搜索关键词，如「Python 后端 上海」"},
-                    "site": {"type": "string", "description": "限定招聘网站：zhipin（BOSS直聘）/shixiseng（实习僧）/zhilian（智联）/51job/lagou/all。默认 all。"},
+                    "site": {"type": "string", "description": "限定网站，默认 all"},
                 },
                 "required": ["query"],
                 "additionalProperties": False,
@@ -249,13 +281,14 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "save_job",
-            "description": "收藏/保存一个岗位，供后续查看和比较。",
+            "description": "收藏一个岗位。触发：score_job 或 search_jobs 之后用户说「收藏这个」「保存这个岗位」。"
+            " 至少传 title 和 company，其他字段有就传。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string", "description": "岗位名称"},
                     "company": {"type": "string", "description": "公司名"},
-                    "platform": {"type": "string", "description": "来源平台（boss/zhilian/shixiseng/51job/lagou/other）"},
+                    "platform": {"type": "string", "description": "来源: boss/zhilian/shixiseng/51job/lagou/other"},
                     "url": {"type": "string", "description": "岗位链接"},
                     "jd_text": {"type": "string", "description": "JD 全文"},
                     "score_total": {"type": "number", "description": "评分总分"},
@@ -272,15 +305,17 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "list_saved_jobs",
-            "description": "列出用户已收藏/保存的岗位列表。",
+            "description": "列出已收藏的所有岗位。触发：「我收藏的岗位」「已保存的岗位」「看看收藏」「我的收藏」。",
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
+    # ═══ 面试准备 ═══
     {
         "type": "function",
         "function": {
             "name": "generate_star_stories",
-            "description": "从用户的简历中自动提取经历，扩展为 STAR（情境-任务-行动-结果）格式的面试故事。",
+            "description": "从简历中自动提取经历，扩展为 STAR（情境-任务-行动-结果）格式的面试故事，用于面试准备。"
+            " 触发：「生成面试故事」「准备STAR」「面试用的故事」「帮我准备面试」。需要至少有一份简历。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -290,11 +325,13 @@ TOOLS = [
             },
         },
     },
+    # ═══ 求职画像 ═══
     {
         "type": "function",
         "function": {
             "name": "get_my_profile",
-            "description": "获取用户的求职画像，包括教育背景、技能、经历摘要、项目、目标岗位/行业、薪资范围、意向城市。",
+            "description": "查看你的求职画像（教育/技能/经历摘要/项目/目标岗位/目标行业/薪资范围/意向城市）。"
+            " 触发：「查看画像」「我的画像」「看看我的现状」。修改画像前也应先调用此工具看看现在有什么。",
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
@@ -302,7 +339,9 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "update_my_profile",
-            "description": "更新用户求职画像中的字段。只传需要更新的字段，不传的保持不变。",
+            "description": "更新求职画像中的字段。只传要更新的字段，不传的保持不变。"
+            " 触发：「修改画像」「更新XX」「把薪资改成XX」。新用户引导期收集到个人信息后要调用此工具存入。"
+            " 「用简历完善画像」时：先 get_my_resume 读简历，提取字段后调此工具写入。",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -320,11 +359,13 @@ TOOLS = [
             },
         },
     },
+    # ═══ 成长计划 ═══
     {
         "type": "function",
         "function": {
             "name": "list_my_tasks",
-            "description": "获取用户的成长计划任务列表，包括待学习技能、待做事项等。",
+            "description": "列出你的成长计划任务（待学技能/待做事项）。触发：「学习计划」「成长计划」「我的任务」「待办」。"
+            " update_my_task 和 delete_my_task 之前如果不知道 task_id，先调此工具。",
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
@@ -332,13 +373,15 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "add_my_task",
-            "description": "向成长计划中添加一个任务。",
+            "description": "向成长计划添加一个任务。触发：「我要学XX」「我想学XX」「把XX加入计划」「帮我加个任务」。"
+            " category: skill（学技能）/project（做项目）/action（行动项），默认 skill。"
+            " status: pending（待开始）/in_progress（进行中）/done（已完成），默认 pending。",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string", "description": "任务标题"},
-                    "category": {"type": "string", "description": "类型: skill/project/action，默认 skill"},
-                    "status": {"type": "string", "description": "状态: pending/in_progress/done，默认 pending"},
+                    "category": {"type": "string", "description": "skill/project/action，默认 skill"},
+                    "status": {"type": "string", "description": "pending/in_progress/done，默认 pending"},
                 },
                 "required": ["title"],
                 "additionalProperties": False,
@@ -349,14 +392,16 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "update_my_task",
-            "description": "更新成长计划任务。可改状态、标题、分类。用户说「开始学」「完成了」「暂停一下」「改个标题」时调用。",
+            "description": "更新任务（状态/标题/分类）。触发：「开始做了」「完成了」「暂停」「改个标题」。"
+            " task_id 来自 list_my_tasks。不知道 task_id 时先调 list_my_tasks。"
+            " 只传要改的字段，不改的不用传。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "task_id": {"type": "string", "description": "任务 ID（来自 list_my_tasks）"},
-                    "status": {"type": "string", "description": "新状态: pending/in_progress/done/paused（不传则不改）"},
-                    "title": {"type": "string", "description": "新标题（不传则不改）"},
-                    "category": {"type": "string", "description": "新分类: skill/project/action（不传则不改）"},
+                    "task_id": {"type": "string", "description": "任务 ID（必传，来自 list_my_tasks）"},
+                    "status": {"type": "string", "description": "pending/in_progress/done/paused"},
+                    "title": {"type": "string", "description": "新标题"},
+                    "category": {"type": "string", "description": "skill/project/action"},
                 },
                 "required": ["task_id"],
                 "additionalProperties": False,
@@ -367,11 +412,12 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "delete_my_task",
-            "description": "删除成长计划中的某个任务。用户说「删掉」「移除」「不要了」时调用。",
+            "description": "删除一个成长任务。触发：「删掉这个任务」「移除」「不要了」。task_id 来自 list_my_tasks。"
+            " 不知道 task_id 时先调 list_my_tasks。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "task_id": {"type": "string", "description": "要删除的任务 ID（来自 list_my_tasks）"},
+                    "task_id": {"type": "string", "description": "任务 ID（必传，来自 list_my_tasks）"},
                 },
                 "required": ["task_id"],
                 "additionalProperties": False,
@@ -410,31 +456,12 @@ class Agent:
 
     def chat(self, user_id: str, user_message: str) -> dict:
         """Returns {"reply": str, "tool_calls": [str], "confirm_needed": dict|None}"""
-        # Handle confirmation of pending premium tool
-        if user_id in self._pending_tool and "[CONFIRM_PREMIUM]" in user_message:
-            pending = self._pending_tool[user_id]
-            result = self._execute(pending["name"], pending["args"], user_id)
-            if result.get("__confirm__"):
-                # Still blocked — shouldn't happen if confirmed properly
-                return {"reply": "确认失败，请重试。", "tool_calls": [], "confirm_needed": result}
-            # Execute succeeded, now generate a proper reply
-            lang = get_user_lang(user_id)
-            label = pending.get("label_zh" if lang == "zh" else "label_en", pending["name"])
-            reply = f"好的！{label}已完成，来看看结果吧~"
-            # If tool returned markdown/text, append it
-            if result.get("markdown"):
-                reply += "\n\n" + result["markdown"][:3000]
-            elif result.get("text"):
-                reply += "\n\n" + result["text"][:3000]
-            elif result.get("total") is not None:
-                # score_job result
-                reply += f"\n\n总分: {result['total']}/100\n建议: {result.get('verdict', '')}"
-            return {"reply": reply, "tool_calls": [pending["name"]], "confirm_needed": None}
         from database import engine, get_user_lang
         from sqlalchemy import text
 
         lang = get_user_lang(user_id)
 
+        # ── 初始化 session ──
         if user_id not in self.sessions:
             with engine.connect() as conn:
                 row = conn.execute(
@@ -446,7 +473,6 @@ class Agent:
             self.sessions[user_id] = [{"role": "system", "content": prompt}]
             self._langs[user_id] = lang
         elif self._langs.get(user_id) != lang:
-            # Language changed → rebuild system prompt
             has_resume = len(self.sessions[user_id]) > 0
             prompt = self._build_prompt(has_resume, lang)
             self.sessions[user_id][0] = {"role": "system", "content": prompt}
@@ -454,28 +480,43 @@ class Agent:
 
         messages = self.sessions[user_id]
 
-        # ── 工作流路由 ──
-        intent = classify_intent(user_message)
-        if is_workflow_intent(intent):
-            reply, tool_calls_made, wf_confirm = execute_workflow(
-                intent, user_id, user_message, messages, TOOLS, self._execute,
-            )
-            if wf_confirm:
-                # Premium tool needs confirmation — don't save to session yet
-                return {"reply": reply, "tool_calls": tool_calls_made, "confirm_needed": wf_confirm}
-            # 将对话记录写入 session，保持上下文
-            messages.append({"role": "user", "content": user_message})
-            messages.append({"role": "assistant", "content": reply})
-            if len(messages) > MAX_MESSAGES:
-                self.sessions[user_id] = [messages[0]] + messages[-(MAX_MESSAGES - 1):]
-            return {"reply": reply, "tool_calls": tool_calls_made, "confirm_needed": None}
+        # ── 处理付费工具确认 ──
+        if user_id in self._pending_tool and "[CONFIRM_PREMIUM]" in user_message:
+            pending = self._pending_tool[user_id]
+            # 移除上一次对话中 __confirm__ 污染的消息（最后两条：assistant tool_call + tool result）
+            confirm_idx = None
+            for i in range(len(messages) - 1, -1, -1):
+                if (messages[i].get("role") == "tool"
+                        and isinstance(messages[i].get("content"), str)
+                        and '"__confirm__"' in messages[i].get("content", "")[:50]):
+                    confirm_idx = i
+                    break
+            if confirm_idx is not None:
+                del messages[confirm_idx]           # tool result with __confirm__
+                if confirm_idx > 0 and messages[confirm_idx - 1].get("role") == "assistant":
+                    del messages[confirm_idx - 1]   # assistant's tool_call that triggered it
 
+            # _execute 内部会检查 _pending_tool 并自动 pop，所以这里不提前 pop
+            result = self._execute(pending["name"], pending["args"], user_id)
+            # 生成回复
+            label = pending.get("label_zh" if lang == "zh" else "label_en", pending["name"])
+            reply = f"好的！{label}已完成，来看看结果吧~"
+            if result.get("markdown"):
+                reply += "\n\n" + result["markdown"][:3000]
+            elif result.get("text"):
+                reply += "\n\n" + result["text"][:3000]
+            elif result.get("total") is not None:
+                reply += f"\n\n总分: {result['total']}/100\n建议: {result.get('verdict', '')}"
+            return {"reply": reply, "tool_calls": [pending["name"]], "confirm_needed": None}
+
+        # ── 添加用户消息 ──
         messages.append({"role": "user", "content": user_message})
 
         tool_calls_made: list[str] = []
         confirm_needed = None
 
-        for _ in range(MAX_TOOL_ITERATIONS):
+        # ── Agent 循环 ──
+        for iteration in range(MAX_TOOL_ITERATIONS):
             response = client.chat.completions.create(
                 model=settings.llm_model,
                 messages=messages,
@@ -510,14 +551,23 @@ class Agent:
 
                     logger.info("tool_call: %s args=%s", name, {k: str(v)[:100] for k, v in args.items()})
                     result = self._execute(name, args, user_id)
+
                     if result.get("__confirm__"):
+                        # 付费工具需要确认 → 撤销刚追加的 assistant tool_call，跳出循环
                         confirm_needed = result
+                        del messages[-1]  # 撤销 assistant tool_call（tool result 还没追加）
+                        break
+
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
                         "content": json.dumps(result, ensure_ascii=False, default=str),
                     })
+
+                if confirm_needed:
+                    break
             else:
+                # 无 tool call → LLM 认为已完成，返回结果
                 messages.append({"role": "assistant", "content": msg.content})
 
                 if len(messages) > MAX_MESSAGES:
@@ -526,7 +576,10 @@ class Agent:
                         keep_from -= 1
                     self.sessions[user_id] = [messages[0]] + messages[keep_from:]
 
-                return {"reply": msg.content, "tool_calls": tool_calls_made, "confirm_needed": confirm_needed}
+                return {"reply": msg.content, "tool_calls": tool_calls_made, "confirm_needed": None}
+
+        if confirm_needed:
+            return {"reply": "确认处理中...", "tool_calls": tool_calls_made, "confirm_needed": confirm_needed}
 
         return {"reply": "抱歉，处理超时，请重试。", "tool_calls": tool_calls_made, "confirm_needed": None}
 
