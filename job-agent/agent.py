@@ -439,6 +439,11 @@ PREMIUM_TOOLS = {
     "generate_cover":    {"cost": 8,  "label_zh": "AI 求职信",   "label_en": "Cover Letter"},
 }
 
+# save_my_resume 仅新建时收费，更新已有简历免费
+SAVE_RESUME_COST = 6
+SAVE_RESUME_LABEL_ZH = "AI 简历制作"
+SAVE_RESUME_LABEL_EN = "Resume Creation"
+
 class Agent:
     def __init__(self):
         self.sessions: dict[str, list[dict]] = {}
@@ -585,12 +590,21 @@ class Agent:
 
     def _execute(self, name: str, args: dict, user_id: str) -> dict:
         # Gate premium tools: require user confirmation before execution
+        is_premium = False
+        premium_info = None
         if name in PREMIUM_TOOLS:
+            is_premium = True
+            premium_info = PREMIUM_TOOLS[name]
+        elif name == "save_my_resume" and not args.get("resume_id"):
+            # 新建简历（无 resume_id）收费，更新已有简历免费
+            is_premium = True
+            premium_info = {"cost": SAVE_RESUME_COST, "label_zh": SAVE_RESUME_LABEL_ZH, "label_en": SAVE_RESUME_LABEL_EN}
+
+        if is_premium:
             pending = self._pending_tool.get(user_id)
             if not pending or pending.get("name") != name:
-                info = PREMIUM_TOOLS[name]
-                self._pending_tool[user_id] = {"name": name, "args": args, "cost": info["cost"], "label_zh": info["label_zh"], "label_en": info["label_en"]}
-                return {"__confirm__": True, "tool": name, "cost": info["cost"], "label_zh": info["label_zh"], "label_en": info["label_en"]}
+                self._pending_tool[user_id] = {"name": name, "args": args, "cost": premium_info["cost"], "label_zh": premium_info["label_zh"], "label_en": premium_info["label_en"]}
+                return {"__confirm__": True, "tool": name, "cost": premium_info["cost"], "label_zh": premium_info["label_zh"], "label_en": premium_info["label_en"]}
             # User confirmed — clear pending and proceed
             self._pending_tool.pop(user_id, None)
 
@@ -647,6 +661,10 @@ class Agent:
 
             try:
                 logger.info(f"save_my_resume called: user={user_id} name={name_val} len={len(markdown)} resume_id={resume_id}")
+                is_new = not resume_id
+                if is_new:
+                    from database import spend_points
+                    spend_points(user_id, 50, "create_resume")
                 result = save_resume(user_id, name_val, markdown, resume_id)
                 action = "已更新" if resume_id else "已保存"
                 logger.info(f"save_my_resume OK: resume_id={result['resume_id']}")
