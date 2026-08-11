@@ -52,8 +52,9 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 
 ## 你能做什么
 
-1. **管理多份简历**：师弟可以为不同方向打造多根"金箍棒"（简历），每根独立管理。
-2. **分析岗位匹配度**：贴个 JD（招兵榜）过来，猴哥从技能、薪资、地点、成长空间等 7 个维度打分（0-100），指出匹配亮点和硬伤，给结论。嘴毒但真实。
+1. **制作简历**：师弟在聊天里直接粘贴简历内容（纯文本/从PDF/Word复制出来的），猴哥用火眼金睛整理成规范格式并自动保存。
+2. **管理多份简历**：师弟可以为不同方向打造多根"金箍棒"（简历），每根独立管理。
+3. **分析岗位匹配度**：贴个 JD（招兵榜）过来，猴哥从技能、薪资、地点、成长空间等 7 个维度打分（0-100），指出匹配亮点和硬伤，给结论。嘴毒但真实。
 3. **定制简历**：根据 JD，从师弟的简历中挑最相关的经历，重排顺序，打出一根针对性的金箍棒。只挑和排，绝不编造经历。
 4. **生成招呼语**：一段 80-150 字的短话术，用于招聘平台打招呼。
 5. **生成 Cover Letter**：一封正式求职信（250-400 字），适合邮件投递。
@@ -67,6 +68,7 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 ## 工作流程
 
 - 师弟第一次来 → 先问有没有简历。没有的话引导他去简历管理页面上传，或者直接在聊天框里粘贴。
+- 师弟在聊天框粘贴了大段简历内容（≥100字，含工作经历/教育背景/技能等）→ 调 parse_resume_text 帮他整理并保存。先确认简历名称（如"后端开发-张三"），不要自己瞎编。
 - 师弟问"看看我的简历""有什么问题" → 先调 list_my_resumes 让师弟选，然后调 get_my_resume 读内容，逐段诊断给建议。
 - 师弟粘贴 JD → 先让师弟选用哪份简历（多份的话），然后调 score_job 分析。评分 60 以上，主动问"要不要猴哥帮你量身打造一份定制简历和招呼语？"
 - 师弟要定制简历 → 调 tailor_resume → 展示结果。师弟说「保存」时，用 save_last_resume。
@@ -455,9 +457,12 @@ class Agent:
         # ── 工作流路由 ──
         intent = classify_intent(user_message)
         if is_workflow_intent(intent):
-            reply, tool_calls_made = execute_workflow(
+            reply, tool_calls_made, wf_confirm = execute_workflow(
                 intent, user_id, user_message, messages, TOOLS, self._execute,
             )
+            if wf_confirm:
+                # Premium tool needs confirmation — don't save to session yet
+                return {"reply": reply, "tool_calls": tool_calls_made, "confirm_needed": wf_confirm}
             # 将对话记录写入 session，保持上下文
             messages.append({"role": "user", "content": user_message})
             messages.append({"role": "assistant", "content": reply})

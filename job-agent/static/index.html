@@ -937,37 +937,37 @@ body {
 <!-- ═══ Resume Modal ═══ -->
 <div class="modal-overlay" id="resumeModal">
   <div class="modal-box">
-    <h3 id="resumeModalTitle">编辑简历</h3>
+    <h3 id="resumeModalTitle" data-i18n="resume.editTitle">编辑简历</h3>
     <div class="field">
-      <label>简历名称（如"后端开发""产品经理"）</label>
-      <input type="text" id="resumeName" placeholder="未命名简历">
+      <label data-i18n="resume.nameLabel">简历名称（如"后端开发""产品经理"）</label>
+      <input type="text" id="resumeName" data-i18n-placeholder="resume.untitled" placeholder="未命名简历">
     </div>
     <div class="upload-zone" id="uploadZone">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px;opacity:0.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-      <div>上传简历文件自动解析</div>
-      <div class="upload-hint">支持 PDF / Word / Markdown / TXT / JSON，上限 10MB</div>
+      <div data-i18n="resume.uploadHint">上传简历文件自动解析</div>
+      <div class="upload-hint" data-i18n="resume.uploadFormats">支持 PDF / Word / Markdown / TXT / JSON，上限 10MB</div>
       <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt,.md,.markdown,.json">
     </div>
     <div class="upload-status" id="uploadStatus"></div>
     <div class="resume-preview" id="resumePreview"></div>
     <div class="modal-btns">
       <div class="export-bar" id="exportBar" style="display:none;gap:8px;">
-        <button class="btn-export" onclick="exportResumeMD()" title="下载为 Markdown 文件 (.md)">
+        <button class="btn-export" onclick="exportResumeMD()" data-i18n-title="resume.downloadMDTitle" title="下载为 Markdown 文件 (.md)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 .md
+          <span data-i18n="resume.downloadMD">下载 .md</span>
         </button>
-        <button class="btn-export" onclick="exportResumePDF()" title="下载为 PDF 文件">
+        <button class="btn-export" onclick="exportResumePDF()" data-i18n-title="resume.downloadPDFTitle" title="下载为 PDF 文件">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 PDF
+          <span data-i18n="resume.downloadPDF">下载 PDF</span>
         </button>
-        <button class="btn-export" onclick="exportResumeWord()" title="下载为 Word 文件 (.docx)">
+        <button class="btn-export" onclick="exportResumeWord()" data-i18n-title="resume.downloadWordTitle" title="下载为 Word 文件 (.docx)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          下载 Word
+          <span data-i18n="resume.downloadWord">下载 Word</span>
         </button>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="btn-cancel" id="btnModalClose" data-i18n="common.cancel">取消</button>
-        <button class="btn-save" id="btnModalSave">保存</button>
+        <button class="btn-save" id="btnModalSave" data-i18n="resume.save">保存</button>
       </div>
     </div>
   </div>
@@ -1260,7 +1260,23 @@ var I18N = {
       new: '新建简历', noResumes: '暂无简历',
       noResumesHint: '在对话中分析岗位后可保存',
       newResumeBtn: '+ 新建简历', noJobs: '暂无目标岗位',
-      selectHint: '选择左侧项目查看详情'
+      selectHint: '选择左侧项目查看详情',
+      editTitle: '编辑简历', viewTitle: '查看简历',
+      nameLabel: '简历名称（如"后端开发""产品经理"）',
+      untitled: '未命名简历',
+      uploadHint: '上传简历文件自动解析',
+      uploadFormats: '支持 PDF / Word / Markdown / TXT / JSON，上限 10MB',
+      downloadMD: '下载 .md', downloadPDF: '下载 PDF', downloadWord: '下载 Word',
+      downloadMDTitle: '下载为 Markdown 文件 (.md)',
+      downloadPDFTitle: '下载为 PDF 文件',
+      downloadWordTitle: '下载为 Word 文件 (.docx)',
+      save: '保存', parseOk: '简历解析完成，请确认后保存',
+      parseFail: '解析失败', noContent: '请先上传简历文件',
+      saved: '简历已保存', saveFail: '保存失败',
+      loadFail: '加载简历失败', noResume: '无简历',
+      setDefault: '设为默认', default: '默认',
+      parsing: '正在解析文件...',
+      parseSuccessHint: '解析成功！请确认预览后保存'
     },
     profileModal: {
       title: '我的画像', statusTab: '我的现状', myTarget: '我的目标', growthPlan: '成长计划',
@@ -1341,7 +1357,23 @@ var I18N = {
       new: 'New Resume', noResumes: 'No resumes',
       noResumesHint: 'Save jobs from chat to see them here',
       newResumeBtn: '+ New Resume', noJobs: 'No target jobs',
-      selectHint: 'Select an item to view details'
+      selectHint: 'Select an item to view details',
+      editTitle: 'Edit Resume', viewTitle: 'View Resume',
+      nameLabel: 'Resume name (e.g. "Backend Dev", "Product Manager")',
+      untitled: 'Untitled Resume',
+      uploadHint: 'Upload resume file for auto-parsing',
+      uploadFormats: 'Supports PDF / Word / Markdown / TXT / JSON, max 10MB',
+      downloadMD: 'Download .md', downloadPDF: 'Download PDF', downloadWord: 'Download Word',
+      downloadMDTitle: 'Download as Markdown file (.md)',
+      downloadPDFTitle: 'Download as PDF file',
+      downloadWordTitle: 'Download as Word file (.docx)',
+      save: 'Save', parseOk: 'Resume parsed. Please review and save.',
+      parseFail: 'Parse failed', noContent: 'Please upload a resume file first',
+      saved: 'Resume saved', saveFail: 'Save failed',
+      loadFail: 'Failed to load resume', noResume: 'No resume',
+      setDefault: 'Set as default', default: 'Default',
+      parsing: 'Parsing file...',
+      parseSuccessHint: 'Parsed successfully! Please review and save.'
     },
     profileModal: {
       title: 'My Profile', statusTab: 'My Status', myTarget: 'My Target', growthPlan: 'Growth Plan',
@@ -1895,7 +1927,7 @@ async function saveProfile() {
     toast(_lang === 'zh' ? '画像已保存' : 'Profile saved');
   } else {
     const d = await res.json();
-    toast(d.detail || (_lang === 'zh' ? '保存失败' : 'Save failed'));
+    toast(d.detail || t('resume.saveFail'));
   }
 }
 
@@ -2238,7 +2270,7 @@ var RESUME_CSS = [
 /* ═══ Resume Export ═══ */
 async function exportBrowseResumeMD(rid, name) {
   const r = await api(`/api/resume/${rid}`);
-  if (!r.ok) { toast('加载简历失败'); return; }
+  if (!r.ok) { toast(t('resume.loadFail')); return; }
   const data = await r.json();
   const safeName = (name || data.name || 'resume').replace(/[\\/:*?"<>|]/g, '_');
   const blob = new Blob([data.content], { type: 'text/markdown;charset=utf-8' });
@@ -2253,7 +2285,7 @@ async function exportBrowseResumePDF(rid, name) {
   if (!window.jspdf || !window.html2canvas) { toast('PDF 库加载中，请稍后再试'); return; }
   const { jsPDF } = window.jspdf;
   const r = await api(`/api/resume/${rid}`);
-  if (!r.ok) { toast('加载简历失败'); return; }
+  if (!r.ok) { toast(t('resume.loadFail')); return; }
   const data = await r.json();
   const safeName = data.name || name || '简历';
   var rendered = renderResumeHTML(data.content || '', safeName);
@@ -2344,7 +2376,7 @@ async function _markdownToDocx(markdown) {
 async function exportBrowseResumeWord(rid, name) {
   if (!window.docx) { toast('Word 库加载中，请稍后再试'); return; }
   const r = await api('/api/resume/' + rid);
-  if (!r.ok) { toast('加载简历失败'); return; }
+  if (!r.ok) { toast(t('resume.loadFail')); return; }
   const data = await r.json();
   const safeName = (name || data.name || 'resume').replace(/[\\/:*?"<>|]/g, '_');
   try {
@@ -2606,7 +2638,7 @@ async function refreshResumes() {
 function renderResumeSelect() {
   const sel = $('#activeResumeSelect');
   if (!resumes.length) {
-    sel.innerHTML = '<option value="">无简历</option>';
+    sel.innerHTML = '<option value="">' + t('resume.noResume') + '</option>';
     return;
   }
   sel.innerHTML = resumes.map(r =>
@@ -2620,10 +2652,10 @@ function renderResumeSelect() {
 
 async function openResume(rid) {
   const r = await api(`/api/resume/${rid}`);
-  if (!r.ok) { toast('加载简历失败'); return; }
+  if (!r.ok) { toast(t('resume.loadFail')); return; }
   const data = await r.json();
   currentModalContent = data.content;
-  $('#resumeModalTitle').textContent = data.name || '查看简历';
+  $('#resumeModalTitle').textContent = data.name || t('resume.viewTitle');
   $('#resumeName').value = data.name || '';
   $('#resumeModal').dataset.mode = 'edit';
   $('#resumeModal').dataset.rid = rid;
@@ -2754,7 +2786,7 @@ function selectMdItem(idx) {
                 导出
               </button>
             </div>
-            ${!r.is_default ? `<button class="tb-btn" style="margin-left:auto;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">设为默认</button>` : '<span style="margin-left:auto;font-size:10px;color:var(--accent);padding:2px 8px;background:rgba(108,138,255,0.1);border-radius:8px;">默认</span>'}
+            ${!r.is_default ? `<button class="tb-btn" style="margin-left:auto;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">' + t('resume.setDefault') + `</button>` : '<span style="margin-left:auto;font-size:10px;color:var(--accent);padding:2px 8px;background:rgba(108,138,255,0.1);border-radius:8px;">' + t('resume.default') + '</span>'}
           </div>
           <div class="resume-styled">${styled.body}</div>`;
       });
@@ -2839,7 +2871,7 @@ fileInput.onchange = () => {
 
 async function handleFileUpload(file) {
   uploadZone.classList.add('loading');
-  uploadStatus.textContent = '正在解析文件...';
+  uploadStatus.textContent = t('resume.parsing');
   uploadStatus.style.color = 'var(--accent)';
 
   const form = new FormData();
@@ -2855,7 +2887,7 @@ async function handleFileUpload(file) {
     if (res.ok) {
       $('#resumeName').value = data.name || '';
       currentModalContent = data.content;  // Markdown string
-      uploadStatus.textContent = '解析成功！请确认预览后保存';
+      uploadStatus.textContent = t('resume.parseSuccessHint');
       uploadStatus.style.color = 'var(--green)';
       if (currentModalContent) {
         var html = typeof marked !== 'undefined' ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
@@ -2863,21 +2895,21 @@ async function handleFileUpload(file) {
         $('#resumePreview').style.display = 'block';
         $('#resumePreview').classList.remove('resume-styled');
       }
-      toast('简历解析完成，请确认后保存');
+      toast(t('resume.parseOk'));
     } else {
-      uploadStatus.textContent = data.detail || '解析失败';
+      uploadStatus.textContent = data.detail || t('resume.parseFail');
       uploadStatus.style.color = 'var(--red)';
     }
   } catch (e) {
-    uploadStatus.textContent = '网络错误，请重试';
+    uploadStatus.textContent = t('common.networkError');
     uploadStatus.style.color = 'var(--red)';
   }
   uploadZone.classList.remove('loading');
 }
 
 $('#btnModalSave').onclick = async () => {
-  const name = $('#resumeName').value.trim() || '未命名简历';
-  if (!currentModalContent) { toast('请先上传简历文件'); return; }
+  const name = $('#resumeName').value.trim() || t('resume.untitled');
+  if (!currentModalContent) { toast(t('resume.noContent')); return; }
 
   const mode = $('#resumeModal').dataset.mode;
   let res;
@@ -2891,13 +2923,13 @@ $('#btnModalSave').onclick = async () => {
     });
   }
   if (res.ok) {
-    toast('简历已保存');
+    toast(t('resume.saved'));
     $('#resumeModal').classList.remove('active');
     currentModalContent = null;
     await refreshResumes();
   } else {
     const d = await res.json();
-    toast(d.detail || '保存失败');
+    toast(d.detail || t('resume.saveFail'));
   }
 };
 

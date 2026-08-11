@@ -43,6 +43,7 @@ INTENT_PROMPT = """分析用户消息，只返回一个 JSON: {"intent":"意图�
 - update_profile: "修改画像""更新画像""薪资改成""改成XX"
 - view_tasks: "学习计划""成长计划""我的任务""待办"
 - add_task: "我要学""添加任务""加入计划""帮我把XX加入成长计划"
+- parse_resume: "制作简历""帮我做份简历""根据以下内容生成简历""整理简历""解析简历"
 - chat: 闲聊、打招呼、咨询建议、问"你觉得我适合什么方向"等开放式问题
 
 规则:
@@ -69,6 +70,7 @@ KEYWORD_RULES: list[tuple[list[str], str]] = [
     (["薪资改成", "改成", "修改画像", "更新画像"], "update_profile"),
     (["查看简历", "看看我的简历", "打开简历", "我的简历"], "view_resume"),
     (["简历有什", "简历诊断", "简历哪里", "帮我改简历"], "diagnose_resume"),
+    (["制作简历", "生成简历", "帮我做简历", "帮我做份简历", "创建简历", "做一份简历", "整理简历", "解析简历"], "parse_resume"),
 ]
 
 
@@ -129,6 +131,7 @@ WORKFLOWS: dict[str, list[str]] = {
     "update_profile":    ["update_my_profile"],
     "view_tasks":        ["list_my_tasks"],
     "add_task":          ["add_my_task"],
+    "parse_resume":      ["parse_resume_text"],
 }
 
 
@@ -152,6 +155,7 @@ def execute_workflow(
     """
     tool_chain = WORKFLOWS[intent]
     tool_calls_made: list[str] = []
+    confirm_needed = None
 
     # 把相关工具定义过滤出来
     tool_map = {t["function"]["name"]: t for t in tools}
@@ -216,6 +220,11 @@ def execute_workflow(
         result = _execute_fn(name, args, user_id)
         tool_calls_made.append(name)
 
+        # Check for premium-tool confirmation gating
+        if result.get("__confirm__"):
+            confirm_needed = result
+            break
+
         # 将 tool call + result 追加到消息中，供下一步参考
         # DeepSeek thinking mode 要求后续请求必须带回 reasoning_content
         assistant_msg = {
@@ -249,4 +258,4 @@ def execute_workflow(
         if tool_calls_made:
             reply += f" 执行了: {', '.join(tool_calls_made)}"
 
-    return reply, tool_calls_made
+    return reply, tool_calls_made, confirm_needed
