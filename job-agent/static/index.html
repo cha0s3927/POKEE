@@ -258,6 +258,27 @@ body {
 .typing .dots span:nth-child(3) { animation-delay: 0s; }
 @keyframes bounce { 0%,80%,100% { transform: scale(0.5); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
 
+/* Quick Action Chips */
+.quick-chips {
+  display: flex; gap: 8px; padding: 0 24px 8px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+  scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+}
+.quick-chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px; min-height: 44px; border-radius: 22px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); font-size: 13px; font-weight: 500;
+  cursor: pointer; user-select: none; white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+  touch-action: manipulation;
+}
+.chip:hover { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+.chip:active { transform: scale(0.96); }
+.chip svg { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s; }
+.chip:hover svg { opacity: 1; }
+
 /* Input */
 .input-area { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
 .input-area textarea {
@@ -751,6 +772,8 @@ body {
   .typing { padding-left: 36px; }
 
   /* ── Input (fixed bottom, safe-area) ── */
+  .quick-chips { padding: 0 12px 6px; gap: 6px; }
+  .chip { padding: 8px 14px; min-height: 40px; font-size: 12px; border-radius: 20px; }
   .input-area {
     padding: 10px 12px; gap: 8px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
@@ -920,6 +943,30 @@ body {
         <h2>OFFERKING</h2>
         <p>有简历？直接粘贴给我，帮你分析 JD、定制投递版。<br><br><span style="color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</span><br><br><span style="color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容<br>也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></span></p>
       </div>
+    </div>
+
+    <!-- Quick Action Chips -->
+    <div class="quick-chips" id="quickChips">
+      <button class="chip" data-prompt="帮我分析一下这个岗位：" aria-label="分析JD">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+        分析JD
+      </button>
+      <button class="chip" data-prompt="帮我制作一份简历" aria-label="制作简历">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        制作简历
+      </button>
+      <button class="chip" data-prompt="帮我写个BOSS直聘的招呼语" aria-label="写招呼语">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        写招呼语
+      </button>
+      <button class="chip" data-prompt="帮我生成面试用的STAR故事" aria-label="面试故事">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        面试故事
+      </button>
+      <button class="chip" data-prompt="帮我搜索" aria-label="搜索岗位">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        搜索岗位
+      </button>
     </div>
 
     <div class="input-area">
@@ -2011,6 +2058,25 @@ $('#btnInterviewExit').onclick = () => exitInterview(false);
     }
   });
 });
+
+/* ═══ Quick Chips ═══ */
+function initQuickChips() {
+  var chips = document.querySelectorAll('.chip');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].addEventListener('click', function() {
+      var prompt = this.getAttribute('data-prompt');
+      var inp = document.getElementById('chatInput');
+      inp.value = prompt;
+      inp.focus();
+      // Place cursor at end
+      inp.setSelectionRange(prompt.length, prompt.length);
+      // Auto-resize textarea
+      inp.style.height = 'auto';
+      inp.style.height = Math.min(inp.scrollHeight, 200) + 'px';
+    });
+  }
+}
+document.addEventListener('DOMContentLoaded', function() { initQuickChips(); });
 
 /* ═══ Growth Tasks ═══ */
 async function fetchGrowthTasks() {
