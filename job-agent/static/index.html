@@ -11,11 +11,17 @@
   --text: #e4e6ed; --text2: #a8b0c0; --accent: #6c8aff; --accent2: #5b7af0;
   --green: #4ade80; --yellow: #fbbf24; --red: #f87171; --purple: #a78bfa;
   --radius: 10px; --radius-sm: 6px;
+  /* Type scale */
+  --fs-xs: 11px; --fs-sm: 12px; --fs-base: 14px; --fs-msg: 15px;
+  --fs-lg: 18px; --fs-xl: 20px; --fs-2xl: 24px;
+  --lh-body: 1.6; --lh-msg: 1.75;
 }
-:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(108,138,255,0.4); border-radius: var(--radius-sm); }
+:focus-visible { outline: none; box-shadow: 0 0 0 2.5px rgba(108,138,255,0.55); border-radius: var(--radius-sm); }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; overflow: hidden;
+  font-size: var(--fs-base); line-height: var(--lh-body);
 }
 
 /* Auth */
@@ -25,7 +31,7 @@ body {
   padding: 40px 36px; width: 380px; max-width: 90vw;
 }
 .auth-box h1 {
-  font-size: 26px; font-weight: 700; text-align: center; margin-bottom: 4px;
+  font-size: var(--fs-2xl); font-weight: 700; text-align: center; margin-bottom: 4px;
   background: linear-gradient(135deg, var(--accent), var(--purple));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
@@ -61,7 +67,7 @@ body {
 }
 .sidebar-header { padding: 20px; border-bottom: 1px solid var(--border); }
 .sidebar-header h1 {
-  font-size: 22px; font-weight: 700;
+  font-size: var(--fs-xl); font-weight: 700;
   background: linear-gradient(135deg, var(--accent), var(--purple));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
@@ -78,8 +84,8 @@ body {
 .user-email { font-size: 11px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .points-card { padding: 14px 20px; border-bottom: 1px solid var(--border); text-align: center; cursor: pointer; transition: background 0.15s; }
 .points-card:hover { background: rgba(108,138,255,0.04); }
-.points-balance { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.points-label { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
+.points-balance { font-size: var(--fs-2xl); font-weight: 700; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.points-label { font-size: 11px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
 .points-today { font-size: 11px; color: var(--green); margin-top: 2px; min-height: 16px; }
 .points-today.neg { color: var(--red); }
 .points-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
@@ -96,7 +102,7 @@ body {
 .ledger-amount.neg { color: var(--red); }
 .ledger-amount.pos { color: var(--green); }
 .tool-indicator { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 16px 12px; }
-.tool-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(108,138,255,0.1); color: var(--accent); }
+.tool-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(108,138,255,0.1); color: var(--accent); }
 .ledger-grid { display: flex; gap: 24px; }
 .ledger-col { flex: 1; min-width: 0; }
 .ledger-col:first-child { flex: 1.2; }
@@ -117,7 +123,7 @@ body {
 .sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .sidebar-body .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: var(--text); padding: 8px 4px 4px; display: flex; gap: 6px; align-items: center; }
 .sidebar-body .section-label > span[data-i18n] { flex: 1; }
-.sidebar-body .section-label .count { font-size: 10px; background: var(--surface2); padding: 1px 6px; border-radius: 10px; }
+.sidebar-body .section-label .count { font-size: 11px; background: var(--surface2); padding: 1px 6px; border-radius: 10px; }
 
 /* Resume list */
 .resume-item {
@@ -130,7 +136,7 @@ body {
 .resume-item .r-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #4a4d5a; }
 .resume-item.active .r-dot { background: var(--accent); }
 .resume-item .r-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.resume-item .r-badge { font-size: 9px; padding: 1px 5px; border-radius: 8px; background: rgba(108,138,255,0.15); color: var(--accent); white-space: nowrap; }
+.resume-item .r-badge { font-size: 11px; padding: 1px 5px; border-radius: 8px; background: rgba(108,138,255,0.15); color: var(--accent); white-space: nowrap; }
 .resume-item .r-actions { display: none; gap: 2px; }
 .resume-item:hover .r-actions { display: flex; }
 .resume-item .r-act {
@@ -149,7 +155,7 @@ body {
 .saved-job-item:hover { border-color: var(--border); }
 .saved-job-item .sj-company { color: var(--text2); font-size: 11px; }
 .saved-job-item .sj-score {
-  display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 8px;
+  display: inline-block; font-size: 11px; padding: 1px 5px; border-radius: 8px;
   margin-top: 2px; font-weight: 600;
 }
 .sj-score.high { background: rgba(74,222,128,0.15); color: var(--green); }
@@ -211,8 +217,8 @@ body {
 .msg.user .msg-avatar { background: var(--accent); }
 .msg.assistant .msg-avatar { background: url(monkey-avatar.png) center/cover no-repeat; }
 .msg-bubble {
-  padding: 12px 16px; border-radius: var(--radius); font-size: 14px;
-  line-height: 1.65; word-break: break-word;
+  padding: 12px 16px; border-radius: var(--radius); font-size: var(--fs-msg);
+  line-height: var(--lh-msg); word-break: break-word;
 }
 .msg.user .msg-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 2px; }
 .msg.assistant .msg-bubble { background: var(--surface2); border-bottom-left-radius: 2px; }
@@ -269,12 +275,12 @@ body {
   flex-shrink: 0; display: flex; align-items: center; gap: 6px;
   padding: 9px 16px; min-height: 44px; border-radius: 22px;
   background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text2); font-size: 13px; font-weight: 500;
+  color: var(--text2); font-size: var(--fs-base); font-weight: 500;
   cursor: pointer; user-select: none; white-space: nowrap;
-  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.1s, box-shadow 0.12s;
   touch-action: manipulation;
 }
-.chip:hover { background: var(--surface); border-color: var(--accent); color: var(--accent); }
+.chip:hover { background: var(--surface); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 1px rgba(108,138,255,0.15); }
 .chip:active { transform: scale(0.96); }
 .chip svg { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s; }
 .chip:hover svg { opacity: 1; }
@@ -479,17 +485,18 @@ body {
 /* Sidebar backdrop */
 .sidebar-backdrop {
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 140;
+  opacity: 0; transition: opacity 0.25s;
 }
-.sidebar-backdrop.active { display: block; }
+.sidebar-backdrop.active { display: block; opacity: 1; }
 
 /* Profile card */
 .pc-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
 .pc-row:last-child { margin-bottom: 0; }
-.pc-label { color: var(--text2); font-size: 10px; flex-shrink: 0; min-width: 28px; }
+.pc-label { color: var(--text2); font-size: 11px; flex-shrink: 0; min-width: 28px; }
 .pc-val { color: var(--text); }
 .pc-tags { display: flex; flex-wrap: wrap; gap: 3px; }
 .pc-tag {
-  font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  font-size: 11px; padding: 1px 6px; border-radius: 8px;
   background: rgba(108,138,255,0.12); color: var(--accent);
   white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis;
 }
@@ -542,8 +549,8 @@ body {
 .growth-item .gi-status.in_progress { background: var(--accent); border-color: var(--accent); }
 .growth-item .gi-title { flex: 1; }
 .growth-item .gi-title.done { text-decoration: line-through; color: var(--text2); }
-.growth-item .gi-cat { font-size: 10px; padding: 1px 5px; border-radius: 8px; background: var(--surface); color: var(--text2); white-space: nowrap; }
-.growth-item .gi-cat-sel { font-size: 10px; padding: 1px 3px; border-radius: 6px; background: var(--surface); color: var(--text2); border: 1px solid var(--border); cursor: pointer; }
+.growth-item .gi-cat { font-size: 11px; padding: 1px 5px; border-radius: 8px; background: var(--surface); color: var(--text2); white-space: nowrap; }
+.growth-item .gi-cat-sel { font-size: 11px; padding: 1px 3px; border-radius: 6px; background: var(--surface); color: var(--text2); border: 1px solid var(--border); cursor: pointer; }
 .growth-item .gi-cat-sel:hover { border-color: var(--accent); }
 .growth-item .gi-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; opacity: 0; transition: opacity 0.1s; }
 .growth-item:hover .gi-del { opacity: 0.6; }
@@ -576,7 +583,7 @@ body {
 
 /* Sidebar growth check-in badge */
 .sg-checkin {
-  font-size: 9px; background: var(--green); color: #000; padding: 1px 5px; border-radius: 8px;
+  font-size: 11px; background: var(--green); color: #000; padding: 1px 5px; border-radius: 8px;
   margin-left: auto; flex-shrink: 0; animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -585,8 +592,8 @@ body {
 .checkin-history { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
 .checkin-history h4 { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
 .checkin-item { font-size: 12px; padding: 8px 10px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 4px; line-height: 1.5; }
-.checkin-item .ci-meta { font-size: 10px; color: var(--text2); margin-top: 4px; display: flex; gap: 8px; }
-.checkin-item .ci-tone { padding: 1px 5px; border-radius: 6px; font-size: 9px; }
+.checkin-item .ci-meta { font-size: 11px; color: var(--text2); margin-top: 4px; display: flex; gap: 8px; }
+.checkin-item .ci-tone { padding: 1px 5px; border-radius: 6px; font-size: 11px; }
 .ci-tone.curious { background: rgba(108,138,255,0.15); color: var(--accent); }
 .ci-tone.supportive { background: rgba(74,222,128,0.15); color: var(--green); }
 .ci-tone.challenging { background: rgba(251,191,36,0.15); color: var(--yellow); }
@@ -638,7 +645,7 @@ body {
 .md-item .md-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-item .md-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .md-item .md-tags { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
-.md-item .md-tag { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--surface); color: var(--text2); }
+.md-item .md-tag { font-size: 11px; padding: 1px 6px; border-radius: 8px; background: var(--surface); color: var(--text2); }
 .md-item .md-actions { display: none; gap: 2px; flex-shrink: 0; }
 .md-item:hover .md-actions { display: flex; }
 .md-item .md-act {
@@ -757,7 +764,7 @@ body {
 }
 .lang-switch:hover { border-color: var(--accent); color: var(--accent); }
 .auth-lang { position: absolute; top: 16px; right: 20px; }
-.header-lang { font-size: 10px; padding: 1px 6px; }
+.header-lang { font-size: 11px; padding: 1px 6px; }
 
 /* Responsive */
 @media (max-width: 860px) {
@@ -803,7 +810,7 @@ body {
   .input-area textarea { font-size: 16px; min-height: 40px; padding: 10px 14px; }
   .input-area button { padding: 8px 16px; font-size: 13px; min-height: 40px; }
   .input-area .mic-btn { width: 40px; height: 40px; }
-  .mic-select { max-width: 100px; font-size: 10px; }
+  .mic-select { max-width: 100px; font-size: 11px; }
 
   /* ── Modals: fullscreen ── */
   .modal-overlay { align-items: flex-end; }
@@ -832,7 +839,7 @@ body {
   /* ── Interview bar ── */
   #interviewBar { padding: 8px 12px; }
   #ivBarInfo { font-size: 11px; }
-  #ivBarProgress { font-size: 10px; }
+  #ivBarProgress { font-size: 11px; }
 
   /* ── Browse/Jobs modal ── */
   .browse-item { padding: 8px; gap: 6px; }
@@ -946,7 +953,7 @@ body {
 
   <main class="main">
     <div class="chat-header">
-      <button class="hamburger-btn" id="btnHamburger" onclick="toggleSidebar()" title="菜单">
+      <button class="hamburger-btn" id="btnHamburger" onclick="toggleSidebar()" data-i18n-title="chat.menu" title="菜单">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="status"><span class="dot"></span> <span data-i18n="chat.online">DeepSeek · 在线</span></div>
@@ -968,34 +975,34 @@ body {
 
     <!-- Quick Action Chips -->
     <div class="quick-chips" id="quickChips">
-      <button class="chip" data-prompt="帮我分析一下这个岗位：" aria-label="分析JD">
+      <button class="chip" data-prompt="帮我分析一下这个岗位：">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
-        分析JD
+        <span data-i18n="chat.chips.analyzeJD">分析JD</span>
       </button>
-      <button class="chip" data-prompt="帮我制作一份简历" aria-label="制作简历">
+      <button class="chip" data-prompt="帮我制作一份简历">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        制作简历
+        <span data-i18n="chat.chips.createResume">制作简历</span>
       </button>
-      <button class="chip" data-prompt="帮我写个BOSS直聘的招呼语" aria-label="写招呼语">
+      <button class="chip" data-prompt="帮我写个BOSS直聘的招呼语">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        写招呼语
+        <span data-i18n="chat.chips.writePitch">写招呼语</span>
       </button>
-      <button class="chip" data-prompt="帮我生成面试用的STAR故事" aria-label="面试故事">
+      <button class="chip" data-prompt="帮我生成面试用的STAR故事">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        面试故事
+        <span data-i18n="chat.chips.starStory">面试故事</span>
       </button>
-      <button class="chip" data-prompt="帮我搜索" aria-label="搜索岗位">
+      <button class="chip" data-prompt="帮我搜索">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        搜索岗位
+        <span data-i18n="chat.chips.searchJob">搜索岗位</span>
       </button>
     </div>
 
     <div class="input-area">
       <textarea id="chatInput" rows="1" data-i18n-placeholder="chat.placeholder" placeholder="粘贴 JD 或输入消息…"></textarea>
-      <button class="mic-btn" id="btnMic" title="语音输入" onclick="toggleVoiceInput()">
+      <button class="mic-btn" id="btnMic" data-i18n-title="chat.voiceInput" title="语音输入" onclick="toggleVoiceInput()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
       </button>
-      <select id="micDevice" class="mic-select" style="display:none" title="选择麦克风"></select>
+      <select id="micDevice" class="mic-select" style="display:none" data-i18n-title="chat.micDevice" title="选择麦克风"></select>
       <span id="recTimer" style="display:none; color:var(--red); font-size:12px; font-weight:600; min-width:36px;"></span>
       <button id="btnSend" data-i18n="chat.send">发送</button>
     </div>
@@ -1045,7 +1052,7 @@ body {
 <div class="modal-overlay" id="browseModal">
   <div class="modal-box" style="width:92vw;max-width:1200px;padding:24px 28px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <h3 id="browseTitle" style="margin:0;">浏览</h3>
+      <h3 id="browseTitle" style="margin:0;" data-i18n="common.browse">浏览</h3>
       <button class="btn-cancel" id="btnBrowseClose" style="font-size:11px;padding:4px 12px;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span data-i18n="common.close">关闭</span></button>
     </div>
     <div class="md-container">
@@ -1053,7 +1060,7 @@ body {
       <div class="md-right" id="mdRight">
         <div class="md-detail-empty" id="mdEmpty">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span>选择左侧项目查看详情</span>
+          <span data-i18n="jobs.selectHint">选择左侧项目查看详情</span>
         </div>
         <div id="mdDetail" style="display:none;"></div>
       </div>
@@ -1064,7 +1071,7 @@ body {
 <!-- Keep original savedJobsModal for backward compat (delete job, etc.) -->
 <div class="modal-overlay" id="savedJobsModal" style="display:none;">
   <div class="modal-box" style="max-width:700px;">
-    <h3>收藏的岗位</h3>
+    <h3 data-i18n="jobs.title">收藏的岗位</h3>
     <div id="savedJobsDetail"></div>
     <div class="modal-btns">
       <button class="btn-cancel" id="btnJobsModalClose" data-i18n="common.close">关闭</button>
@@ -1099,14 +1106,7 @@ body {
         </div>
         <div class="field" style="flex:1;">
           <label data-i18n="profileModal.degree">学历</label>
-          <select id="pfDegree">
-            <option value="">--</option>
-            <option value="高中">高中</option>
-            <option value="大专">大专</option>
-            <option value="本科">本科</option>
-            <option value="硕士">硕士</option>
-            <option value="博士">博士</option>
-          </select>
+          <select id="pfDegree"></select>
         </div>
       </div>
       <div class="field">
@@ -1169,8 +1169,8 @@ body {
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
         <span style="font-size:11px;color:var(--text2);" data-i18n="profileModal.debug">调试：</span>
-        <button onclick="triggerDebugCheckin()" style="font-size:11px;padding:3px 10px;background:var(--yellow);color:#000;border:none;border-radius:4px;cursor:pointer;">模拟督促触发</button>
-        <span style="font-size:10px;color:var(--text2);margin-left:4px;">将 in_progress 任务回退 25h 并立即触发</span>
+        <button onclick="triggerDebugCheckin()" style="font-size:11px;padding:3px 10px;background:var(--yellow);color:#000;border:none;border-radius:4px;cursor:pointer;" id="btnDebugTrigger" data-i18n="debug.trigger">模拟督促触发</button>
+        <span style="font-size:10px;color:var(--text2);margin-left:4px;" data-i18n="debug.note">将 in_progress 任务回退 25h 并立即触发</span>
       </div>
     </div>
 
@@ -1225,14 +1225,14 @@ body {
 <div id="interviewBar" style="display:none;background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 24px;display:none;align-items:center;justify-content:space-between;">
   <div style="display:flex;align-items:center;gap:10px;">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
-    <span id="ivBarInfo" style="font-size:13px;color:var(--text);">面试中</span>
+    <span id="ivBarInfo" style="font-size:13px;color:var(--text);" data-i18n="interview.inProgress">面试中</span>
     <span id="ivBarProgress" style="font-size:11px;color:var(--text2);"></span>
   </div>
   <div style="display:flex;align-items:center;gap:14px;">
-    <label class="tts-toggle" id="ttsToggle" title="朗读题目">
+    <label class="tts-toggle" id="ttsToggle" data-i18n-title="interview.ttsTitle" title="朗读题目">
       <input type="checkbox" id="ttsCheck" onchange="toggleTTS()">
       <span class="tts-switch"></span>
-      <span style="font-size:11px;">朗读</span>
+      <span style="font-size:11px;" data-i18n="interview.ttsLabel">朗读</span>
     </label>
     <button id="btnInterviewExit" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:11px;" data-i18n="interview.exit">退出面试</button>
   </div>
@@ -1278,7 +1278,9 @@ body {
 var I18N = {
   zh: {
     lang: { switch: 'EN' }, app: { title: 'OFFERKING', subtitle: 'AI 求职 Agent · 聊天式交互' },
-    common: { close: '关闭', cancel: '取消', confirm: '确认' },
+    common: { close: '关闭', cancel: '取消', confirm: '确认',
+      processing: '处理中…', browse: '浏览', delete: '删除',
+      clickToToggle: '点击切换状态', doubleClickToEdit: '双击编辑' },
     auth: {
       login: '登录', register: '注册', email: '邮箱',
       password: '密码（至少6位）', fillFields: '请填写邮箱和密码',
@@ -1290,7 +1292,9 @@ var I18N = {
       pricingNote: '1 积分 = ¥0.1，基于 DeepSeek V4 Flash token 成本定价',
       confirmTitle: '确认消耗积分', confirmInterview: '模拟面试将消耗 <strong>20 积分</strong>，确认开始？',
       confirmCost: '{label}将消耗 <strong>{cost} 积分</strong>，确认开始？',
-      noPoints: '积分不足，当前余额 ' },
+      noPoints: '积分不足，当前余额 ',
+      dailySigned: '签到 +5.0',
+    },
     profile: {
       title: '我的现状', empty: '点击完善我的现状',
       education: '教育', projects: '项目', skills: '技能',
@@ -1310,7 +1314,8 @@ var I18N = {
       start: '开始面试', cancel: '取消',
       answering: '请回答', answerPlaceholder: '输入你的回答…',
       completed: '面试结束', newRound: '再来一轮',
-      exit: '退出面试',
+      exit: '退出面试', inProgress: '面试中', ttsTitle: '朗读题目', ttsLabel: '朗读',
+      positionRequired: '请填写岗位名称',
     },
     chat: {
       online: 'DeepSeek · 在线', newSession: '新会话',
@@ -1322,7 +1327,9 @@ var I18N = {
       error: '抱歉，连接失败，请重试。',
       noPoints: '积分不足', noPointsHint: '积分不足，请签到或充值',
       reset: '会话已重置，有什么我可以帮你的？',
-      thinking: '思考中…'
+      thinking: '思考中…',
+      menu: '菜单', voiceInput: '语音输入', micDevice: '选择麦克风',
+      chips: { analyzeJD: '分析JD', createResume: '制作简历', writePitch: '写招呼语', starStory: '面试故事', searchJob: '搜索岗位' },
     },
     resume: {
       new: '新建简历', noResumes: '暂无简历',
@@ -1344,7 +1351,8 @@ var I18N = {
       loadFail: '加载简历失败', noResume: '无简历',
       setDefault: '设为默认', default: '默认',
       parsing: '正在解析文件...',
-      parseSuccessHint: '解析成功！请确认预览后保存'
+      parseSuccessHint: '解析成功！请确认预览后保存',
+      professionalSummary: '专业概述',
     },
     profileModal: {
       title: '我的画像', statusTab: '我的现状', myTarget: '我的目标', growthPlan: '成长计划',
@@ -1356,7 +1364,7 @@ var I18N = {
       skills: '技能 / 技术栈（输入后按回车添加）',
       projectsLabel: '项目 / 作品集（输入后按回车添加）',
       projectsPlaceholder: '项目名或链接',
-      save: '保存画像',
+      save: '保存画像', saved: '画像已保存',
       targetRole: '目标岗位', targetRolePlaceholder: '如: 后端开发工程师',
       targetIndustry: '目标行业', targetIndustryPlaceholder: '如: 金融科技 / SaaS',
       minSalary: '最低薪资 (K/月)', maxSalary: '最高薪资 (K/月)',
@@ -1369,11 +1377,24 @@ var I18N = {
       debug: '调试：'
     },
     verdict: { strong_match: '强烈推荐', apply: '建议投递', maybe: '可以试试', skip: '不建议' },
-    growthCat: { skill: '学习', project: '项目', action: '行动' }
+    growthCat: { skill: '学习', project: '项目', action: '行动' },
+    jobs: { title: '收藏的岗位', selectHint: '选择左侧项目查看详情' },
+    growth: { empty: '暂无计划，添加你的第一个学习任务吧' },
+    debug: {
+      trigger: '模拟督促触发', triggering: '触发中…',
+      note: '将 in_progress 任务回退 25h 并立即触发',
+      sent: '猴哥已发来 {n} 条督促消息',
+      noTasks: '没有符合条件的任务（需要 in_progress 且有 last_checkin_at）',
+      failed: '触发失败: {msg}',
+    },
+    salary: { from: '{n}K起', to: '最高{n}K' },
+    degree: { highSchool: '高中', associate: '大专', bachelor: '本科', master: '硕士', phd: '博士', other: '其他' },
   },
   en: {
     lang: { switch: 'cn' }, app: { title: 'OFFERKING', subtitle: 'AI Career Agent · Conversational' },
-    common: { close: 'Close', cancel: 'Cancel', confirm: 'Confirm' },
+    common: { close: 'Close', cancel: 'Cancel', confirm: 'Confirm',
+      processing: 'Processing…', browse: 'Browse', delete: 'Delete',
+      clickToToggle: 'Click to toggle', doubleClickToEdit: 'Double-click to edit' },
     auth: {
       login: 'Login', register: 'Register', email: 'Email',
       password: 'Password (min 6 chars)',
@@ -1387,7 +1408,9 @@ var I18N = {
       pricingNote: '1 point = ¥0.1, priced on DeepSeek V4 Flash token cost',
       confirmTitle: 'Confirm Points', confirmInterview: 'Mock interview costs <strong>20 points</strong>. Start?',
       confirmCost: '{label} will cost <strong>{cost} points</strong>. Continue?',
-      noPoints: 'Not enough points. Balance: ' },
+      noPoints: 'Not enough points. Balance: ',
+      dailySigned: 'Check-in +5.0',
+    },
     profile: {
       title: 'My Profile', empty: 'Click to complete profile',
       education: 'Education', projects: 'Projects', skills: 'Skills',
@@ -1407,7 +1430,8 @@ var I18N = {
       start: 'Start Interview', cancel: 'Cancel',
       answering: 'Your Answer', answerPlaceholder: 'Type your answer…',
       completed: 'Interview Complete', newRound: 'New Round',
-      exit: 'Exit Interview',
+      exit: 'Exit Interview', inProgress: 'Interview in progress', ttsTitle: 'Read question aloud', ttsLabel: 'TTS',
+      positionRequired: 'Please fill in the position',
     },
     chat: {
       online: 'DeepSeek · Online', newSession: 'New Chat',
@@ -1419,7 +1443,9 @@ var I18N = {
       error: 'Sorry, connection failed. Please retry.',
       noPoints: 'Insufficient points', noPointsHint: 'Insufficient points, please check in or top up',
       reset: 'Session reset. How can I help you?',
-      thinking: 'Thinking…'
+      thinking: 'Thinking…',
+      menu: 'Menu', voiceInput: 'Voice Input', micDevice: 'Select Microphone',
+      chips: { analyzeJD: 'Analyze JD', createResume: 'Create Resume', writePitch: 'Write Pitch', starStory: 'STAR Stories', searchJob: 'Search Jobs' },
     },
     resume: {
       new: 'New Resume', noResumes: 'No resumes',
@@ -1441,7 +1467,8 @@ var I18N = {
       loadFail: 'Failed to load resume', noResume: 'No resume',
       setDefault: 'Set as default', default: 'Default',
       parsing: 'Parsing file...',
-      parseSuccessHint: 'Parsed successfully! Please review and save.'
+      parseSuccessHint: 'Parsed successfully! Please review and save.',
+      professionalSummary: 'Professional Summary',
     },
     profileModal: {
       title: 'My Profile', statusTab: 'My Status', myTarget: 'My Target', growthPlan: 'Growth Plan',
@@ -1453,7 +1480,7 @@ var I18N = {
       skills: 'Skills / Tech Stack (type and press Enter)',
       projectsLabel: 'Projects / Portfolio (type and press Enter)',
       projectsPlaceholder: 'Project name or link',
-      save: 'Save Profile',
+      save: 'Save Profile', saved: 'Profile saved',
       targetRole: 'Target Role', targetRolePlaceholder: 'e.g. Backend Developer',
       targetIndustry: 'Target Industry', targetIndustryPlaceholder: 'e.g. FinTech / SaaS',
       minSalary: 'Min Salary (K/month)', maxSalary: 'Max Salary (K/month)',
@@ -1466,7 +1493,18 @@ var I18N = {
       debug: 'Debug:'
     },
     verdict: { strong_match: 'Strong Match', apply: 'Recommended', maybe: 'Maybe', skip: 'Skip' },
-    growthCat: { skill: 'Learning', project: 'Project', action: 'Action' }
+    growthCat: { skill: 'Learning', project: 'Project', action: 'Action' },
+    jobs: { title: 'Saved Jobs', selectHint: 'Select an item to view details' },
+    growth: { empty: 'No tasks yet. Add your first task!' },
+    debug: {
+      trigger: 'Trigger Check-in', triggering: 'Triggering…',
+      note: 'Rewind in_progress tasks by 25h and trigger immediately',
+      sent: 'Monkey King sent {n} check-in messages',
+      noTasks: 'No eligible tasks (requires in_progress with last_checkin_at)',
+      failed: 'Trigger failed: {msg}',
+    },
+    salary: { from: 'From {n}K', to: 'Up to {n}K' },
+    degree: { highSchool: 'High School', associate: 'Associate', bachelor: 'Bachelor', master: 'Master', phd: 'PhD', other: 'Other' },
   }
 };
 
@@ -1487,6 +1525,18 @@ function t(key, replacements) {
     }
   }
   return s;
+}
+
+function populateDegreeOptions() {
+  var sel = document.getElementById('pfDegree');
+  if (!sel) return;
+  var selectedVal = sel.value;
+  var opts = ['', 'highSchool', 'associate', 'bachelor', 'master', 'phd', 'other'];
+  sel.innerHTML = '<option value="">--</option>' + opts.slice(1).map(function(k) {
+    var label = t('degree.' + k);
+    return '<option value="' + label + '">' + label + '</option>';
+  }).join('');
+  if (selectedVal) sel.value = selectedVal;
 }
 
 function applyLanguage() {
@@ -1535,6 +1585,8 @@ function applyLanguage() {
   if ($('#ledgerModal').classList.contains('active')) {
     renderPricing();
   }
+  populateDegreeOptions();
+  fetchPoints();
 }
 
 function toggleLanguage() {
@@ -1644,7 +1696,7 @@ $('#authBtn').onclick = async () => {
       $('#authError').textContent = data.detail || t('auth.fail');
     }
   } catch (e) {
-    $('#authError').textContent = '网络错误，请检查连接后重试';
+    $('#authError').textContent = t('auth.networkError');
   }
   $('#authBtn').disabled = false;
   $('#authBtn').textContent = t('auth.login');
@@ -1697,15 +1749,17 @@ async function showApp(email) {
 var REASON_LABELS = {
   zh: {
     'chat': 'AI 对话', 'interview': '模拟面试', 'jd_score': 'JD 匹配分析',
-    'tailor_resume': 'AI 简历优化', 'cover_letter': 'AI 求职信',
-    'star_stories': 'STAR 故事生成', 'parse_resume': 'AI 简历制作',
-    'daily_login': '每日签到', 'register_bonus': '注册赠送',
+    'tailor_resume': 'AI 简历定制', 'optimize_resume': 'AI 简历优化',
+    'diagnose_resume': 'AI 简历诊断', 'cover_letter': 'AI 求职信',
+    'create_resume': 'AI 简历制作', 'star_stories': 'STAR 故事生成',
+    'parse_resume': 'AI 简历制作', 'daily_login': '每日签到', 'register_bonus': '注册赠送',
   },
   en: {
     'chat': 'AI Chat', 'interview': 'Mock Interview', 'jd_score': 'JD Analysis',
-    'tailor_resume': 'Resume Tailor', 'cover_letter': 'Cover Letter',
-    'star_stories': 'STAR Stories', 'parse_resume': 'Resume Parsing',
-    'daily_login': 'Daily Check-in', 'register_bonus': 'Welcome Bonus',
+    'tailor_resume': 'Resume Tailor', 'optimize_resume': 'Resume Optimize',
+    'diagnose_resume': 'Resume Diagnosis', 'cover_letter': 'Cover Letter',
+    'create_resume': 'Resume Creation', 'star_stories': 'STAR Stories',
+    'parse_resume': 'Resume Parsing', 'daily_login': 'Daily Check-in', 'register_bonus': 'Welcome Bonus',
   }
 };
 function _reasonLabel(r) { return (REASON_LABELS[_lang] || REASON_LABELS['zh'])[r] || r; }
@@ -1732,7 +1786,7 @@ async function dailyBonus() {
   if (!res.ok) return;
   const d = await res.json();
   $('#pointsBalance').textContent = d.balance;
-  $('#pointsToday').textContent = '签到 +5.0';
+  $('#pointsToday').textContent = t('points.dailySigned');
   $('#pointsToday').className = 'points-today';
   const btn = $('#btnDaily');
   if (d.credited) {
@@ -1806,7 +1860,7 @@ async function closeConfirmModal(confirmed) {
   if (confirmed && _confirmCallback) {
     var btn = $('#btnConfirmOk');
     btn.disabled = true;
-    btn.textContent = '处理中…';
+    btn.textContent = t('common.processing');
     await _confirmCallback();
     btn.disabled = false;
     btn.textContent = t('common.confirm');
@@ -1892,8 +1946,8 @@ function renderSidebarTarget() {
   if (p.salary_range) salaryText = p.salary_range;
   else if (p.salary_min || p.salary_max) {
     if (p.salary_min && p.salary_max) salaryText = `${p.salary_min}K-${p.salary_max}K`;
-    else if (p.salary_min) salaryText = `${p.salary_min}K起`;
-    else salaryText = `最高${p.salary_max}K`;
+    else if (p.salary_min) salaryText = t('salary.from', {n: p.salary_min});
+    else salaryText = t('salary.to', {n: p.salary_max});
   }
   if (salaryText) parts.push({ label: t('profile.salaryLabel') || '薪资', val: salaryText });
 
@@ -1967,8 +2021,8 @@ async function saveProfile() {
   const salaryMax = parseInt($('#pfSalaryMax').value) || null;
   let salaryRange = '';
   if (salaryMin && salaryMax) salaryRange = `${salaryMin}K-${salaryMax}K`;
-  else if (salaryMin) salaryRange = `${salaryMin}K起`;
-  else if (salaryMax) salaryRange = `最高${salaryMax}K`;
+  else if (salaryMin) salaryRange = t('salary.from', {n: salaryMin});
+  else if (salaryMax) salaryRange = t('salary.to', {n: salaryMax});
 
   const payload = {
     name: $('#pfName').value.trim(),
@@ -1992,7 +2046,7 @@ async function saveProfile() {
     updateUserDisplay();
     renderProfileCard();
     $('#profileModal').classList.remove('active');
-    toast(_lang === 'zh' ? '画像已保存' : 'Profile saved');
+    toast(t('profileModal.saved'));
   } else {
     const d = await res.json();
     toast(d.detail || t('resume.saveFail'));
@@ -2016,7 +2070,7 @@ document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(bt
 // Interview modal
 function confirmStartInterview() {
   var position = $('#ivPosition').value.trim();
-  if (!position) { toast('请填写岗位名称'); return; }
+  if (!position) { toast(t('interview.positionRequired')); return; }
   var balance = parseFloat($('#pointsBalance').textContent) || 0;
   if (balance < 20) { toast(t('points.noPoints') + balance); return; }
   showConfirmModal(t('points.confirmInterview'), function() { startInterview(); });
@@ -2132,21 +2186,22 @@ function renderSidebarGrowth() {
 function renderGrowthList() {
   const container = $('#growthList');
   if (!growthTasks.length) {
-    container.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;font-size:13px;">暂无计划，添加你的第一个学习任务吧</p>';
+    container.innerHTML = '<p style="color:var(--text2);text-align:center;padding:20px;font-size:13px;">' + escHtml(t('growth.empty')) + '</p>';
     return;
   }
   const catLabels = { skill: t('growthCat.skill'), project: t('growthCat.project'), action: t('growthCat.action') };
   const catOptions = ['skill','project','action'].map(function(v) {
     return '<option value="' + v + '"' + '>' + (catLabels[v] || v) + '</option>';
   }).join('');
+  var _t = t;
   container.innerHTML = growthTasks.map(function(t) {
     return '<div class="growth-item" data-tid="' + t.id + '">'
-      + '<span class="gi-status ' + t.status + '" onclick="toggleGrowthTask(\'' + t.id + '\')" title="点击切换状态"></span>'
-      + '<span class="gi-title ' + (t.status === 'done' ? 'done' : '') + '" id="gt-' + t.id + '" ondblclick="editGrowthTitle(\'' + t.id + '\')" title="双击编辑">' + esc(t.title) + '</span>'
+      + '<span class="gi-status ' + t.status + '" onclick="toggleGrowthTask(\'' + t.id + '\')" title="' + _t('common.clickToToggle') + '"></span>'
+      + '<span class="gi-title ' + (t.status === 'done' ? 'done' : '') + '" id="gt-' + t.id + '" ondblclick="editGrowthTitle(\'' + t.id + '\')" title="' + _t('common.doubleClickToEdit') + '">' + esc(t.title) + '</span>'
       + '<select class="gi-cat-sel" onchange="changeGrowthCat(\'' + t.id + '\', this.value)">'
       +   catOptions.replace('value="' + t.category + '"', 'value="' + t.category + '" selected')
       + '</select>'
-      + '<button class="gi-del" onclick="deleteGrowthTask(\'' + t.id + '\')" title="删除">&times;</button>'
+      + '<button class="gi-del" onclick="deleteGrowthTask(\'' + t.id + '\')" title="' + _t('common.delete') + '">&times;</button>'
       + '</div>';
   }).join('');
 }
@@ -2185,35 +2240,33 @@ function changeGrowthCat(tid, cat) {
 async function triggerDebugCheckin() {
   var btn = event.target;
   btn.disabled = true;
-  btn.textContent = '触发中...';
+  btn.textContent = t('debug.triggering');
   try {
     var res = await api('/api/debug/trigger-checkin', { method: 'POST', body: JSON.stringify({ hours_ago: 25 }) });
     var data = await res.json();
     if (res.ok && data.checkins && data.checkins.length > 0) {
-      // 关闭画像弹窗，切到聊天 tab
       $('#profileModal').classList.remove('active');
       switchTab('tabChat');
-      // 把督促消息逐条显示（复用 checkin 消息格式，避免和轮询重复）
       data.checkins.reverse().forEach(function(c) {
         if (!seenCheckins.has(c.id)) {
           seenCheckins.add(c.id);
           addCheckinMessage(c);
         }
       });
-      toast('猴哥已发来 ' + data.checkins.length + ' 条督促消息');
+      toast(t('debug.sent', {n: data.checkins.length}));
     } else {
-      toast('没有符合条件的任务（需要 in_progress 且有 last_checkin_at）');
+      toast(t('debug.noTasks'));
     }
   } catch(e) {
-    toast('触发失败: ' + e.message);
+    toast(t('debug.failed', {msg: e.message}));
   }
   btn.disabled = false;
-  btn.textContent = '模拟督促触发';
+  btn.textContent = t('debug.trigger');
 }
 
 /* ═══ Resume HTML Renderer (career-ops Chinese Minimal) ═══ */
 function renderResumeHTML(md, title) {
-  var rawHtml = typeof marked !== 'undefined' ? marked.parse(md || '') : (md || '').replace(/\n/g, '<br>');
+  var rawHtml = (typeof marked !== 'undefined' && typeof marked.parse === 'function') ? marked.parse(md || '') : (md || '').replace(/\n/g, '<br>');
   title = title || '';
 
   // Post-process: wrap h2 sections, add classes
@@ -2266,17 +2319,17 @@ function renderResumeHTML(md, title) {
   var bodyHtml = '';
 
   sections.forEach(function(sec) {
-    var t = sec.title.toLowerCase();
-    var isSummary = !t || t.indexOf('总结') !== -1 || t.indexOf('概述') !== -1 || t.indexOf('summary') !== -1 || t.indexOf('profile') !== -1;
-    var isSkills = t.indexOf('技能') !== -1 || t.indexOf('skills') !== -1 || t.indexOf('技术栈') !== -1;
-    var isContact = t.indexOf('联系') !== -1 || t.indexOf('contact') !== -1 || t.indexOf('个人信息') !== -1;
+    var _title = sec.title.toLowerCase();
+    var isSummary = !_title || _title.indexOf('总结') !== -1 || _title.indexOf('概述') !== -1 || _title.indexOf('summary') !== -1 || _title.indexOf('profile') !== -1;
+    var isSkills = _title.indexOf('技能') !== -1 || _title.indexOf('skills') !== -1 || _title.indexOf('技术栈') !== -1;
+    var isContact = _title.indexOf('联系') !== -1 || _title.indexOf('contact') !== -1 || _title.indexOf('个人信息') !== -1;
 
     if (isContact) {
       contactHtml = sec.items.map(function(i) { return i.html; }).join('');
       return;
     }
     if (isSummary) {
-      summaryHtml = '<div class="section"><div class="section-title">专业概述</div><div class="summary-text">' + sec.items.map(function(i) { return i.html; }).join('') + '</div></div>';
+      summaryHtml = '<div class="section"><div class="section-title">' + t('resume.professionalSummary') + '</div><div class="summary-text">' + sec.items.map(function(i) { return i.html; }).join('') + '</div></div>';
       return;
     }
     if (isSkills) {
@@ -2750,7 +2803,7 @@ async function openResume(rid) {
 
   // Show raw markdown preview in edit modal
   if (currentModalContent) {
-    var html = typeof marked !== 'undefined' ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
+    var html = (typeof marked !== 'undefined' && typeof marked.parse === 'function') ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
     $('#resumePreview').innerHTML = html;
     $('#resumePreview').style.display = 'block';
     $('#resumePreview').classList.remove('resume-styled');
@@ -2856,6 +2909,7 @@ function selectMdItem(idx) {
     const r = resumes[idx];
     if (!r) return;
     // Fetch resume content for detail
+    detail.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2);">' + t('common.processing') + '</div>';
     api(`/api/resume/${r.id}`).then(res => {
       if (!res.ok) { detail.innerHTML = '<p style="color:var(--text2);">加载失败</p>'; return; }
       res.json().then(data => {
@@ -2876,8 +2930,8 @@ function selectMdItem(idx) {
             ${!r.is_default ? `<button class="tb-btn" style="margin-left:auto;" onclick="event.stopPropagation();api('/api/resume/${r.id}/default',{method:'POST'}).then(()=>{refreshResumes().then(()=>{renderMdLeft();selectMdItem(idx)})});">${t('resume.setDefault')}</button>` : '<span style="margin-left:auto;font-size:10px;color:var(--accent);padding:2px 8px;background:rgba(108,138,255,0.1);border-radius:8px;">' + t('resume.default') + '</span>'}
           </div>
           <div class="resume-styled">${styled.body}</div>`;
-      });
-    });
+      }).catch(function(e) { detail.innerHTML = '<p style="color:var(--red);padding:20px;">' + esc(e.message) + '</p>'; });
+    }).catch(function(e) { detail.innerHTML = '<p style="color:var(--red);padding:20px;">' + esc(e.message) + '</p>'; });
   } else {
     const j = savedJobs[idx];
     if (!j) return;
@@ -2977,7 +3031,7 @@ async function handleFileUpload(file) {
       uploadStatus.textContent = t('resume.parseSuccessHint');
       uploadStatus.style.color = 'var(--green)';
       if (currentModalContent) {
-        var html = typeof marked !== 'undefined' ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
+        var html = (typeof marked !== 'undefined' && typeof marked.parse === 'function') ? marked.parse(currentModalContent) : currentModalContent.replace(/\n/g, '<br>');
         $('#resumePreview').innerHTML = html;
         $('#resumePreview').style.display = 'block';
         $('#resumePreview').classList.remove('resume-styled');
@@ -3370,7 +3424,7 @@ function openInterviewSetup() {
 
 async function startInterview() {
   var position = $('#ivPosition').value.trim();
-  if (!position) { toast('请填写岗位名称'); return; }
+  if (!position) { toast(t('interview.positionRequired')); return; }
   var company = $('#ivCompany').value.trim();
   var jdText = $('#ivJd').value.trim();
 
