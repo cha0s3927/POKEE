@@ -767,6 +767,8 @@ body {
     width: 100vw; max-width: 100vw; height: 92dvh; max-height: 92dvh;
     border-radius: 14px 14px 0 0; padding: 20px 16px;
   }
+  #confirmModal .modal-box { width: auto; height: auto; max-width: 90vw; max-height: 85vh; border-radius: 14px; }
+  #confirmModal.modal-overlay { align-items: center; }
   .modal-box h3 { font-size: 15px; }
   .modal-box .field label { font-size: 11px; }
   .modal-box .field input { padding: 10px 12px; font-size: 16px; }
@@ -864,7 +866,7 @@ body {
       </div>
       <div class="section-label clickable" onclick="openProfileModal();closeSidebar()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span data-i18n="profile.title">我的画像</span>
+        <span data-i18n="profile.title">我的现状</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
       </div>
       <div id="sidebarProfile" style="padding: 0 4px 8px 20px;"></div>
@@ -1700,9 +1702,16 @@ function showConfirmModal(msg, callback) {
   $('#confirmModal').classList.add('active');
   _confirmCallback = callback;
 }
-function closeConfirmModal(confirmed) {
+async function closeConfirmModal(confirmed) {
+  if (confirmed && _confirmCallback) {
+    var btn = $('#btnConfirmOk');
+    btn.disabled = true;
+    btn.textContent = '处理中…';
+    await _confirmCallback();
+    btn.disabled = false;
+    btn.textContent = t('common.confirm');
+  }
   $('#confirmModal').classList.remove('active');
-  if (confirmed && _confirmCallback) _confirmCallback();
   _confirmCallback = null;
 }
 $('#confirmModal').onclick = function(e) { if (e.target === $('#confirmModal')) closeConfirmModal(false); };
@@ -2966,20 +2975,33 @@ $('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
 
 /* ═══ Chat ═══ */
 async function sendConfirmMessage(originalMsg) {
-  // Re-send the original message with confirm marker to execute pending tool
   showTyping(true);
   var confirmMsg = '[CONFIRM_PREMIUM] ' + originalMsg;
-  var res = await api('/api/chat', { method: 'POST', body: JSON.stringify({ message: confirmMsg }) });
-  showTyping(false);
-  if (res.ok) {
-    var data = await res.json();
-    addMessage('assistant', data.reply);
-    if (data.tool_calls && data.tool_calls.length > 0) {
-      addToolIndicator(data.tool_calls);
+  try {
+    var res = await api('/api/chat', { method: 'POST', body: JSON.stringify({ message: confirmMsg }) });
+    showTyping(false);
+    if (res.ok) {
+      var data = await res.json();
+      addMessage('assistant', data.reply);
+      if (data.tool_calls && data.tool_calls.length > 0) {
+        addToolIndicator(data.tool_calls);
+      }
+      if (data.balance !== undefined) await fetchPoints();
+      refreshResumes();
+      refreshSavedJobs();
+    } else if (res.status === 402) {
+      var errData = await res.json();
+      addMessage('assistant', errData.detail || '积分不足');
+      toast(errData.detail || '积分不足，操作未执行');
+    } else {
+      var errData2 = await res.json();
+      addMessage('assistant', errData2.detail || '操作失败，请重试');
+      toast(errData2.detail || '操作失败');
     }
-    if (data.balance !== undefined) fetchPoints();
-    refreshResumes();
-    refreshSavedJobs();
+  } catch (e) {
+    showTyping(false);
+    addMessage('assistant', '网络错误，请重试');
+    toast('网络错误，请重试');
   }
 }
 
@@ -3018,7 +3040,7 @@ async function sendMessage() {
     if (data.tool_calls && data.tool_calls.length > 0) {
       addToolIndicator(data.tool_calls);
     }
-    if (data.balance !== undefined) fetchPoints();
+    if (data.balance !== undefined) await fetchPoints();
     // Premium tool needs confirmation
     if (data.confirm_needed) {
       var cf = data.confirm_needed;
@@ -3231,7 +3253,7 @@ async function startInterview() {
   $('#chatInput').placeholder = t('interview.answerPlaceholder') || '输入你的回答…';
   var hint = document.querySelector('.input-hint'); if (hint) hint.style.display = 'none';
   $('#chatInput').focus();
-  if (data.balance !== undefined) fetchPoints();
+  if (data.balance !== undefined) await fetchPoints();
 }
 
 async function submitInterviewAnswer(answer) {
@@ -3253,7 +3275,7 @@ async function submitInterviewAnswer(answer) {
     }
 
     addMessage('assistant', data.message, false);
-    if (data.balance !== undefined) fetchPoints();
+    if (data.balance !== undefined) await fetchPoints();
 
     if (data.status === 'done') {
       exitInterview(true);
