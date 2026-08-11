@@ -111,6 +111,12 @@ def start_interview(req: StartRequest, user: dict = Depends(auth_user)):
         profile = json.loads(row.profile) if row and row.profile else {}
         req.position = profile.get("target_role", "").strip()
 
+    from database import spend_points
+    try:
+        spend_points(user["id"], 200, "interview")
+    except ValueError as e:
+        return {"error": "no_points", "message": str(e) or "积分不足"}
+
     session = get_session(user["id"])
     try:
         session.start(
@@ -144,13 +150,8 @@ def submit_answer(req: AnswerRequest, user: dict = Depends(auth_user)):
     if session.status != "waiting":
         return {"error": "not_waiting", "message": "当前没有等待回答的面试题"}
 
-    from database import spend_points, engine
+    from database import engine
     from sqlalchemy import text
-    try:
-        spend_points(user["id"], 10, "interview")
-    except ValueError as e:
-        return {"error": "no_points", "message": str(e) or "积分不足"}
-
     reply = session.handle_answer(req.answer)
     if reply is None:
         return {"error": "internal", "message": "处理失败"}

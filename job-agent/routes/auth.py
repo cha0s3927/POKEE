@@ -79,7 +79,7 @@ def register(req: RegisterRequest):
 
         conn.execute(
             text("INSERT INTO users (id, email, password_hash, token, created_at, persona, points, lang) "
-                 "VALUES (:id, :email, :ph, :token, :now, 'default', 50, 'zh')"),
+                 "VALUES (:id, :email, :ph, :token, :now, 'default', 300, 'zh')"),
             {"id": uid, "email": email, "ph": password_hash, "token": token, "now": now},
         )
         conn.commit()

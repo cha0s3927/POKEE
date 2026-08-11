@@ -382,11 +382,21 @@ MAX_TOOL_ITERATIONS = 5
 MAX_MESSAGES = 101
 
 
+# Premium tools that require user confirmation before execution
+PREMIUM_TOOLS = {
+    "tailor_resume":     {"cost": 10, "label_zh": "AI 简历优化", "label_en": "Resume Tailor"},
+    "parse_resume_text": {"cost": 6,  "label_zh": "AI 简历制作", "label_en": "Resume Parsing"},
+    "score_job":         {"cost": 3,  "label_zh": "JD 匹配分析",  "label_en": "JD Analysis"},
+    "generate_pitch":    {"cost": 8,  "label_zh": "AI 招呼语",   "label_en": "Self Pitch"},
+    "generate_cover":    {"cost": 8,  "label_zh": "AI 求职信",   "label_en": "Cover Letter"},
+}
+
 class Agent:
     def __init__(self):
         self.sessions: dict[str, list[dict]] = {}
-        self._last_tailored: dict[str, str] = {}  # user_id → markdown（工作流约束：缓存最新生成的简历）
+        self._last_tailored: dict[str, str] = {}  # user_id → markdown
         self._langs: dict[str, str] = {}  # user_id → lang
+        self._pending_tool: dict[str, dict] = {}  # user_id → {name, args, cost, label}
 
     def _build_prompt(self, has_resume: bool, lang: str) -> str:
         prompt = SYSTEM_PROMPT if has_resume else ONBOARDING_PROMPT
@@ -396,7 +406,28 @@ class Agent:
             prompt += "\n\n请始终用中文回复。"
         return prompt
 
-    def chat(self, user_id: str, user_message: str) -> tuple[str, list[str]]:
+    def chat(self, user_id: str, user_message: str) -> dict:
+        """Returns {"reply": str, "tool_calls": [str], "confirm_needed": dict|None}"""
+        # Handle confirmation of pending premium tool
+        if user_id in self._pending_tool and "[CONFIRM_PREMIUM]" in user_message:
+            pending = self._pending_tool[user_id]
+            result = self._execute(pending["name"], pending["args"], user_id)
+            if result.get("__confirm__"):
+                # Still blocked — shouldn't happen if confirmed properly
+                return {"reply": "确认失败，请重试。", "tool_calls": [], "confirm_needed": result}
+            # Execute succeeded, now generate a proper reply
+            lang = get_user_lang(user_id)
+            label = pending.get("label_zh" if lang == "zh" else "label_en", pending["name"])
+            reply = f"好的！{label}已完成，来看看结果吧~"
+            # If tool returned markdown/text, append it
+            if result.get("markdown"):
+                reply += "\n\n" + result["markdown"][:3000]
+            elif result.get("text"):
+                reply += "\n\n" + result["text"][:3000]
+            elif result.get("total") is not None:
+                # score_job result
+                reply += f"\n\n总分: {result['total']}/100\n建议: {result.get('verdict', '')}"
+            return {"reply": reply, "tool_calls": [pending["name"]], "confirm_needed": None}
         from database import engine, get_user_lang
         from sqlalchemy import text
 
@@ -432,11 +463,12 @@ class Agent:
             messages.append({"role": "assistant", "content": reply})
             if len(messages) > MAX_MESSAGES:
                 self.sessions[user_id] = [messages[0]] + messages[-(MAX_MESSAGES - 1):]
-            return reply, tool_calls_made
+            return {"reply": reply, "tool_calls": tool_calls_made, "confirm_needed": None}
 
         messages.append({"role": "user", "content": user_message})
 
         tool_calls_made: list[str] = []
+        confirm_needed = None
 
         for _ in range(MAX_TOOL_ITERATIONS):
             response = client.chat.completions.create(
@@ -473,6 +505,8 @@ class Agent:
 
                     logger.info("tool_call: %s args=%s", name, {k: str(v)[:100] for k, v in args.items()})
                     result = self._execute(name, args, user_id)
+                    if result.get("__confirm__"):
+                        confirm_needed = result
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
@@ -487,11 +521,21 @@ class Agent:
                         keep_from -= 1
                     self.sessions[user_id] = [messages[0]] + messages[keep_from:]
 
-                return msg.content, tool_calls_made
+                return {"reply": msg.content, "tool_calls": tool_calls_made, "confirm_needed": confirm_needed}
 
-        return "抱歉，处理超时，请重试。", tool_calls_made
+        return {"reply": "抱歉，处理超时，请重试。", "tool_calls": tool_calls_made, "confirm_needed": None}
 
     def _execute(self, name: str, args: dict, user_id: str) -> dict:
+        # Gate premium tools: require user confirmation before execution
+        if name in PREMIUM_TOOLS:
+            pending = self._pending_tool.get(user_id)
+            if not pending or pending.get("name") != name:
+                info = PREMIUM_TOOLS[name]
+                self._pending_tool[user_id] = {"name": name, "args": args, "cost": info["cost"], "label_zh": info["label_zh"], "label_en": info["label_en"]}
+                return {"__confirm__": True, "tool": name, "cost": info["cost"], "label_zh": info["label_zh"], "label_en": info["label_en"]}
+            # User confirmed — clear pending and proceed
+            self._pending_tool.pop(user_id, None)
+
         from engine import score_job
         from resume import (
             list_resumes, get_resume, save_resume, get_default_resume,
@@ -505,8 +549,11 @@ class Agent:
             if len(text) < 50:
                 return {"error": "简历内容太短，请粘贴完整的简历"}
             try:
+                from database import spend_points
+                spend_points(user_id, 50, "parse_resume")
                 markdown = self._clean_resume_text(text, user_id)
                 result = save_resume(user_id, name_val, markdown)
+                logger.info(f"parse_resume_text OK: user={user_id} resume_id={result['resume_id']}")
                 return {"status": "ok", "resume_id": result["resume_id"], "name": name_val, "message": f"简历「{name_val}」已解析并保存"}
             except Exception as e:
                 logger.exception("parse_resume_text error")
@@ -541,8 +588,10 @@ class Agent:
                 return {"error": "请传入完整的 Markdown 简历内容"}
 
             try:
+                logger.info(f"save_my_resume called: user={user_id} name={name_val} len={len(markdown)} resume_id={resume_id}")
                 result = save_resume(user_id, name_val, markdown, resume_id)
                 action = "已更新" if resume_id else "已保存"
+                logger.info(f"save_my_resume OK: resume_id={result['resume_id']}")
                 return {"status": "ok", "resume_id": result["resume_id"], "message": f"简历「{name_val}」{action}"}
             except Exception as e:
                 logger.exception("save_my_resume error")
@@ -565,6 +614,8 @@ class Agent:
             if len(jd_text) < 20:
                 return {"error": "jd_too_short", "message": "JD 内容太短，请粘贴完整的岗位描述"}
             try:
+                from database import spend_points
+                spend_points(user_id, 20, "jd_score")
                 result = score_job(markdown, jd_text)
                 return {
                     "total": result.total,
@@ -590,6 +641,8 @@ class Agent:
             if len(jd_text) < 20:
                 return {"error": "jd_too_short", "message": "JD 内容太短"}
             try:
+                from database import spend_points
+                spend_points(user_id, 90, "tailor_resume")
                 markdown = tailor_resume(resume_id, jd_text)
                 self._last_tailored[user_id] = markdown
                 return {"markdown": markdown}
@@ -620,6 +673,8 @@ class Agent:
             if not resume_id:
                 return {"error": "no_resume", "message": "请先上传简历"}
             try:
+                from database import spend_points
+                spend_points(user_id, 70, "cover_letter")
                 text = generate_pitch(user_id, jd_text, resume_id)
                 return {"text": text}
             except Exception as e:
@@ -635,6 +690,8 @@ class Agent:
             if not resume_id:
                 return {"error": "no_resume", "message": "请先上传简历"}
             try:
+                from database import spend_points
+                spend_points(user_id, 70, "cover_letter")
                 text = generate_cover(user_id, jd_text, resume_id)
                 return {"text": text}
             except Exception as e:

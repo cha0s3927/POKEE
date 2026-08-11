@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from routes.auth import auth_user
 from resume import get_resume_content, get_default_resume
 from engine import score_job
+from database import spend_points
 
 router = APIRouter(tags=["score"])
 
@@ -45,6 +46,11 @@ def api_score(req: ScoreRequest, user: dict = Depends(auth_user)):
 
     if not content:
         raise HTTPException(400, "请先在「简历管理」中上传简历")
+
+    try:
+        spend_points(user["id"], 30, "jd_score")
+    except ValueError as e:
+        raise HTTPException(402, str(e))
 
     result = score_job(content, req.jd_text)
     return {

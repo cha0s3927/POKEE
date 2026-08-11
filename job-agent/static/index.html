@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OfferDash — AI Agent</title>
+<title>OFFERKING — AI Agent</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -15,11 +15,11 @@
 :focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(108,138,255,0.4); border-radius: var(--radius-sm); }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  background: var(--bg); color: var(--text); height: 100vh; overflow: hidden;
+  background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; overflow: hidden;
 }
 
 /* Auth */
-.auth-container { display: flex; align-items: center; justify-content: center; height: 100vh; }
+.auth-container { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; }
 .auth-box {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
   padding: 40px 36px; width: 380px; max-width: 90vw;
@@ -53,7 +53,7 @@ body {
 .auth-error { color: var(--red); font-size: 12px; text-align: center; margin-top: 12px; min-height: 18px; }
 
 /* App */
-.app { display: none; height: 100vh; }
+.app { display: none; height: 100vh; height: 100dvh; }
 .app.active { display: flex; }
 .sidebar {
   width: 260px; background: var(--surface); border-right: 1px solid var(--border);
@@ -76,11 +76,38 @@ body {
 .user-detail { overflow: hidden; }
 .user-name { font-size: 13px; font-weight: 600; color: var(--text); }
 .user-email { font-size: 11px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.points-card { padding: 14px 20px; border-bottom: 1px solid var(--border); text-align: center; }
+.points-card { padding: 14px 20px; border-bottom: 1px solid var(--border); text-align: center; cursor: pointer; transition: background 0.15s; }
+.points-card:hover { background: rgba(108,138,255,0.04); }
 .points-balance { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .points-label { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
 .points-today { font-size: 11px; color: var(--green); margin-top: 2px; min-height: 16px; }
+.points-today.neg { color: var(--red); }
 .points-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+/* Points ledger */
+.ledger-list { max-height: 360px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.ledger-list::-webkit-scrollbar { width: 4px; }
+.ledger-list::-webkit-scrollbar-track { background: transparent; }
+.ledger-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.ledger-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.ledger-item:last-child { border-bottom: none; }
+.ledger-reason { color: var(--text); flex: 1; }
+.ledger-time { color: var(--text2); font-size: 11px; margin-right: 12px; white-space: nowrap; }
+.ledger-amount { font-weight: 600; white-space: nowrap; }
+.ledger-amount.neg { color: var(--red); }
+.ledger-amount.pos { color: var(--green); }
+.tool-indicator { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 16px 12px; }
+.tool-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(108,138,255,0.1); color: var(--accent); }
+.ledger-grid { display: flex; gap: 24px; }
+.ledger-col { flex: 1; min-width: 0; }
+.ledger-col:first-child { flex: 1.2; }
+.ledger-col-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.pricing-table { display: flex; flex-direction: column; gap: 0; }
+.pricing-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.pricing-item:last-child { border-bottom: none; }
+.pricing-feature { color: var(--text); flex: 1; }
+.pricing-cost { font-weight: 600; color: var(--accent); white-space: nowrap; margin-left: 8px; }
+.pricing-note { font-size: 11px; color: var(--text2); margin-top: 10px; line-height: 1.5; }
+@media (max-width: 560px) { .ledger-grid { flex-direction: column; gap: 16px; } }
 .daily-btn { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 3px 14px; border-radius: 20px; cursor: pointer; font-size: 11px; transition: all 0.15s; white-space: nowrap; }
 .daily-btn:hover { background: var(--green); color: #fff; }
 .daily-btn.done { opacity: 0.5; cursor: default; border-color: var(--text2); color: var(--text2); }
@@ -786,7 +813,7 @@ body {
 <div class="auth-container" id="authPage">
   <div class="auth-box" style="position:relative">
     <span class="lang-switch auth-lang" onclick="toggleLanguage()" data-i18n="lang.switch">EN</span>
-    <h1 data-i18n="app.title">Offer大圣</h1>
+    <h1 data-i18n="app.title">OFFERKING</h1>
     <p class="sub" data-i18n="app.subtitle">AI 求职 Agent · 聊天式交互</p>
     <div class="auth-tabs">
       <button id="tabLogin" class="active" data-i18n="auth.login">登录</button>
@@ -810,7 +837,7 @@ body {
   <aside class="sidebar">
     <div class="sidebar-header">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <h1 style="margin:0" data-i18n="app.title">Offer大圣</h1>
+        <h1 style="margin:0" data-i18n="app.title">OFFERKING</h1>
         <span class="lang-switch header-lang" onclick="toggleLanguage()" data-i18n="lang.switch">EN</span>
       </div>
       <div class="user-card">
@@ -821,7 +848,7 @@ body {
         </div>
       </div>
     </div>
-    <div class="points-card" id="pointsCard">
+    <div class="points-card" id="pointsCard" onclick="openLedgerModal()" data-i18n-title="points.ledgerHint" title="点击查看积分明细">
       <div class="points-balance" id="pointsBalance">0</div>
       <div class="points-label" data-i18n="points.label">积分</div>
       <div class="points-row">
@@ -888,7 +915,7 @@ body {
 
     <div class="messages" id="messages">
       <div class="welcome" id="welcomeMsg">
-        <h2>Offer大圣</h2>
+        <h2>OFFERKING</h2>
         <p>有简历？直接粘贴给我，帮你分析 JD、定制投递版。<br><br><span style="color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</span><br><br><span style="color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容<br>也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></span></p>
       </div>
     </div>
@@ -900,7 +927,6 @@ body {
       </button>
       <select id="micDevice" class="mic-select" style="display:none" title="选择麦克风"></select>
       <span id="recTimer" style="display:none; color:var(--red); font-size:12px; font-weight:600; min-width:36px;"></span>
-      <span class="input-hint" data-i18n="chat.shiftHint">Shift+Enter 换行</span>
       <button id="btnSend" data-i18n="chat.send">发送</button>
     </div>
   </main>
@@ -932,9 +958,13 @@ body {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           下载 PDF
         </button>
+        <button class="btn-export" onclick="exportResumeWord()" title="下载为 Word 文件 (.docx)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          下载 Word
+        </button>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn-cancel" id="btnModalClose">取消</button>
+        <button class="btn-cancel" id="btnModalClose" data-i18n="common.cancel">取消</button>
         <button class="btn-save" id="btnModalSave">保存</button>
       </div>
     </div>
@@ -946,7 +976,7 @@ body {
   <div class="modal-box" style="width:92vw;max-width:1200px;padding:24px 28px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <h3 id="browseTitle" style="margin:0;">浏览</h3>
-      <button class="btn-cancel" id="btnBrowseClose" style="font-size:11px;padding:4px 12px;">关闭</button>
+      <button class="btn-cancel" id="btnBrowseClose" style="font-size:11px;padding:4px 12px;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span data-i18n="common.close">关闭</span></button>
     </div>
     <div class="md-container">
       <div class="md-left" id="mdLeft"></div>
@@ -967,7 +997,7 @@ body {
     <h3>收藏的岗位</h3>
     <div id="savedJobsDetail"></div>
     <div class="modal-btns">
-      <button class="btn-cancel" id="btnJobsModalClose">关闭</button>
+      <button class="btn-cancel" id="btnJobsModalClose" data-i18n="common.close">关闭</button>
     </div>
   </div>
 </div>
@@ -977,7 +1007,7 @@ body {
   <div class="modal-box" style="max-width:620px;">
     <h3 data-i18n="profileModal.title">我的画像</h3>
     <div class="profile-modal-tabs">
-      <button class="active" data-tab="tabStatus" data-i18n="profile.title">我的现状</button>
+      <button class="active" data-tab="tabStatus" data-i18n="profileModal.statusTab">我的现状</button>
       <button data-tab="tabTarget" data-i18n="profileModal.myTarget">我的目标</button>
       <button data-tab="tabGrowth" data-i18n="profileModal.growthPlan">成长计划</button>
     </div>
@@ -985,20 +1015,20 @@ body {
     <!-- Tab 1: 现状 -->
     <div class="profile-tab active" id="tabStatus">
       <div class="field">
-        <label>姓名</label>
-        <input type="text" id="pfName" placeholder="你的名字">
+        <label data-i18n="profileModal.name">姓名</label>
+        <input type="text" id="pfName" data-i18n-placeholder="profileModal.namePlaceholder" placeholder="你的名字">
       </div>
       <div class="field">
-        <label>学校</label>
-        <input type="text" id="pfSchool" placeholder="XX大学">
+        <label data-i18n="profileModal.school">学校</label>
+        <input type="text" id="pfSchool" data-i18n-placeholder="profileModal.schoolPlaceholder" placeholder="XX大学">
       </div>
       <div style="display:flex;gap:10px;">
         <div class="field" style="flex:1;">
-          <label>专业</label>
-          <input type="text" id="pfMajor" placeholder="计算机科学与技术">
+          <label data-i18n="profileModal.major">专业</label>
+          <input type="text" id="pfMajor" data-i18n-placeholder="profileModal.majorPlaceholder" placeholder="计算机科学与技术">
         </div>
         <div class="field" style="flex:1;">
-          <label>学历</label>
+          <label data-i18n="profileModal.degree">学历</label>
           <select id="pfDegree">
             <option value="">--</option>
             <option value="高中">高中</option>
@@ -1010,19 +1040,19 @@ body {
         </div>
       </div>
       <div class="field">
-        <label>技能 / 技术栈（输入后按回车添加）</label>
+        <label data-i18n="profileModal.skills">技能 / 技术栈（输入后按回车添加）</label>
         <div class="tag-input-wrap" id="pfSkills">
           <input type="text" id="pfSkillsInput" placeholder="如 Python, Go, React...">
         </div>
       </div>
       <div class="field">
-        <label>工作经历摘要（一句话描述）</label>
-        <input type="text" id="pfExpSummary" placeholder="如: 3年SaaS后端开发经验">
+        <label data-i18n="profileModal.expSummary">工作经历摘要</label>
+        <input type="text" id="pfExpSummary" data-i18n-placeholder="profileModal.expPlaceholder" placeholder="如: 3年SaaS后端开发经验">
       </div>
       <div class="field">
-        <label>项目 / 作品集（输入后按回车添加）</label>
+        <label data-i18n="profileModal.projectsLabel">项目 / 作品集（输入后按回车添加）</label>
         <div class="tag-input-wrap" id="pfProjects">
-          <input type="text" id="pfProjectsInput" placeholder="项目名或链接">
+          <input type="text" id="pfProjectsInput" data-i18n-placeholder="profileModal.projectsPlaceholder" placeholder="项目名或链接">
         </div>
       </div>
     </div>
@@ -1030,27 +1060,27 @@ body {
     <!-- Tab 2: 目标 -->
     <div class="profile-tab" id="tabTarget">
       <div class="field">
-        <label>目标岗位</label>
-        <input type="text" id="pfTargetRole" placeholder="如: 高级后端工程师">
+        <label data-i18n="profileModal.targetRole">目标岗位</label>
+        <input type="text" id="pfTargetRole" data-i18n-placeholder="profileModal.targetRolePlaceholder" placeholder="如: 后端开发工程师">
       </div>
       <div class="field">
-        <label>目标行业</label>
-        <input type="text" id="pfTargetIndustry" placeholder="如: SaaS、金融科技">
+        <label data-i18n="profileModal.targetIndustry">目标行业</label>
+        <input type="text" id="pfTargetIndustry" data-i18n-placeholder="profileModal.targetIndustryPlaceholder" placeholder="如: SaaS、金融科技">
       </div>
       <div style="display:flex;gap:10px;">
         <div class="field" style="flex:1;">
-          <label>最低薪资 (K/月)</label>
-          <input type="number" id="pfSalaryMin" placeholder="如 20" min="0">
+          <label data-i18n="profileModal.minSalary">最低薪资 (K/月)</label>
+          <input type="number" id="pfSalaryMin" data-i18n-placeholder="profileModal.minSalaryPlaceholder" placeholder="如 20" min="0">
         </div>
         <div class="field" style="flex:1;">
-          <label>最高薪资 (K/月)</label>
-          <input type="number" id="pfSalaryMax" placeholder="如 35" min="0">
+          <label data-i18n="profileModal.maxSalary">最高薪资 (K/月)</label>
+          <input type="number" id="pfSalaryMax" data-i18n-placeholder="profileModal.maxSalaryPlaceholder" placeholder="如 35" min="0">
         </div>
       </div>
       <div class="field">
-        <label>意向城市（输入后按回车添加）</label>
+        <label data-i18n="profileModal.cities">意向城市（输入后按回车添加）</label>
         <div class="tag-input-wrap" id="pfCities">
-          <input type="text" id="pfCitiesInput" placeholder="如 上海、远程">
+          <input type="text" id="pfCitiesInput" data-i18n-placeholder="profileModal.citiesPlaceholder" placeholder="如 上海、远程">
         </div>
       </div>
     </div>
@@ -1059,24 +1089,24 @@ body {
     <div class="profile-tab" id="tabGrowth">
       <div class="growth-list" id="growthList"></div>
       <div class="growth-add">
-        <input type="text" id="growthInput" placeholder="新的待办事项...">
+        <input type="text" id="growthInput" data-i18n-placeholder="profileModal.taskTitlePlaceholder" placeholder="新的待办事项...">
         <select id="growthCategory">
-          <option value="skill">技能学习</option>
-          <option value="project">项目实战</option>
-          <option value="action">求职行动</option>
+          <option value="skill" data-i18n="profileModal.catSkill">技能学习</option>
+          <option value="project" data-i18n="profileModal.catProject">项目实战</option>
+          <option value="action" data-i18n="profileModal.catAction">求职行动</option>
         </select>
-        <button id="btnGrowthAdd">添加</button>
+        <button id="btnGrowthAdd" data-i18n="profileModal.addTask">添加</button>
       </div>
       <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">
-        <span style="font-size:11px;color:var(--text2);">调试：</span>
+        <span style="font-size:11px;color:var(--text2);" data-i18n="profileModal.debug">调试：</span>
         <button onclick="triggerDebugCheckin()" style="font-size:11px;padding:3px 10px;background:var(--yellow);color:#000;border:none;border-radius:4px;cursor:pointer;">模拟督促触发</button>
         <span style="font-size:10px;color:var(--text2);margin-left:4px;">将 in_progress 任务回退 25h 并立即触发</span>
       </div>
     </div>
 
     <div class="modal-btns">
-      <button class="btn-cancel" id="btnProfileClose">关闭</button>
-      <button class="btn-save" id="btnProfileSave">保存画像</button>
+      <button class="btn-cancel" id="btnProfileClose" data-i18n="common.close">关闭</button>
+      <button class="btn-save" id="btnProfileSave" data-i18n="profileModal.save">保存画像</button>
     </div>
   </div>
 </div>
@@ -1138,19 +1168,59 @@ body {
   </div>
 </div>
 
+<!-- ═══ Points Ledger Modal ═══ -->
+<div class="modal-overlay" id="ledgerModal">
+  <div class="modal-box" style="max-width:680px;">
+    <h3 data-i18n="points.ledgerTitle">积分明细</h3>
+    <div class="ledger-grid">
+      <div class="ledger-col">
+        <div class="ledger-col-title" data-i18n="points.ledgerHistory">近期记录</div>
+        <div class="ledger-list" id="ledgerList"></div>
+      </div>
+      <div class="ledger-col">
+        <div class="ledger-col-title" data-i18n="points.pricingTitle">功能定价</div>
+        <div class="pricing-table" id="pricingTable"></div>
+        <div class="pricing-note" data-i18n="points.pricingNote">1 积分 = ¥0.1，基于 DeepSeek V4 Flash  token 成本定价</div>
+      </div>
+    </div>
+    <div class="modal-btns" style="margin-top:16px;">
+      <button class="btn-cancel" onclick="closeLedgerModal()" data-i18n="common.close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Confirm Modal ═══ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="max-width:380px;text-align:center;">
+    <h3 id="confirmTitle" data-i18n="points.confirmTitle">确认消耗积分</h3>
+    <p id="confirmMsg" style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6;"></p>
+    <div class="modal-btns" style="justify-content:center;">
+      <button class="btn-cancel" onclick="closeConfirmModal()" data-i18n="common.cancel">取消</button>
+      <button class="btn-save" id="btnConfirmOk" data-i18n="common.confirm">确认</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 /* ═══ I18N ═══ */
 var I18N = {
   zh: {
-    lang: { switch: 'EN' }, app: { title: 'Offer大圣', subtitle: 'AI 求职 Agent · 聊天式交互' },
+    lang: { switch: 'EN' }, app: { title: 'OFFERKING', subtitle: 'AI 求职 Agent · 聊天式交互' },
+    common: { close: '关闭', cancel: '取消', confirm: '确认' },
     auth: {
       login: '登录', register: '注册', email: '邮箱',
       password: '密码（至少6位）', fillFields: '请填写邮箱和密码',
       wait: '请稍候...', fail: '操作失败', networkError: '网络错误，请重试'
     },
-    points: { label: '积分', checkin: '签到', checkedIn: '已签到', bonus: '签到成功! +5.0 积分' },
+    points: { label: '积分', checkin: '签到', checkedIn: '已签到', bonus: '签到成功! +5.0 积分',
+      ledgerTitle: '积分明细', ledgerEmpty: '暂无积分记录', ledgerHint: '点击查看积分明细',
+      ledgerHistory: '近期记录', pricingTitle: '功能定价',
+      pricingNote: '1 积分 = ¥0.1，基于 DeepSeek V4 Flash token 成本定价',
+      confirmTitle: '确认消耗积分', confirmInterview: '模拟面试将消耗 <strong>20 积分</strong>，确认开始？',
+      confirmCost: '{label}将消耗 <strong>{cost} 积分</strong>，确认开始？',
+      noPoints: '积分不足，当前余额 ' },
     profile: {
       title: '我的现状', empty: '点击完善我的现状',
       education: '教育', projects: '项目', skills: '技能',
@@ -1177,7 +1247,7 @@ var I18N = {
       currentResume: '当前简历:',
       placeholder: '粘贴 JD 或输入消息…',
       shiftHint: 'Shift+Enter 换行',
-      send: '发送', welcomeTitle: 'Offer大圣',
+      send: '发送', welcomeTitle: 'OFFERKING',
       welcomeHtml: '有简历？直接粘贴给我，帮你分析 JD、定制投递版。<br><br><span style="color:var(--text2)">还没简历？跟我说说方向和技能，我帮你梳理求职画像、生成第一份简历。</span><br><br><span style="color:var(--text2)">试试说：<em>"帮我分析一下这个岗位"</em> 然后粘贴 JD 内容<br>也可以说：<em>"我想找后端开发实习，会 Python 和 Go"</em></span>',
       error: '抱歉，连接失败，请重试。',
       noPoints: '积分不足', noPointsHint: '积分不足，请签到或充值',
@@ -1191,29 +1261,33 @@ var I18N = {
       selectHint: '选择左侧项目查看详情'
     },
     profileModal: {
-      title: '我的现状', myTarget: '我的目标', growthPlan: '成长计划',
+      title: '我的画像', statusTab: '我的现状', myTarget: '我的目标', growthPlan: '成长计划',
       name: '姓名', namePlaceholder: '你的名字',
       school: '学校', schoolPlaceholder: '如: 北京大学',
       major: '专业', majorPlaceholder: '如: 计算机科学与技术',
       degree: '学历', degreeOptions: ['本科', '硕士', '博士', '大专', '其他'],
-      expSummary: '经历摘要', expPlaceholder: '如: 3年SaaS后端开发经验',
+      expSummary: '工作经历摘要', expPlaceholder: '如: 3年SaaS后端开发经验',
       skills: '技能 / 技术栈（输入后按回车添加）',
       projectsLabel: '项目 / 作品集（输入后按回车添加）',
       projectsPlaceholder: '项目名或链接',
       save: '保存画像',
       targetRole: '目标岗位', targetRolePlaceholder: '如: 后端开发工程师',
       targetIndustry: '目标行业', targetIndustryPlaceholder: '如: 金融科技 / SaaS',
-      salary: '期望薪资 (K/月)',
+      minSalary: '最低薪资 (K/月)', maxSalary: '最高薪资 (K/月)',
+      minSalaryPlaceholder: '如 20', maxSalaryPlaceholder: '如 35',
       cities: '意向城市（输入后按回车添加）',
-      addTask: '添加任务', taskTitle: '事项内容',
-      taskTitlePlaceholder: '如: 刷 LeetCode Hot 100',
-      taskCategory: '分类', catSkill: '技能学习', catProject: '项目实战', catAction: '行动'
+      citiesPlaceholder: '如 上海、远程',
+      addTask: '添加', taskTitle: '事项内容',
+      taskTitlePlaceholder: '新的待办事项...',
+      taskCategory: '分类', catSkill: '技能学习', catProject: '项目实战', catAction: '求职行动',
+      debug: '调试：'
     },
     verdict: { strong_match: '强烈推荐', apply: '建议投递', maybe: '可以试试', skip: '不建议' },
     growthCat: { skill: '学习', project: '项目', action: '行动' }
   },
   en: {
-    lang: { switch: 'cn' }, app: { title: 'OfferDash', subtitle: 'AI Career Agent · Conversational' },
+    lang: { switch: 'cn' }, app: { title: 'OFFERKING', subtitle: 'AI Career Agent · Conversational' },
+    common: { close: 'Close', cancel: 'Cancel', confirm: 'Confirm' },
     auth: {
       login: 'Login', register: 'Register', email: 'Email',
       password: 'Password (min 6 chars)',
@@ -1221,7 +1295,13 @@ var I18N = {
       wait: 'Please wait...', fail: 'Operation failed',
       networkError: 'Network error, please retry'
     },
-    points: { label: 'Points', checkin: 'Check-in', checkedIn: 'Checked in', bonus: 'Check-in success! +5.0 points' },
+    points: { label: 'Points', checkin: 'Check-in', checkedIn: 'Checked in', bonus: 'Check-in success! +5.0 points',
+      ledgerTitle: 'Points History', ledgerEmpty: 'No transactions yet', ledgerHint: 'View points history',
+      ledgerHistory: 'Recent', pricingTitle: 'Pricing',
+      pricingNote: '1 point = ¥0.1, priced on DeepSeek V4 Flash token cost',
+      confirmTitle: 'Confirm Points', confirmInterview: 'Mock interview costs <strong>20 points</strong>. Start?',
+      confirmCost: '{label} will cost <strong>{cost} points</strong>. Continue?',
+      noPoints: 'Not enough points. Balance: ' },
     profile: {
       title: 'My Profile', empty: 'Click to complete profile',
       education: 'Education', projects: 'Projects', skills: 'Skills',
@@ -1248,7 +1328,7 @@ var I18N = {
       currentResume: 'Resume:',
       placeholder: 'Paste JD or type message…',
       shiftHint: 'Shift+Enter for newline',
-      send: 'Send', welcomeTitle: 'OfferDash',
+      send: 'Send', welcomeTitle: 'OFFERKING',
       welcomeHtml: 'Got a resume? Paste it and I\'ll analyze JDs and tailor applications.<br><br><span style="color:var(--text2)">No resume? Tell me your direction and skills — I\'ll build your profile and first resume.</span><br><br><span style="color:var(--text2)">Try saying: <em>"Analyze this job for me"</em> then paste the JD<br>Or: <em>"I\'m looking for backend dev internships, I know Python and Go"</em></span>',
       error: 'Sorry, connection failed. Please retry.',
       noPoints: 'Insufficient points', noPointsHint: 'Insufficient points, please check in or top up',
@@ -1262,7 +1342,7 @@ var I18N = {
       selectHint: 'Select an item to view details'
     },
     profileModal: {
-      title: 'My Profile', myTarget: 'My Target', growthPlan: 'Growth Plan',
+      title: 'My Profile', statusTab: 'My Status', myTarget: 'My Target', growthPlan: 'Growth Plan',
       name: 'Name', namePlaceholder: 'Your name',
       school: 'School', schoolPlaceholder: 'e.g. Stanford University',
       major: 'Major', majorPlaceholder: 'e.g. Computer Science',
@@ -1274,11 +1354,14 @@ var I18N = {
       save: 'Save Profile',
       targetRole: 'Target Role', targetRolePlaceholder: 'e.g. Backend Developer',
       targetIndustry: 'Target Industry', targetIndustryPlaceholder: 'e.g. FinTech / SaaS',
-      salary: 'Expected Salary (K/month)',
+      minSalary: 'Min Salary (K/month)', maxSalary: 'Max Salary (K/month)',
+      minSalaryPlaceholder: 'e.g. 20', maxSalaryPlaceholder: 'e.g. 35',
       cities: 'Preferred Cities (type and press Enter)',
-      addTask: 'Add Task', taskTitle: 'Task',
-      taskTitlePlaceholder: 'e.g. Complete LeetCode Top 100',
-      taskCategory: 'Category', catSkill: 'Skill Learning', catProject: 'Project', catAction: 'Action'
+      citiesPlaceholder: 'e.g. Shanghai, Remote',
+      addTask: 'Add', taskTitle: 'Task',
+      taskTitlePlaceholder: 'New task...',
+      taskCategory: 'Category', catSkill: 'Skill', catProject: 'Project', catAction: 'Action',
+      debug: 'Debug:'
     },
     verdict: { strong_match: 'Strong Match', apply: 'Recommended', maybe: 'Maybe', skip: 'Skip' },
     growthCat: { skill: 'Learning', project: 'Project', action: 'Action' }
@@ -1325,6 +1408,10 @@ function applyLanguage() {
   for (var j = 0; j < phEls.length; j++) {
     phEls[j].placeholder = t(phEls[j].getAttribute('data-i18n-placeholder'));
   }
+  var titleEls = document.querySelectorAll('[data-i18n-title]');
+  for (var k = 0; k < titleEls.length; k++) {
+    titleEls[k].title = t(titleEls[k].getAttribute('data-i18n-title'));
+  }
   var authMode = isLogin ? 'login' : 'register';
   var btn = document.getElementById('authBtn');
   if (btn) btn.textContent = t('auth.' + authMode);
@@ -1342,6 +1429,9 @@ function applyLanguage() {
   document.title = t('app.title') + ' — AI Agent';
   if (document.getElementById('appMain').classList.contains('active')) {
     updateDynamicI18n();
+  }
+  if ($('#ledgerModal').classList.contains('active')) {
+    renderPricing();
   }
 }
 
@@ -1502,12 +1592,37 @@ async function showApp(email) {
 }
 
 /* ═══ Points ═══ */
+var REASON_LABELS = {
+  zh: {
+    'chat': 'AI 对话', 'interview': '模拟面试', 'jd_score': 'JD 匹配分析',
+    'tailor_resume': 'AI 简历优化', 'cover_letter': 'AI 求职信',
+    'star_stories': 'STAR 故事生成', 'parse_resume': 'AI 简历制作',
+    'daily_login': '每日签到', 'register_bonus': '注册赠送',
+  },
+  en: {
+    'chat': 'AI Chat', 'interview': 'Mock Interview', 'jd_score': 'JD Analysis',
+    'tailor_resume': 'Resume Tailor', 'cover_letter': 'Cover Letter',
+    'star_stories': 'STAR Stories', 'parse_resume': 'Resume Parsing',
+    'daily_login': 'Daily Check-in', 'register_bonus': 'Welcome Bonus',
+  }
+};
+function _reasonLabel(r) { return (REASON_LABELS[_lang] || REASON_LABELS['zh'])[r] || r; }
+
 async function fetchPoints() {
   const res = await api('/api/me/points');
   if (!res.ok) return;
   const d = await res.json();
   $('#pointsBalance').textContent = d.balance;
-  $('#pointsToday').textContent = d.today_earned > 0 ? `今日 +${d.today_earned}` : '';
+  var el = $('#pointsToday');
+  var lc = d.latest_change;
+  if (lc) {
+    var sign = lc.amount > 0 ? '+' : '';
+    el.textContent = _reasonLabel(lc.reason) + ' ' + sign + lc.amount;
+    el.className = 'points-today' + (lc.amount < 0 ? ' neg' : '');
+  } else {
+    el.textContent = '';
+    el.className = 'points-today';
+  }
 }
 
 async function dailyBonus() {
@@ -1515,7 +1630,8 @@ async function dailyBonus() {
   if (!res.ok) return;
   const d = await res.json();
   $('#pointsBalance').textContent = d.balance;
-  $('#pointsToday').textContent = d.today_earned > 0 ? `今日 +${d.today_earned}` : '';
+  $('#pointsToday').textContent = '签到 +5.0';
+  $('#pointsToday').className = 'points-today';
   const btn = $('#btnDaily');
   if (d.credited) {
     toast(t('points.bonus'));
@@ -1526,6 +1642,71 @@ async function dailyBonus() {
     btn.classList.add('done');
   }
 }
+
+async function openLedgerModal() {
+  const modal = $('#ledgerModal');
+  modal.classList.add('active');
+  renderPricing();
+  const res = await api('/api/me/points-ledger');
+  if (!res.ok) return;
+  const data = await res.json();
+  var html = '';
+  if (data.ledger.length === 0) {
+    html = '<div style="text-align:center;color:var(--text2);padding:24px;">' + t('points.ledgerEmpty') + '</div>';
+  } else {
+    for (var i = 0; i < data.ledger.length; i++) {
+      var item = data.ledger[i];
+      var cls = item.display >= 0 ? 'pos' : 'neg';
+      var sign = item.display > 0 ? '+' : '';
+      var time = item.created_at ? item.created_at.slice(0, 16).replace('T', ' ') : '';
+      html += '<div class="ledger-item">'
+        + '<span class="ledger-reason">' + _reasonLabel(item.reason) + '</span>'
+        + '<span class="ledger-time">' + time + '</span>'
+        + '<span class="ledger-amount ' + cls + '">' + sign + item.display + '</span>'
+        + '</div>';
+    }
+  }
+  $('#ledgerList').innerHTML = html;
+}
+function renderPricing() {
+  var lang = _lang === 'en' ? 'en' : 'zh';
+  var unit = lang === 'en' ? ' pts' : ' 积分';
+  var pricing = [
+    { key: 'chat', zh: 'AI 对话', en: 'AI Chat', cost: '1.0' },
+    { key: 'parse_resume', zh: 'AI 简历制作', en: 'Resume Parsing', cost: '5.0' },
+    { key: 'jd_score', zh: 'JD 匹配分析', en: 'JD Analysis', cost: '3.0' },
+    { key: 'tailor_resume', zh: 'AI 简历优化', en: 'Resume Tailor', cost: '10.0' },
+    { key: 'cover_letter', zh: 'AI 求职信', en: 'Cover Letter', cost: '8.0' },
+    { key: 'star_stories', zh: 'STAR 故事生成', en: 'STAR Stories', cost: '2.0' },
+    { key: 'interview', zh: '模拟面试', en: 'Mock Interview', cost: '20.0' }
+  ];
+  var html = '';
+  for (var i = 0; i < pricing.length; i++) {
+    var p = pricing[i];
+    html += '<div class="pricing-item">'
+      + '<span class="pricing-feature">' + p[lang] + '</span>'
+      + '<span class="pricing-cost">' + p.cost + unit + '</span>'
+      + '</div>';
+  }
+  $('#pricingTable').innerHTML = html;
+}
+function closeLedgerModal() { $('#ledgerModal').classList.remove('active'); }
+$('#ledgerModal').onclick = function(e) { if (e.target === $('#ledgerModal')) closeLedgerModal(); };
+
+/* Confirm modal */
+var _confirmCallback = null;
+function showConfirmModal(msg, callback) {
+  $('#confirmMsg').innerHTML = msg;
+  $('#confirmModal').classList.add('active');
+  _confirmCallback = callback;
+}
+function closeConfirmModal(confirmed) {
+  $('#confirmModal').classList.remove('active');
+  if (confirmed && _confirmCallback) _confirmCallback();
+  _confirmCallback = null;
+}
+$('#confirmModal').onclick = function(e) { if (e.target === $('#confirmModal')) closeConfirmModal(false); };
+$('#btnConfirmOk').onclick = function() { closeConfirmModal(true); };
 
 /* ═══ Profile ═══ */
 let profileData = {};
@@ -1724,7 +1905,14 @@ document.querySelectorAll('#profileModal .profile-modal-tabs button').forEach(bt
 });
 
 // Interview modal
-$('#btnInterviewStart').onclick = startInterview;
+function confirmStartInterview() {
+  var position = $('#ivPosition').value.trim();
+  if (!position) { toast('请填写岗位名称'); return; }
+  var balance = parseFloat($('#pointsBalance').textContent) || 0;
+  if (balance < 20) { toast(t('points.noPoints') + balance); return; }
+  showConfirmModal(t('points.confirmInterview'), function() { startInterview(); });
+}
+$('#btnInterviewStart').onclick = confirmStartInterview;
 $('#btnInterviewCancel').onclick = () => $('#interviewModal').classList.remove('active');
 $('#interviewModal').onclick = (e) => { if (e.target === $('#interviewModal')) $('#interviewModal').classList.remove('active'); };
 
@@ -1750,7 +1938,7 @@ $('#btnInterviewExit').onclick = () => exitInterview(false);
 ['#ivPosition', '#ivCompany'].forEach(function(sel) {
   var el = $(sel);
   if (el) el.onkeydown = function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); startInterview(); }
+    if (e.key === 'Enter') { e.preventDefault(); confirmStartInterview(); }
   };
 });
 
@@ -2093,6 +2281,87 @@ async function exportBrowseResumePDF(rid, name) {
 }
 
 
+/* ── Word export ── */
+function _parseMdInline(text) {
+  const { TextRun } = window.docx || {};
+  if (!TextRun) return [{ text: text }];
+  const parts = [];
+  const re = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`(.+?)`)/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(new TextRun({ text: text.slice(last, m.index) }));
+    if (m[1]) parts.push(new TextRun({ text: m[2], bold: true }));
+    else if (m[3]) parts.push(new TextRun({ text: m[4], italics: true }));
+    else if (m[5]) parts.push(new TextRun({ text: m[6], font: 'Courier New', size: 20 }));
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push(new TextRun({ text: text.slice(last) }));
+  return parts.length > 0 ? parts : [new TextRun({ text: text })];
+}
+
+function _stripMd(text) { return text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/`(.+?)`/g, '$1'); }
+
+async function _markdownToDocx(markdown) {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, Alignment } = window.docx;
+  const lines = markdown.split('\n');
+  const children = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const h = line.match(/^(#{1,4})\s+(.+)/);
+    if (h) {
+      const lv = [null, HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3, HeadingLevel.HEADING_4][h[1].length];
+      children.push(new Paragraph({ text: _stripMd(h[2]), heading: lv, spacing: { before: h[1].length === 1 ? 240 : 200, after: 120 } }));
+      continue;
+    }
+    if (/^[-*_]{3,}\s*$/.test(line)) {
+      children.push(new Paragraph({ children: [new TextRun({ text: '—'.repeat(36), color: 'aaaaaa', size: 18 })], alignment: Alignment.CENTER, spacing: { before: 100, after: 100 } }));
+      continue;
+    }
+    const bl = line.match(/^(\s*)[-*]\s+(.+)/);
+    if (bl) {
+      const indent = Math.min(Math.floor(bl[1].length / 2), 2);
+      children.push(new Paragraph({ children: _parseMdInline(bl[2]), bullet: { level: indent }, spacing: { after: 60 } }));
+      continue;
+    }
+    if (line.trim() === '') { children.push(new Paragraph({ spacing: { after: 80 } })); continue; }
+    children.push(new Paragraph({ children: _parseMdInline(line), spacing: { after: 80 } }));
+  }
+
+  const doc = new Document({ sections: [{ children }] });
+  return await Packer.toBlob(doc);
+}
+
+async function exportBrowseResumeWord(rid, name) {
+  if (!window.docx) { toast('Word 库加载中，请稍后再试'); return; }
+  const r = await api('/api/resume/' + rid);
+  if (!r.ok) { toast('加载简历失败'); return; }
+  const data = await r.json();
+  const safeName = (name || data.name || 'resume').replace(/[\\/:*?"<>|]/g, '_');
+  try {
+    const blob = await _markdownToDocx(data.content || '');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = safeName + '.docx';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch (e) { console.error('Word error:', e); toast('Word 生成失败，请重试'); }
+}
+
+async function exportResumeWord() {
+  if (!currentModalContent) return;
+  if (!window.docx) { toast('Word 库加载中，请稍后再试'); return; }
+  const name = ($('#resumeName').value || 'resume').replace(/[\\/:*?"<>|]/g, '_');
+  try {
+    const blob = await _markdownToDocx(currentModalContent);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name + '.docx';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch (e) { console.error('Word error:', e); toast('Word 生成失败，请重试'); }
+}
+
 function showExportBar() { const bar = $('#exportBar'); if (bar) bar.style.display = 'flex'; }
 function hideExportBar() { const bar = $('#exportBar'); if (bar) bar.style.display = 'none'; }
 
@@ -2110,9 +2379,11 @@ function toggleExportPopover(e, rid, name) {
   pop.innerHTML = `
     <button data-action="md">下载 .md</button>
     <button data-action="pdf">下载 PDF</button>
+    <button data-action="word">下载 Word</button>
   `;
   pop.querySelector('[data-action="md"]').onclick = (ev) => { ev.stopPropagation(); pop.remove(); btn._popoverOpen = false; exportBrowseResumeMD(rid, name); };
   pop.querySelector('[data-action="pdf"]').onclick = (ev) => { ev.stopPropagation(); pop.remove(); btn._popoverOpen = false; exportBrowseResumePDF(rid, name); };
+  pop.querySelector('[data-action="word"]').onclick = (ev) => { ev.stopPropagation(); pop.remove(); btn._popoverOpen = false; exportBrowseResumeWord(rid, name); };
   btn.parentElement.appendChild(pop);
   _exportPopoverEl = pop;
 
@@ -2694,6 +2965,24 @@ $('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
 };
 
 /* ═══ Chat ═══ */
+async function sendConfirmMessage(originalMsg) {
+  // Re-send the original message with confirm marker to execute pending tool
+  showTyping(true);
+  var confirmMsg = '[CONFIRM_PREMIUM] ' + originalMsg;
+  var res = await api('/api/chat', { method: 'POST', body: JSON.stringify({ message: confirmMsg }) });
+  showTyping(false);
+  if (res.ok) {
+    var data = await res.json();
+    addMessage('assistant', data.reply);
+    if (data.tool_calls && data.tool_calls.length > 0) {
+      addToolIndicator(data.tool_calls);
+    }
+    if (data.balance !== undefined) fetchPoints();
+    refreshResumes();
+    refreshSavedJobs();
+  }
+}
+
 async function sendMessage() {
   const input = $('#chatInput');
   const msg = input.value.trim();
@@ -2726,7 +3015,21 @@ async function sendMessage() {
   if (res.ok) {
     const data = await res.json();
     addMessage('assistant', data.reply);
+    if (data.tool_calls && data.tool_calls.length > 0) {
+      addToolIndicator(data.tool_calls);
+    }
     if (data.balance !== undefined) fetchPoints();
+    // Premium tool needs confirmation
+    if (data.confirm_needed) {
+      var cf = data.confirm_needed;
+      var label = _lang === 'en' ? cf.label_en : cf.label_zh;
+      var costMsg = t('points.confirmCost').replace('{cost}', cf.cost).replace('{label}', label);
+      // Store that we need to confirm, and show modal
+      showConfirmModal(costMsg, function() {
+        // Send confirmation message
+        sendConfirmMessage(msg);
+      });
+    }
     // Refresh after chat (may have saved jobs, new resume, etc.)
     refreshResumes();
     refreshSavedJobs();
@@ -2740,6 +3043,16 @@ async function sendMessage() {
   }
   $('#btnSend').disabled = false;
   input.focus();
+}
+
+function addToolIndicator(toolCalls) {
+  var names = toolCalls.map(function(t) { return t.name || t.function?.name || ''; }).filter(Boolean);
+  if (names.length === 0) return;
+  var div = document.createElement('div');
+  div.className = 'tool-indicator';
+  div.innerHTML = names.map(function(n) { return '<span class=\"tool-tag\">' + escHtml(n) + '</span>'; }).join('');
+  $('#messages').appendChild(div);
+  $('#messages').scrollTop = $('#messages').scrollHeight;
 }
 
 function addMessage(role, text, persist = true) {
@@ -2964,7 +3277,7 @@ function exitInterview(keepChat) {
     const wm = document.createElement('div');
     wm.className = 'welcome';
     wm.id = 'welcomeMsg';
-    wm.innerHTML = '<h2>' + (t('chat.welcomeTitle') || 'Offer大圣') + '</h2><p>' + (t('chat.welcomeHtml') || '') + '</p>';
+    wm.innerHTML = '<h2>' + (t('chat.welcomeTitle') || 'OFFERKING') + '</h2><p>' + (t('chat.welcomeHtml') || '') + '</p>';
     $('#messages').appendChild(wm);
   }
   fetch('/api/interview/reset', { method: 'POST', headers: apiHeaders() }).catch(() => {});
@@ -3302,5 +3615,6 @@ applyLanguage();
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+	<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js" defer></script>
 </body>
 </html>

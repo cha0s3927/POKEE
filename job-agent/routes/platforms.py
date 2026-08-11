@@ -147,6 +147,12 @@ def api_generate_stories(resume_id: Optional[str] = None, user: dict = Depends(a
     if not content:
         raise HTTPException(400, "请先上传简历")
 
+    from database import spend_points
+    try:
+        spend_points(user["id"], 20, "star_stories")
+    except ValueError as e:
+        raise HTTPException(402, str(e))
+
     stories = generate_star_stories(user["id"], content, resume_id)
     return {"stories": stories, "total": len(stories)}
 
@@ -162,7 +168,7 @@ def api_delete_story(story_id: str, user: dict = Depends(auth_user)):
 
 @router.get("/api/me/points", summary="查询积分余额")
 def api_get_points(user: dict = Depends(auth_user)):
-    """返回积分余额 + 今日收入（显示单位）"""
+    """返回积分余额 + 今日收入 + 最近一条变动"""
     from datetime import datetime
 
     with engine.connect() as conn:
@@ -179,7 +185,25 @@ def api_get_points(user: dict = Depends(auth_user)):
         ).fetchone()
         internal_earned = row2.earned if row2 else 0
 
-    return {"balance": round(internal / 10, 1), "today_earned": round(internal_earned / 10, 1)}
+        latest = conn.execute(
+            text("SELECT amount, reason, created_at FROM points_ledger "
+                 "WHERE user_id = :uid ORDER BY created_at DESC LIMIT 1"),
+            {"uid": user["id"]},
+        ).fetchone()
+
+    latest_change = None
+    if latest:
+        latest_change = {
+            "amount": round(latest.amount / 10, 1),
+            "reason": latest.reason,
+            "created_at": latest.created_at,
+        }
+
+    return {
+        "balance": round(internal / 10, 1),
+        "today_earned": round(internal_earned / 10, 1),
+        "latest_change": latest_change,
+    }
 
 
 @router.post("/api/me/daily-bonus", summary="每日签到领积分")
@@ -348,9 +372,9 @@ def api_create_growth_task(req: GrowthTaskPayload, user: dict = Depends(auth_use
     now = now_iso()
     with engine.connect() as conn:
         conn.execute(
-            text("INSERT INTO growth_tasks (id, plan_id, user_id, title, category, status, sort_order, created_at) "
-                 "VALUES (:id, :pid, :uid, :title, :cat, :status, :sort, :now)"),
-            {"id": tid, "pid": tid, "uid": user["id"], "title": req.title, "cat": req.category,
+            text("INSERT INTO growth_tasks (id, user_id, title, category, status, sort_order, created_at) "
+                 "VALUES (:id, :uid, :title, :cat, :status, :sort, :now)"),
+            {"id": tid, "uid": user["id"], "title": req.title, "cat": req.category,
              "status": req.status, "sort": req.sort_order, "now": now},
         )
         # 如果直接创建为 in_progress，初始化督促时间（首次督促在 20-28h 后）

@@ -158,7 +158,7 @@ def api_tailor_resume(req: TailorRequest, user: dict = Depends(auth_user)):
     from database import spend_points, engine
     from sqlalchemy import text
     try:
-        spend_points(user["id"], 10, "tailor_resume")
+        spend_points(user["id"], 100, "tailor_resume")
     except ValueError as e:
         raise HTTPException(402, str(e))
     try:
@@ -175,7 +175,7 @@ def api_cover_letter(req: CoverRequest, user: dict = Depends(auth_user)):
     from database import spend_points, engine
     from sqlalchemy import text
     try:
-        spend_points(user["id"], 10, "cover_letter")
+        spend_points(user["id"], 80, "cover_letter")
     except ValueError as e:
         raise HTTPException(402, str(e))
     try:

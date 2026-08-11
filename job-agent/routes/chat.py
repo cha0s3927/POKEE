@@ -17,15 +17,17 @@ class ChatRequest(BaseModel):
 def chat(req: ChatRequest, user: dict = Depends(auth_user)):
     from database import spend_points, engine
     from sqlalchemy import text
-    try:
-        spend_points(user["id"], 10, "chat")
-    except ValueError as e:
-        raise HTTPException(402, str(e))
+    # Skip chat fee for confirm messages (no LLM call)
+    if "[CONFIRM_PREMIUM]" not in req.message:
+        try:
+            spend_points(user["id"], 10, "chat")
+        except ValueError as e:
+            raise HTTPException(402, str(e))
     from main import agent
-    reply, tool_calls = agent.chat(user_id=user["id"], user_message=req.message)
+    result = agent.chat(user_id=user["id"], user_message=req.message)
     with engine.connect() as conn:
         row = conn.execute(text("SELECT points FROM users WHERE id = :uid"), {"uid": user["id"]}).fetchone()
-    return {"reply": reply, "user_id": user["id"], "balance": round((row.points if row else 0) / 10, 1), "tool_calls": tool_calls}
+    return {"reply": result["reply"], "user_id": user["id"], "balance": round((row.points if row else 0) / 10, 1), "tool_calls": result["tool_calls"], "confirm_needed": result.get("confirm_needed")}
 
 
 @router.post("/api/reset", summary="重置会话")
