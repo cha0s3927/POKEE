@@ -444,6 +444,34 @@ SAVE_RESUME_COST = 6
 SAVE_RESUME_LABEL_ZH = "AI 简历制作"
 SAVE_RESUME_LABEL_EN = "Resume Creation"
 
+# ── 自然语言确认/拒绝检测 ──
+CONFIRM_WORDS = ["确认", "好的", "好滴", "可以", "行", "做吧", "要", "是的", "对", "嗯", "搞", "来吧",
+                 "ok", "yes", "sure", "go ahead", "do it", "please", "yeah", "yep", "confirm"]
+DENY_WORDS = ["不用了", "算了", "太贵了", "不要", "取消", "不了", "不做了", "下次吧", "先不要",
+              "no", "cancel", "nope", "nah", "stop", "never mind", "pass"]
+
+
+def _detect_confirm(message: str) -> tuple[bool, bool]:
+    """返回 (is_confirm, is_deny)。仅短消息做关键词判定，长消息交给 LLM。"""
+    # 前端按钮发送的标记
+    if "[CONFIRM_PREMIUM]" in message:
+        return True, False
+    if "[DENY_PREMIUM]" in message:
+        return False, True
+
+    text = message.strip()
+    # 短消息（≤12 字/词）用关键词检测，防止误触发
+    if len(text) <= 12:
+        lower = text.lower()
+        for w in CONFIRM_WORDS:
+            if lower == w or lower.startswith(w):
+                return True, False
+        for w in DENY_WORDS:
+            if w in lower:
+                return False, True
+    return False, False
+
+
 class Agent:
     def __init__(self):
         self.sessions: dict[str, list[dict]] = {}
@@ -486,33 +514,57 @@ class Agent:
         messages = self.sessions[user_id]
 
         # ── 处理付费工具确认 ──
-        if user_id in self._pending_tool and "[CONFIRM_PREMIUM]" in user_message:
-            pending = self._pending_tool[user_id]
-            # 移除上一次对话中 __confirm__ 污染的消息（最后两条：assistant tool_call + tool result）
-            confirm_idx = None
-            for i in range(len(messages) - 1, -1, -1):
-                if (messages[i].get("role") == "tool"
-                        and isinstance(messages[i].get("content"), str)
-                        and '"__confirm__"' in messages[i].get("content", "")[:50]):
-                    confirm_idx = i
-                    break
-            if confirm_idx is not None:
-                del messages[confirm_idx]           # tool result with __confirm__
-                if confirm_idx > 0 and messages[confirm_idx - 1].get("role") == "assistant":
-                    del messages[confirm_idx - 1]   # assistant's tool_call that triggered it
+        if user_id in self._pending_tool:
+            is_confirm, is_deny = _detect_confirm(user_message)
 
-            # _execute 内部会检查 _pending_tool 并自动 pop，所以这里不提前 pop
-            result = self._execute(pending["name"], pending["args"], user_id)
-            # 生成回复
-            label = pending.get("label_zh" if lang == "zh" else "label_en", pending["name"])
-            reply = f"好的！{label}已完成，来看看结果吧~"
-            if result.get("markdown"):
-                reply += "\n\n" + result["markdown"][:3000]
-            elif result.get("text"):
-                reply += "\n\n" + result["text"][:3000]
-            elif result.get("total") is not None:
-                reply += f"\n\n总分: {result['total']}/100\n建议: {result.get('verdict', '')}"
-            return {"reply": reply, "tool_calls": [pending["name"]], "confirm_needed": None}
+            if is_deny:
+                pending = self._pending_tool.pop(user_id)
+                label = pending.get("label_zh" if lang == "zh" else "label_en", pending["name"])
+                # 把用户拒绝当作普通对话，交给 LLM 自然回应
+                messages.append({"role": "user", "content": user_message})
+                try:
+                    resp = client.chat.completions.create(
+                        model=settings.llm_model,
+                        messages=messages + [{"role": "user",
+                            "content": f"用户刚才拒绝了使用「{label}」服务（可能是因为积分不够或暂时不需要）。请自然地回应，不要催用户，可以提一下有免费的功能可以用。"}],
+                    )
+                    reply = resp.choices[0].message.content
+                except Exception:
+                    reply = "好的，有需要随时找俺老孙~"
+                return {"reply": reply, "tool_calls": [], "confirm_needed": None}
+
+            if is_confirm:
+                pending = self._pending_tool[user_id]
+                # 清理上一次对话中 __confirm__ 污染的 assistant tool_call
+                for i in range(len(messages) - 1, -1, -1):
+                    if messages[i].get("role") == "assistant" and messages[i].get("tool_calls"):
+                        tc = messages[i].get("tool_calls", [])
+                        if tc and tc[0].get("function", {}).get("name") == pending["name"]:
+                            del messages[i]
+                            break
+
+                # _execute 内部会检查 _pending_tool 并自动 pop
+                result = self._execute(pending["name"], pending["args"], user_id)
+                # 让 LLM 自然报告结果
+                label = pending.get("label_zh" if lang == "zh" else "label_en", pending["name"])
+                try:
+                    result_dump = json.dumps(result, ensure_ascii=False, default=str)[:2000]
+                    resp = client.chat.completions.create(
+                        model=settings.llm_model,
+                        messages=messages + [{"role": "user",
+                            "content": f"「{label}」已执行完毕，以下是结果。请用你的人设语气自然地告诉用户结果（不要用列表格式）：\n{result_dump}"}],
+                    )
+                    reply = resp.choices[0].message.content
+                except Exception:
+                    reply = f"好的！{label}已完成~"
+                    if result.get("markdown"):
+                        reply += "\n\n" + result["markdown"][:3000]
+                    elif result.get("text"):
+                        reply += "\n\n" + result["text"][:3000]
+                return {"reply": reply, "tool_calls": [pending["name"]], "confirm_needed": None}
+
+            # 不明确的回复 → 清除 pending，当作新消息交给 LLM
+            self._pending_tool.pop(user_id, None)
 
         # ── 添加用户消息 ──
         messages.append({"role": "user", "content": user_message})
@@ -584,7 +636,25 @@ class Agent:
                 return {"reply": msg.content, "tool_calls": tool_calls_made, "confirm_needed": None}
 
         if confirm_needed:
-            return {"reply": "确认处理中...", "tool_calls": tool_calls_made, "confirm_needed": confirm_needed}
+            # 让 LLM 生成自然的确认询问
+            cf = confirm_needed
+            label = cf.get("label_zh" if lang == "zh" else "label_en", cf["tool"])
+            cost = cf["cost"]
+            confirm_prompt = (
+                f"用户刚才表达了想要使用「{label}」功能的意图（消耗 {cost} 积分）。"
+                f"请用你的人设语气自然地告诉用户：这个服务需要消耗 {cost} 积分，询问是否继续。"
+                f"语气参考：「师弟，这个要花俺老孙 {cost} 个积分才能帮你做，你确定要吗？」"
+                f"保持简短，不要用列表，不要提「确认」「取消按钮」——就是你正常问用户要不要做。"
+            )
+            try:
+                resp = client.chat.completions.create(
+                    model=settings.llm_model,
+                    messages=messages + [{"role": "user", "content": confirm_prompt}],
+                )
+                reply = resp.choices[0].message.content or f"这个功能需要消耗 {cost} 积分，确认使用吗？"
+            except Exception:
+                reply = f"这个功能需要消耗 {cost} 积分，确认使用吗？"
+            return {"reply": reply, "tool_calls": tool_calls_made, "confirm_needed": confirm_needed}
 
         return {"reply": "抱歉，处理超时，请重试。", "tool_calls": tool_calls_made, "confirm_needed": None}
 

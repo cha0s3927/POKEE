@@ -279,6 +279,26 @@ body {
 .chip svg { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s; }
 .chip:hover svg { opacity: 1; }
 
+/* Inline Confirm Buttons (inside agent message) */
+.inline-confirm {
+  display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
+}
+.inline-confirm button {
+  padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  cursor: pointer; min-height: 44px; transition: all 0.15s; border: none;
+  touch-action: manipulation; font-family: inherit;
+}
+.inline-confirm .cfm-ok {
+  background: var(--accent); color: #fff;
+}
+.inline-confirm .cfm-ok:hover { background: var(--accent2); }
+.inline-confirm .cfm-ok:active { transform: scale(0.97); }
+.inline-confirm .cfm-no {
+  background: var(--surface2); color: var(--text2); border: 1px solid var(--border);
+}
+.inline-confirm .cfm-no:hover { border-color: var(--text2); color: var(--text); }
+.inline-confirm .cfm-no:active { transform: scale(0.97); }
+
 /* Input */
 .input-area { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
 .input-area textarea {
@@ -774,6 +794,7 @@ body {
   /* ── Input (fixed bottom, safe-area) ── */
   .quick-chips { padding: 0 12px 6px; gap: 6px; }
   .chip { padding: 8px 14px; min-height: 40px; font-size: 12px; border-radius: 20px; }
+  .inline-confirm button { padding: 8px 16px; font-size: 12px; min-height: 40px; }
   .input-area {
     padding: 10px 12px; gap: 8px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
@@ -3073,6 +3094,10 @@ $('#btnHeaderClear').onclick = $('#btnClearChat').onclick = async () => {
 
 /* ═══ Chat ═══ */
 async function sendConfirmMessage(originalMsg) {
+  // Remove inline confirm buttons
+  var existing = document.querySelector('.inline-confirm');
+  if (existing) existing.remove();
+
   showTyping(true);
   var confirmMsg = '[CONFIRM_PREMIUM] ' + originalMsg;
   try {
@@ -3139,16 +3164,10 @@ async function sendMessage() {
       addToolIndicator(data.tool_calls);
     }
     if (data.balance !== undefined) await fetchPoints();
-    // Premium tool needs confirmation
+    // Premium tool needs confirmation → inline buttons
     if (data.confirm_needed) {
       var cf = data.confirm_needed;
-      var label = _lang === 'en' ? cf.label_en : cf.label_zh;
-      var costMsg = t('points.confirmCost').replace('{cost}', cf.cost).replace('{label}', label);
-      // Store that we need to confirm, and show modal
-      showConfirmModal(costMsg, function() {
-        // Send confirmation message
-        sendConfirmMessage(msg);
-      });
+      addConfirmButtons(cf, msg);
     }
     // Refresh after chat (may have saved jobs, new resume, etc.)
     refreshResumes();
@@ -3173,6 +3192,46 @@ function addToolIndicator(toolCalls) {
   div.innerHTML = names.map(function(n) { return '<span class=\"tool-tag\">' + escHtml(n) + '</span>'; }).join('');
   $('#messages').appendChild(div);
   $('#messages').scrollTop = $('#messages').scrollHeight;
+}
+
+/* ── Inline confirm buttons ── */
+function addConfirmButtons(cf, originalMsg) {
+  // Append confirm/deny buttons to the LAST assistant message bubble
+  var msgs = document.querySelectorAll('#messages .msg.assistant');
+  if (msgs.length === 0) return;
+  var bubble = msgs[msgs.length - 1].querySelector('.msg-bubble');
+  if (!bubble) return;
+
+  // Remove any existing confirm buttons
+  var existing = bubble.querySelector('.inline-confirm');
+  if (existing) existing.remove();
+
+  var div = document.createElement('div');
+  div.className = 'inline-confirm';
+
+  var okBtn = document.createElement('button');
+  okBtn.className = 'cfm-ok';
+  okBtn.textContent = '确认使用（' + cf.cost + ' 积分）';
+  okBtn.onclick = function() {
+    div.innerHTML = '<span style="color:var(--text2);font-size:12px;">处理中…</span>';
+    okBtn.disabled = true; noBtn.disabled = true;
+    sendConfirmMessage(originalMsg);
+  };
+
+  var noBtn = document.createElement('button');
+  noBtn.className = 'cfm-no';
+  noBtn.textContent = '不用了';
+  noBtn.onclick = function() {
+    div.remove();
+    // Send deny marker
+    var inp = document.getElementById('chatInput');
+    inp.value = '[DENY_PREMIUM]';
+    sendMessage();
+  };
+
+  div.appendChild(okBtn);
+  div.appendChild(noBtn);
+  bubble.appendChild(div);
 }
 
 function addMessage(role, text, persist = true) {
