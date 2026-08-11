@@ -289,6 +289,9 @@ class ProfilePayload(BaseModel):
     salary_max: Optional[int] = Field(default=None, description="最高薪资(K)")
     salary_range: Optional[str] = Field(default=None, description="薪资范围显示")
     preferred_cities: Optional[list] = Field(default=None, description="意向城市列表(兼容)")
+    years_of_experience: Optional[str] = Field(default=None, description="工作年限: 0-1/1-3/3-5/5-10/10+")
+    job_search_status: Optional[str] = Field(default=None, description="求职状态: actively-looking/casually-browsing/preparing")
+    current_status: Optional[str] = Field(default=None, description="在职状态: employed/unemployed/student")
 
 
 @router.get("/api/me/profile", summary="获取用户画像")
@@ -313,6 +316,9 @@ def api_get_profile(user: dict = Depends(auth_user)):
         "salary_max": None,
         "salary_range": "",
         "preferred_cities": [],
+        "years_of_experience": "",
+        "job_search_status": "exploring",
+        "current_status": "",
     }
     for k, v in defaults.items():
         if k not in profile:

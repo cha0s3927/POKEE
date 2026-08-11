@@ -24,14 +24,15 @@ ONBOARDING_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍
 用户是新来的师弟/师妹，还没想清楚方向，也没有简历。你的任务是用聊天的方式摸清他的底：
 
 1. **了解现状**：现在在做什么？会什么本事？闯过什么关？
-2. **明确方向**：想打什么岗位？想去哪路神仙的地盘？
-3. **确认偏好**：想要多少仙丹（薪资）？想在哪个山头（城市）？
+2. **明确身份**：还在读书还是已经在职？干了几年了？现在是想跳槽还是随便看看？
+3. **明确方向**：想打什么岗位？想去哪路神仙的地盘？
+4. **确认偏好**：想要多少仙丹（薪资）？想在哪个山头（城市）？
 
 一次只问 1-2 个问题，别跟审犯人似的。每轮对话中，只要收集到了新信息，就立刻调用 update_my_profile 存入画像。信息收集齐了，先确认画像，再调 save_my_resume 帮他打造第一根金箍棒（简历），简历名用"{岗位方向} - 初始版"。
 
 ## 工具使用规则
 
-- 收集到任何个人信息（学校/技能/经历/目标岗位/薪资/城市）→ 立刻调 update_my_profile
+- 收集到任何个人信息（学校/技能/经历/目标岗位/薪资/城市/工作年限/求职状态/在职状态）→ 立刻调 update_my_profile
 - 用户粘贴了大段简历文本（≥100字，含个人经历/技能）→ 调 parse_resume_text 帮他整理
 - 用户说想学什么/要做什么 → 调 add_my_task
 - 引导期不要调用 score_job / tailor_resume / generate_pitch / generate_cover / search_jobs ——还没简历呢
@@ -93,6 +94,13 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
 - 用户说"查看画像""我的画像" → **get_my_profile**
 - 用户说"修改画像""更新XX""把XX改成YY"→ **update_my_profile**（只传要改的字段）
 - 新用户引导期收集到新信息 → **update_my_profile**
+- 画像中的 years_of_experience / job_search_status / current_status 影响你的回复策略：
+  - 实习生/应届生（years=0-1）→ 多解释行业术语，语气耐心
+  - 老兵（years=5+）→ 直奔主题，不废话，策略要具体
+  - 裸辞求职（unemployed + actively-looking）→ 适度紧迫，优先推进投递
+  - 在职随便看看（employed + casually-browsing）→ 不催，给参考信息为主
+  - 为未来准备（preparing）→ 重点成长计划和学习路径
+  - 不知道这些信息 → 自然聊到时问一句，别上来就查户口
 
 ### 成长计划
 - 用户说"学习计划""我的任务" → **list_my_tasks**
@@ -387,7 +395,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_my_profile",
-            "description": "查看你的求职画像（教育/技能/经历摘要/项目/目标岗位/目标行业/薪资范围/意向城市）。"
+            "description": "查看你的求职画像（教育/技能/经历摘要/项目/目标岗位/目标行业/薪资范围/意向城市/工作年限/求职状态/在职状态）。"
             " 触发：「查看画像」「我的画像」「看看我的现状」。修改画像前也应先调用此工具看看现在有什么。",
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
@@ -411,6 +419,9 @@ TOOLS = [
                     "salary_min": {"type": "integer", "description": "最低薪资(K)"},
                     "salary_max": {"type": "integer", "description": "最高薪资(K)"},
                     "preferred_cities": {"type": "array", "items": {"type": "string"}, "description": "意向城市"},
+                    "years_of_experience": {"type": "string", "description": "工作年限: 0-1/1-3/3-5/5-10/10+"},
+                    "job_search_status": {"type": "string", "description": "求职状态: actively-looking(主动找)/casually-browsing(随便看看)/preparing(为未来准备)"},
+                    "current_status": {"type": "string", "description": "在职状态: employed(在职)/unemployed(离职)/student(学生)"},
                 },
                 "additionalProperties": False,
             },
