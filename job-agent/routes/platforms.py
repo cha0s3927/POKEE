@@ -292,6 +292,7 @@ class ProfilePayload(BaseModel):
     years_of_experience: Optional[str] = Field(default=None, description="工作年限: 0-1/1-3/3-5/5-10/10+")
     job_search_status: Optional[str] = Field(default=None, description="求职状态: actively-looking/casually-browsing/preparing")
     current_status: Optional[str] = Field(default=None, description="在职状态: employed/unemployed/student")
+    personality_notes: Optional[str] = Field(default=None, description="性格/偏好备注，AI 被动收集，不在对话中主动询问")
 
 
 @router.get("/api/me/profile", summary="获取用户画像")
@@ -319,6 +320,7 @@ def api_get_profile(user: dict = Depends(auth_user)):
         "years_of_experience": "",
         "job_search_status": "exploring",
         "current_status": "",
+        "personality_notes": "",
     }
     for k, v in defaults.items():
         if k not in profile:

@@ -33,6 +33,7 @@ ONBOARDING_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍
 ## 工具使用规则
 
 - 收集到任何个人信息（学校/技能/经历/目标岗位/薪资/城市/工作年限/求职状态/在职状态）→ 立刻调 update_my_profile
+- 用户在对话中自然透露了性格/偏好（如"我容易紧张""我喜欢直接"）→ 顺手写入 personality_notes。不要主动问"你是什么性格"，只在用户自然表达时记
 - 用户粘贴了大段简历文本（≥100字，含个人经历/技能）→ 调 parse_resume_text 帮他整理
 - 用户说想学什么/要做什么 → 调 add_my_task
 - 引导期不要调用 score_job / tailor_resume / generate_pitch / generate_cover / search_jobs ——还没简历呢
@@ -101,6 +102,7 @@ SYSTEM_PROMPT = """你是孙悟空，花果山求职道场的掌门。金箍棒�
   - 在职随便看看（employed + casually-browsing）→ 不催，给参考信息为主
   - 为未来准备（preparing）→ 重点成长计划和学习路径
   - 不知道这些信息 → 自然聊到时问一句，别上来就查户口
+  - 画像里有 personality_notes → 回复时自然融入，比如用户说容易紧张就多鼓励、喜欢直接就不废话。但不要刻意引用原文（"根据画像，你性格内向..."太机械了）
 
 ### 成长计划
 - 用户说"学习计划""我的任务" → **list_my_tasks**
@@ -395,7 +397,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_my_profile",
-            "description": "查看你的求职画像（教育/技能/经历摘要/项目/目标岗位/目标行业/薪资范围/意向城市/工作年限/求职状态/在职状态）。"
+            "description": "查看你的求职画像（教育/技能/经历摘要/项目/目标岗位/目标行业/薪资范围/意向城市/工作年限/求职状态/在职状态/性格备注）。"
             " 触发：「查看画像」「我的画像」「看看我的现状」。修改画像前也应先调用此工具看看现在有什么。",
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
@@ -422,6 +424,7 @@ TOOLS = [
                     "years_of_experience": {"type": "string", "description": "工作年限: 0-1/1-3/3-5/5-10/10+"},
                     "job_search_status": {"type": "string", "description": "求职状态: actively-looking(主动找)/casually-browsing(随便看看)/preparing(为未来准备)"},
                     "current_status": {"type": "string", "description": "在职状态: employed(在职)/unemployed(离职)/student(学生)"},
+                    "personality_notes": {"type": "string", "description": "性格/偏好备注。用户自然透露时顺手记录，不要主动追问。如'性格偏内向，面试容易紧张''喜欢直接沟通'"},
                 },
                 "additionalProperties": False,
             },
@@ -1044,6 +1047,7 @@ class Agent:
                 "target_role", "target_industry", "salary_min", "salary_max", "preferred_cities",
                 "summary",
                 "years_of_experience", "job_search_status", "current_status",
+                "personality_notes",
             }
             payload = {}
             for k, v in args.items():

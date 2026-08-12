@@ -80,6 +80,8 @@ class TestProfileAPI:
             f"job_search_status 默认值应为 'exploring'，实际 {profile.get('job_search_status')}"
         assert profile["current_status"] == "", \
             f"current_status 默认值应为 ''，实际 {profile.get('current_status')}"
+        assert profile["personality_notes"] == "", \
+            f"personality_notes 默认值应为 ''，实际 {profile.get('personality_notes')}"
 
     def test_update_new_fields_persist(self):
         """更新新字段后读取，值应持久化"""
@@ -127,6 +129,21 @@ class TestProfileAPI:
         assert p["years_of_experience"] == "10+"
         assert p["current_status"] == "unemployed"
 
+    def test_personality_notes_passive_collection(self):
+        """personality_notes 纯被动收集，可单独更新"""
+        from routes.platforms import api_update_profile, api_get_profile, ProfilePayload
+
+        self._setup_user()
+
+        # 模拟用户在对话中说"我有点社恐"
+        api_update_profile(
+            ProfilePayload(personality_notes="性格偏内向，面试场景容易紧张"),
+            user={"id": self.uid},
+        )
+
+        result = api_get_profile(user={"id": self.uid})
+        assert result["profile"]["personality_notes"] == "性格偏内向，面试场景容易紧张"
+
 
 # ═══ Agent 工具定义测试 ═══
 
@@ -145,6 +162,7 @@ class TestAgentToolDefinitions:
         assert "工作年限" in desc, f"get_my_profile 描述缺少'工作年限': {desc}"
         assert "求职状态" in desc, f"get_my_profile 描述缺少'求职状态': {desc}"
         assert "在职状态" in desc, f"get_my_profile 描述缺少'在职状态': {desc}"
+        assert "性格" in desc, f"get_my_profile 描述缺少'性格': {desc}"
 
     def test_update_my_profile_has_new_params(self):
         """update_my_profile 参数应包含 3 个新字段"""
@@ -158,6 +176,8 @@ class TestAgentToolDefinitions:
             f"update_my_profile 参数缺少 job_search_status"
         assert "current_status" in params, \
             f"update_my_profile 参数缺少 current_status"
+        assert "personality_notes" in params, \
+            f"update_my_profile 参数缺少 personality_notes"
 
 
 # ═══ Prompt 策略测试 ═══
@@ -184,6 +204,13 @@ class TestPromptStrategy:
             "Prompt 应包含对 senior 用户的直接策略"
         assert "紧迫" in SYSTEM_PROMPT or "优先" in SYSTEM_PROMPT or "催" in SYSTEM_PROMPT, \
             "Prompt 应包含对急求职用户的紧迫策略"
+
+    def test_prompt_has_personality_notes_guidance(self):
+        """Prompt 应包含 personality_notes 的被动收集指引"""
+        assert "personality_notes" in SYSTEM_PROMPT, \
+            "Prompt 应提及 personality_notes"
+        assert "不要主动" in SYSTEM_PROMPT or "不要刻意" in SYSTEM_PROMPT, \
+            "Prompt 应强调不要主动追问性格"
 
 
 # ═══ Agent 执行测试 ═══
@@ -311,3 +338,20 @@ class TestProfileToolExecution:
             f"years 应保留，实际: {profile['years_of_experience']}"
         assert profile["job_search_status"] == "actively-looking", \
             f"job_search_status 应更新，实际: {profile['job_search_status']}"
+
+    def test_personality_notes_via_agent(self):
+        """Agent 写入 personality_notes，应成功持久化"""
+        self._register_user()
+
+        llm_exec = self._make_llm_response("update_my_profile", {
+            "personality_notes": "喜欢简洁直接，讨厌废话",
+        })
+        llm_summary = self._make_text_response("好的师弟，猴哥记住了~")
+        with patch.object(agent_module, 'client') as mock_client:
+            mock_client.chat.completions.create.side_effect = [llm_exec, llm_summary]
+            self.agent.chat(self.uid, "我这人比较直接，不喜欢绕弯子")
+
+        from routes.platforms import api_get_profile
+        profile = api_get_profile(user={"id": self.uid})["profile"]
+        assert profile["personality_notes"] == "喜欢简洁直接，讨厌废话", \
+            f"personality_notes 应被写入，实际: {profile['personality_notes']}"
