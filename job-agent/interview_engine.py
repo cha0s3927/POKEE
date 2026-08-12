@@ -271,6 +271,7 @@ class InterviewSession:
         self._match_score = 0
         self._match_note = ""
         self._match_suggestion = ""
+        self._last_scores = {}
 
         try:
             self.questions = plan_questions(
@@ -346,6 +347,7 @@ class InterviewSession:
 
         try:
             result = score_interview(self.qa_log, self.position)
+            self._last_scores = result  # 暴露结构化评分供路由持久化
         except Exception as e:
             logger.exception("score_interview error")
             return f"面试结束！共完成 {len(self.qa_log)} 道题。评分生成失败，请重试。"

@@ -321,6 +321,7 @@ def api_get_profile(user: dict = Depends(auth_user)):
         "job_search_status": "exploring",
         "current_status": "",
         "personality_notes": "",
+        "interview_stats": None,
     }
     for k, v in defaults.items():
         if k not in profile:

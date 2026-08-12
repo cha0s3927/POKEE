@@ -156,6 +156,9 @@ def submit_answer(req: AnswerRequest, user: dict = Depends(auth_user)):
     if reply is None:
         return {"error": "internal", "message": "处理失败"}
 
+    if session.status == "done" and session._last_scores:
+        _update_interview_stats(user["id"], session._last_scores)
+
     with engine.connect() as conn:
         row = conn.execute(
             text("SELECT points FROM users WHERE id = :uid"),
@@ -169,6 +172,67 @@ def submit_answer(req: AnswerRequest, user: dict = Depends(auth_user)):
         "message": reply,
         "balance": round((row.points if row else 0) / 10, 1),
     }
+
+
+def _update_interview_stats(user_id: str, scores: dict):
+    """累计更新用户的面试统计（profile.interview_stats）"""
+    import json
+    from database import engine
+    from sqlalchemy import text
+
+    dims = scores.get("dimensions", {})
+    total = scores.get("total_score", 0)
+    if not dims or not total:
+        return
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT profile FROM users WHERE id = :uid"), {"uid": user_id}
+        ).fetchone()
+        profile = json.loads(row.profile) if row and row.profile else {}
+        stats = profile.get("interview_stats")
+
+    if not stats or not isinstance(stats, dict) or "total_score_sum" not in stats:
+        stats = {"total_sessions": 0, "total_score_sum": 0, "dim_sums": {}, "dim_counts": {}}
+
+    stats["total_sessions"] += 1
+    stats["total_score_sum"] += total
+    stats["avg_score"] = round(stats["total_score_sum"] / stats["total_sessions"])
+    stats["latest_score"] = total
+    stats["latest_improvements"] = scores.get("improvements", [])[:3]
+    stats["latest_strengths"] = scores.get("strengths", [])[:3]
+
+    for dim, detail in dims.items():
+        s = detail.get("score", 0)
+        if not isinstance(s, (int, float)):
+            continue
+        if dim not in stats["dim_sums"]:
+            stats["dim_sums"][dim] = 0
+            stats["dim_counts"][dim] = 0
+        stats["dim_sums"][dim] += s
+        stats["dim_counts"][dim] += 1
+
+    dims_avg = {}
+    for dim in stats["dim_sums"]:
+        dims_avg[dim] = round(stats["dim_sums"][dim] / stats["dim_counts"][dim])
+
+    stats["dimensions_avg"] = dims_avg
+    if dims_avg:
+        stats["weakest"] = min(dims_avg, key=dims_avg.get)
+        stats["strongest"] = max(dims_avg, key=dims_avg.get)
+
+    with engine.connect() as conn:
+        current = json.loads(
+            conn.execute(
+                text("SELECT profile FROM users WHERE id = :uid"), {"uid": user_id}
+            ).fetchone().profile
+        )
+        current["interview_stats"] = stats
+        conn.execute(
+            text("UPDATE users SET profile = :p WHERE id = :uid"),
+            {"p": json.dumps(current, ensure_ascii=False), "uid": user_id},
+        )
+        conn.commit()
 
 
 @router.post("/api/interview/reset", summary="重置面试")
