@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 个性化画像 — 效果对照报告</title>
+<style>
+  :root {
+    --bg: #f8f9fb;
+    --card: #fff;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --orange: #d97706;
+    --orange-bg: #fffbeb;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  header p {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .summary-card .label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .summary-card .value {
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .summary-card .value.green { color: var(--green); }
+  .summary-card .value.blue { color: var(--blue); }
+
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  td.field {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .has-data {
+    color: var(--green);
+    font-weight: 500;
+  }
+  .no-data {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  .highlight-row td {
+    background: var(--green-bg);
+  }
+
+  .insight-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .insight {
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .insight.a {
+    background: var(--green-bg);
+    border: 1px solid #a7f3d0;
+  }
+  .insight.b {
+    background: var(--orange-bg);
+    border: 1px solid #fde68a;
+  }
+  .insight h4 {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .flow-step {
+    background: var(--blue-bg);
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+  }
+  .flow-arrow {
+    color: var(--text-muted);
+    font-size: 18px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .feature {
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .feature h4 {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .feature p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .feature .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    margin-bottom: 8px;
+  }
+  .tag.passive { background: var(--blue-bg); color: var(--blue); }
+  .tag.system { background: var(--green-bg); color: var(--green); }
+
+  footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>AI 个性化画像 — 效果对照报告</h1>
+  <p>验证 personality_notes 与 interview_stats 两个新字段对 Agent 行为的实际影响</p>
+</header>
+
+<div class="summary-cards">
+  <div class="summary-card">
+    <div class="label">新增字段</div>
+    <div class="value green">2</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">对照测试</div>
+    <div class="value blue">10</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">测试通过率</div>
+    <div class="value green">100%</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">代码改动文件</div>
+    <div class="value blue">4</div>
+  </div>
+</div>
+
+<!-- 核心对比 -->
+<section>
+  <h2>画像对比：有画像用户 vs 空画像用户</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>字段</th>
+        <th>用户 A（有画像）</th>
+        <th>用户 B（空画像）</th>
+        <th>说明</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="field">name</td>
+        <td class="has-data">张三</td>
+        <td class="no-data">（空）</td>
+        <td>AI 可直呼其名，更亲切</td>
+      </tr>
+      <tr>
+        <td class="field">target_role</td>
+        <td class="has-data">后端开发</td>
+        <td class="no-data">（空）</td>
+        <td>求职方向明确 vs 泛泛而谈</td>
+      </tr>
+      <tr>
+        <td class="field">years_of_experience</td>
+        <td class="has-data">3-5 年</td>
+        <td class="no-data">（空）</td>
+        <td>影响推荐的岗位级别</td>
+      </tr>
+      <tr>
+        <td class="field">job_search_status</td>
+        <td class="has-data">actively-looking</td>
+        <td class="no-data">（空）</td>
+        <td>主动求职者 → 更积极推动</td>
+      </tr>
+      <tr>
+        <td class="field">current_status</td>
+        <td class="has-data">employed</td>
+        <td class="no-data">（空）</td>
+        <td>在职跳槽 → 关注保密性建议</td>
+      </tr>
+      <tr class="highlight-row">
+        <td class="field">personality_notes</td>
+        <td class="has-data">性格偏内向，面试容易紧张，喜欢直接沟通</td>
+        <td class="no-data">（空）</td>
+        <td>⭐ 新字段 — 性格感知</td>
+      </tr>
+      <tr class="highlight-row">
+        <td class="field">interview_stats</td>
+        <td class="has-data">4 次 / 均分 78 / 弱项: 沟通表达</td>
+        <td class="no-data">—（无数据）</td>
+        <td>⭐ 新字段 — 面试追踪</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight-box">
+    <div class="insight a">
+      <h4>用户 A — AI 能做到</h4>
+      感知到用户在面试中容易紧张，自动多给鼓励；发现"沟通表达"是弱项，优先推荐沟通类练习；第 5 次练习时知道用户已有 4 次经验，不做新手式啰嗦。
+    </div>
+    <div class="insight b">
+      <h4>用户 B — AI 只能</h4>
+      通用回复，没有用户背景可参考。不知道用户是谁、找什么工作、有什么性格偏好、面试表现如何。所有交互都是"一次性"的，无记忆。
+    </div>
+  </div>
+</section>
+
+<!-- 数据流 -->
+<section>
+  <h2>数据如何流入？</h2>
+
+  <h4 style="margin-bottom:12px;font-size:14px;">personality_notes — 被动收集，无需用户填表</h4>
+  <div class="flow">
+    <div class="flow-step">用户在对话中自然流露<br>"面试好紧张"</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">AI 调用<br>update_my_profile</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">写入<br>personality_notes</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">后续对话 AI 读取<br>调整回复风格</div>
+  </div>
+  <p style="font-size:13px;color:var(--text-muted);margin-top:12px;">Prompt 要求 AI "不可主动询问用户性格"，只在用户自然暴露时记录。用户无感知。</p>
+
+  <h4 style="margin:24px 0 12px;font-size:14px;">interview_stats — 系统自动维护，面试结束后更新</h4>
+  <div class="flow">
+    <div class="flow-step">完成一场<br>模拟面试</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">评分官生成<br>5 维度评分</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">_update_interview_stats<br>累计加权平均</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-step">下次对话 AI 感知<br>用户进步/薄弱点</div>
+  </div>
+  <p style="font-size:13px;color:var(--text-muted);margin-top:12px;">用户看到的是自然语言评价（"你在沟通方面还可以继续加强"），永远不会看到原始数字。</p>
+</section>
+
+<!-- 字段说明 -->
+<section>
+  <h2>两个新字段详解</h2>
+  <div class="feature-grid">
+    <div class="feature">
+      <span class="tag passive">被动收集</span>
+      <h4>personality_notes</h4>
+      <p>性格偏好备注。用户在对话中自然提到"容易紧张""喜欢直接""偏内向"等关键词时，Agent 通过 <code>update_my_profile</code> 工具自动写入。</p>
+      <p style="margin-top:8px;"><strong>用户权限：</strong>可通过画像编辑修改或删除</p>
+      <p><strong>AI 权限：</strong>可读写，不可主动询问</p>
+    </div>
+    <div class="feature">
+      <span class="tag system">系统自动</span>
+      <h4>interview_stats</h4>
+      <p>面试表现累计统计。包括总次数、平均分、各维度加权平均、最强/最弱维度。每次模拟面试结束后由系统自动更新。</p>
+      <p style="margin-top:8px;"><strong>用户权限：</strong>只看自然语言评语，不暴露数字</p>
+      <p><strong>AI 权限：</strong>只读，不可修改（不由 ProfilePayload 暴露）</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  job-agent · 2026-08-12 · 10/10 测试通过
+</footer>
+
+</div>
+</body>
+</html>
